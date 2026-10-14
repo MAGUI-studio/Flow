@@ -1,93 +1,224 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
-import { Header } from "@/components/header";
-import { CancelBooking } from "@/components/cancel-booking";
+import {
+  ArrowUpRight,
+  CalendarDays,
+  Clock,
+  MapPin,
+  Globe,
+  CheckCircle2,
+} from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { money, statusLabel } from "@/lib/format";
-export default async function Page() {
+import { money, hourLabel, statusLabel } from "@/lib/format";
+import { loadConsumerSearch, type SearchInput } from "@/lib/url-state";
+import {
+  PageHeading,
+  EmptyState,
+  StatusPill,
+} from "@/components/internal/primitives";
+import { ListFilters } from "@/components/internal/filters";
+import { BookingActions } from "@/components/internal/booking-actions";
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: SearchInput;
+}) {
   const { userId } = await auth.protect();
-  const bookings = await prisma().booking.findMany({
+  const query = await loadConsumerSearch(searchParams);
+  const now = new Date();
+  const records = await prisma().booking.findMany({
     where: { consumerId: userId },
     include: {
       session: {
         include: { establishment: true, service: true, professional: true },
       },
     },
-    orderBy: { session: { startsAt: "desc" } },
+    orderBy: { session: { startsAt: "asc" } },
   });
+  const all = records.map((b) => ({
+    ...b,
+    effectiveStatus:
+      b.status === "pending" && b.expiresAt && b.expiresAt <= now
+        ? "expired"
+        : b.status,
+  }));
+  const upcoming = all.filter(
+    (b) =>
+      b.session.startsAt >= now &&
+      ["confirmed", "pending"].includes(b.effectiveStatus),
+  );
+  const rows = all.filter(
+    (b) =>
+      (query.periodo === "all" ||
+        (query.periodo === "upcoming"
+          ? b.session.startsAt >= now
+          : b.session.startsAt < now)) &&
+      (query.status === "all" || b.effectiveStatus === query.status) &&
+      `${b.session.service.name} ${b.session.establishment.name} ${b.session.professional.name}`
+        .toLocaleLowerCase("pt-BR")
+        .includes(query.busca.toLocaleLowerCase("pt-BR")),
+  );
+  if (query.periodo === "past") rows.reverse();
   return (
     <>
-      <Header />
-      <main className="wrap page-intro">
-        <div className="eyebrow" style={{ justifyContent: "flex-start" }}>
-          SEU TEMPO, ORGANIZADO
-        </div>
-        <h1>Meus agendamentos</h1>
-        <div className="account-links">
-          <Link href="/painel" className="button secondary">
-            Painel do meu negócio ↗
-          </Link>
+      <PageHeading
+        eyebrow="SEU TEMPO, ORGANIZADO"
+        title="Seus próximos momentos."
+        description="Acompanhe suas reservas, encontre os detalhes e cuide da sua agenda."
+        action={
           <Link href="/#explorar" className="button">
-            Agendar um serviço →
+            Agendar um serviço
+            <ArrowUpRight size={16} />
           </Link>
+        }
+      />
+      <div className="consumer-summary">
+        <div>
+          <span className="summary-icon">
+            <CalendarDays size={20} />
+          </span>
+          <strong>{upcoming.length}</strong>
+          <span>agendamentos por vir</span>
         </div>
-        {!bookings.length ? (
-          <section className="panel empty">
-            <h2>Qual será seu próximo momento?</h2>
-            <p className="muted-text">
-              Você ainda não tem agendamentos. Encontre um profissional e
-              escolha seu horário.
-            </p>
-          </section>
-        ) : (
-          bookings.map((b) => {
-            const status =
-              b.status === "pending" && b.expiresAt && b.expiresAt <= new Date()
-                ? "expired"
-                : b.status;
+        <div>
+          <span className="summary-icon">
+            <CheckCircle2 size={20} />
+          </span>
+          <strong>
+            {upcoming.filter((b) => b.effectiveStatus === "confirmed").length}
+          </strong>
+          <span>confirmados</span>
+        </div>
+        <div>
+          <span className="summary-icon">
+            <Clock size={20} />
+          </span>
+          <strong>
+            {upcoming.filter((b) => b.effectiveStatus === "pending").length}
+          </strong>
+          <span>aguardando aprovação</span>
+        </div>
+      </div>
+      <ListFilters
+        placeholder="Buscar serviço, espaço ou profissional"
+        statuses
+        period
+      />
+      <div className="section-subline">
+        <span>
+          {rows.length} {rows.length === 1 ? "agendamento" : "agendamentos"}
+        </span>
+        <span>Reservas e histórico da sua conta</span>
+      </div>
+      {!rows.length ? (
+        <EmptyState
+          title={
+            all.length
+              ? "Nenhum agendamento por aqui."
+              : "Qual será seu próximo momento?"
+          }
+          description={
+            all.length
+              ? "Tente outro período ou ajuste os filtros para encontrar sua reserva."
+              : "Encontre um profissional, escolha seu serviço e reserve um tempo para você."
+          }
+          href="/#explorar"
+          label="Explorar serviços"
+          icon={<CalendarDays size={26} />}
+        />
+      ) : (
+        <div className="consumer-booking-list">
+          {rows.map((b) => {
             const e = b.session.establishment;
             const canCancel =
-              ["pending", "confirmed"].includes(status) &&
-              b.session.startsAt.getTime() - Date.now() >=
+              ["pending", "confirmed"].includes(b.effectiveStatus) &&
+              b.session.startsAt.getTime() - now.getTime() >=
                 e.cancelNoticeHours * 3600000;
             return (
-              <article className="panel booking-record" key={b.id}>
-                <div>
-                  <span className="badge">{statusLabel[status]}</span>
-                  <h2 style={{ marginTop: 12 }}>{b.session.service.name}</h2>
-                  <p className="muted-text">
-                    {e.name} · {b.session.professional.name}
-                  </p>
-                  <p className="muted-text">
-                    {b.session.startsAt.toLocaleString("pt-BR", {
-                      timeZone: e.timezone,
-                      dateStyle: "long",
-                      timeStyle: "short",
-                    })}{" "}
-                    · {b.durationMinutes} min
-                  </p>
-                  <strong>{money(b.priceCents)}</strong>
-                  {status === "pending" && b.expiresAt && (
-                    <p className="muted-text">
-                      Aguardando resposta até{" "}
-                      {b.expiresAt.toLocaleString("pt-BR", {
-                        timeZone: e.timezone,
-                      })}
-                      .
-                    </p>
-                  )}
-                  {!canCancel && ["pending", "confirmed"].includes(status) && (
-                    <p className="muted-text">
-                      Para alterações, entre em contato com o estabelecimento.
-                    </p>
-                  )}
+              <article key={b.id} className="consumer-booking">
+                <div className="consumer-booking-header">
+                  <Link href={`/${e.slug}`}>
+                    <i style={{ background: e.color }}>{e.name[0]}</i>
+                    <span>{e.name}</span>
+                    <ArrowUpRight size={14} />
+                  </Link>
+                  <StatusPill
+                    status={b.effectiveStatus}
+                    label={statusLabel[b.effectiveStatus]}
+                  />
                 </div>
-                {canCancel && <CancelBooking id={b.id} />}
+                <div className="consumer-booking-body">
+                  <div className="appointment-date-block">
+                    <strong>
+                      {b.session.startsAt.toLocaleDateString("pt-BR", {
+                        timeZone: e.timezone,
+                        day: "2-digit",
+                      })}
+                    </strong>
+                    <span>
+                      {b.session.startsAt.toLocaleDateString("pt-BR", {
+                        timeZone: e.timezone,
+                        month: "short",
+                      })}
+                    </span>
+                  </div>
+                  <div className="consumer-booking-main">
+                    <h2>{b.session.service.name}</h2>
+                    <p>Com {b.session.professional.name}</p>
+                    <div className="booking-detail-line">
+                      <span>
+                        <CalendarDays size={14} />
+                        {b.session.startsAt.toLocaleDateString("pt-BR", {
+                          timeZone: e.timezone,
+                          weekday: "long",
+                          day: "2-digit",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </span>
+                      <span>
+                        <Clock size={14} />
+                        {hourLabel(b.session.startsAt, e.timezone)} ·{" "}
+                        {b.durationMinutes} min
+                      </span>
+                      <span>
+                        {b.session.service.modality === "online" ? (
+                          <Globe size={14} />
+                        ) : (
+                          <MapPin size={14} />
+                        )}{" "}
+                        {b.session.service.modality === "online"
+                          ? "Online"
+                          : e.city || "Presencial"}
+                      </span>
+                    </div>
+                  </div>
+                  <strong className="consumer-booking-price">
+                    {money(b.priceCents)}
+                  </strong>
+                </div>
+                <div className="consumer-booking-footer">
+                  <p>
+                    {b.effectiveStatus === "pending" && b.expiresAt
+                      ? `Aguardando resposta até ${b.expiresAt.toLocaleString("pt-BR", { timeZone: e.timezone, dateStyle: "short", timeStyle: "short" })}.`
+                      : canCancel
+                        ? `Cancelamento disponível até ${e.cancelNoticeHours}h antes do atendimento.`
+                        : ["pending", "confirmed"].includes(b.effectiveStatus)
+                          ? "Para alterações, entre em contato com o estabelecimento."
+                          : "Este agendamento está no seu histórico."}
+                  </p>
+                  <BookingActions
+                    id={b.id}
+                    status={b.effectiveStatus}
+                    consumer
+                    canCancel={canCancel}
+                  />
+                </div>
               </article>
             );
-          })
-        )}
-      </main>
+          })}
+        </div>
+      )}
     </>
   );
 }
