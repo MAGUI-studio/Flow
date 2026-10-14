@@ -10,7 +10,7 @@ export function Header() {
         <img className="logo" src="/brand/logo_black.svg" alt="Flow" />
       </Link>
       <nav>
-        <Link href="/#explorar">Explorar</Link>
+        <Link href="/explorar">Explorar</Link>
         <Link href="/#como-funciona">Como funciona</Link>
         <Link href="/planos" className="group inline-flex items-center gap-1.5">
           Para seu negócio{" "}

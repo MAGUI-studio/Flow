@@ -43,6 +43,7 @@ export const establishmentSchema = z.object({
           "painel",
           "planos",
           "agendamentos",
+          "explorar",
           "entrar",
           "sign-in",
           "sign-up",

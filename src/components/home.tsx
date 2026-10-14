@@ -1,48 +1,22 @@
 "use client";
 import { Container } from "@/components/container";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { catalogSearchSchema } from "@/lib/form-schemas";
+
 import Link from "next/link";
-import { FlowSelect } from "@/components/ui/flow-select";
+
 import {
   ArrowUpRight,
-  Search,
-  MapPin,
-  ArrowRight,
   Check,
   CalendarDays,
   Heart,
   Scissors,
   Stethoscope,
-  Globe,
 } from "lucide-react";
 import type { BusinessCard } from "@/lib/catalog";
 import { Header } from "./header";
 import { Footer } from "./footer";
+import { BusinessDirectory } from "./business-directory";
 import { ArrowLink } from "./ui/arrow-link";
 export function Home({ businesses }: { businesses: BusinessCard[] }) {
-  const searchForm = useForm({
-    resolver: zodResolver(catalogSearchSchema),
-    defaultValues: {
-      query: "",
-      city: "",
-      modality: "all" as "all" | "in_person" | "online",
-    },
-  });
-  const { query, city, modality } = searchForm.watch();
-  const [category, setCategory] = useState("Todos");
-  const categories = ["Todos", ...new Set(businesses.map((b) => b.category))];
-  const found = businesses.filter(
-    (b) =>
-      (category === "Todos" || b.category === category) &&
-      `${b.name} ${b.tag} ${b.serviceNames.join(" ")}`
-        .toLowerCase()
-        .includes(query.toLowerCase()) &&
-      b.city.toLowerCase().includes(city.toLowerCase()) &&
-      (modality === "all" || b.modalities.includes(modality)),
-  );
   return (
     <>
       <Header />
@@ -180,11 +154,11 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
             ].map(({ label, icon: Icon }) => (
               <li
                 key={label}
-                className="relative isolate flex min-h-28 items-end overflow-hidden rounded-2xl border border-[#eae7f3] bg-[#faf9ff] p-4 sm:p-5"
+                className="relative isolate flex min-h-28 items-end overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-5"
               >
                 <Icon
                   aria-hidden="true"
-                  className="pointer-events-none absolute -right-3 -bottom-3 -z-10 size-24 rotate-[-12deg] stroke-[1.2] text-[#635BFF]/10"
+                  className="pointer-events-none absolute -right-8 -bottom-8 -z-10 size-40 rotate-[-12deg] stroke-[1.1] text-zinc-900/6"
                 />
                 <span className="max-w-28 text-xs font-medium leading-relaxed text-zinc-700 sm:text-sm">
                   {label}
@@ -205,105 +179,7 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
               Explore espaços e pessoas que fazem a diferença na sua rotina.
             </p>
           </div>
-          <form
-            className="search-box"
-            noValidate
-            onSubmit={searchForm.handleSubmit(() =>
-              document
-                .getElementById("results")
-                ?.scrollIntoView({ behavior: "smooth", block: "center" }),
-            )}
-          >
-            <Search size={20} />
-            <input
-              aria-label="Busque um serviço ou estabelecimento"
-              placeholder="O que você está procurando?"
-              {...searchForm.register("query")}
-            />
-            <div className="search-city">
-              <MapPin size={18} />
-              <input
-                aria-label="Cidade ou online"
-                placeholder="Cidade ou online"
-                {...searchForm.register("city")}
-              />
-            </div>
-            <FlowSelect
-              className="modality-filter"
-              aria-label="Modalidade"
-              value={modality}
-              onValueChange={(v) =>
-                searchForm.setValue(
-                  "modality",
-                  catalogSearchSchema.shape.modality.parse(v),
-                )
-              }
-            >
-              <option value="all">Todas as modalidades</option>
-              <option value="in_person">Presencial</option>
-              <option value="online">Online</option>
-            </FlowSelect>
-            <button type="submit" className="button small">
-              Buscar <ArrowRight size={17} />
-            </button>
-          </form>
-          {(searchForm.formState.errors.query ||
-            searchForm.formState.errors.city) && (
-            <p className="mt-2 text-xs text-rose-600" role="alert">
-              {searchForm.formState.errors.query?.message ??
-                searchForm.formState.errors.city?.message}
-            </p>
-          )}
-          <div className="filters">
-            {categories.map((c) => (
-              <button
-                key={c}
-                onClick={() => setCategory(c)}
-                className={c === category ? "active" : ""}
-              >
-                {c}
-              </button>
-            ))}
-            <span>
-              {found.length}{" "}
-              {found.length === 1
-                ? "espaço para descobrir"
-                : "espaços para descobrir"}
-            </span>
-          </div>
-          <div id="results" className="business-grid">
-            {found.map((b) => (
-              <Link className="business-card" key={b.slug} href={`/${b.slug}`}>
-                <div className="business-cover" style={{ background: b.color }}>
-                  <div className="cover-lines" />
-                  <span className="business-monogram">
-                    {b.initials}
-                    <span>✳</span>
-                  </span>
-                  <span className="cover-tag">
-                    {b.online ? <Globe size={12} /> : <MapPin size={12} />}{" "}
-                    {b.online ? "Atendimento online" : b.city}
-                  </span>
-                  <span className="cover-arrow">
-                    <ArrowUpRight size={19} />
-                  </span>
-                </div>
-                <div className="business-info">
-                  <small>{b.tag}</small>
-                  <h3>{b.name}</h3>
-                  <p>{b.description}</p>
-                  <div>
-                    Conhecer e agendar <ArrowRight size={16} />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-          {found.length === 0 && (
-            <div className="empty">
-              Nenhum espaço encontrado. Experimente outra busca.
-            </div>
-          )}
+          <BusinessDirectory businesses={businesses} featured />
         </Container>
         <Container as="section" id="como-funciona" className="how">
           <div>
