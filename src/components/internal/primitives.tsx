@@ -99,8 +99,13 @@ export function FormSection({
 }) {
   return (
     <section className="internal-form-section">
-      <header>
-        <span>{number}</span>
+      <header className="relative isolate block overflow-hidden pr-20">
+        <span
+          aria-hidden="true"
+          className="section-watermark pointer-events-none absolute -top-5 right-0 -z-10 rounded-none border-0 bg-transparent p-0 text-7xl font-extrabold tracking-tighter text-[#635BFF]/8"
+        >
+          {number}
+        </span>
         <div>
           <h2>{title}</h2>
           <p>{description}</p>

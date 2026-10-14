@@ -567,11 +567,17 @@ export async function PanelPage({
               note: "Seu talento em cada atendimento",
             },
           ].map((m) => (
-            <div className="metric-card" key={m.label}>
+            <div
+              className="metric-card relative isolate overflow-hidden"
+              key={m.label}
+            >
               <div>
                 <span>{m.label}</span>
-                <i>
-                  <m.icon size={18} />
+                <i
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -right-3 -bottom-5 -z-10 rotate-[-12deg] bg-transparent p-0 opacity-10"
+                >
+                  <m.icon className="size-28 stroke-[1.2]" />
                 </i>
               </div>
               <strong>{m.value.toString().padStart(2, "0")}</strong>
