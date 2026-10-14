@@ -47,7 +47,13 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
     <>
       <Header />
       <main>
-        <Container as="section" className="hero">
+        <Container as="section" className="hero relative isolate">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -left-36 top-8 -z-10 size-[520px] rounded-full border border-[#e8e5f6] bg-[radial-gradient(ellipse,rgba(99,91,255,0.06),transparent_70%)] sm:-left-28 sm:size-[620px]"
+          >
+            <div className="absolute inset-12 rounded-full border border-[#e8e5f6]/70" />
+          </div>
           <div className="hero-copy">
             <div className="eyebrow">
               <span className="dot" /> MAIS TEMPO PARA O QUE IMPORTA
@@ -63,8 +69,12 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
               Encontre quem cuida de você. Agende serviços com os melhores
               profissionais, no seu tempo.
             </p>
-            <a href="#explorar" className="button">
-              Encontre seu próximo horário <ArrowUpRight size={19} />
+            <a href="#explorar" className="button group">
+              Encontre seu próximo horário{" "}
+              <ArrowUpRight
+                size={19}
+                className="transition-transform duration-200 ease-out group-hover:translate-x-1 group-hover:-translate-y-1 group-focus-visible:translate-x-1 group-focus-visible:-translate-y-1 motion-reduce:transition-none"
+              />
             </a>
             <div className="hero-note">
               <span className="mini-avatars">
@@ -80,10 +90,9 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
             </div>
           </div>
           <div
-            className="hero-art"
+            className="hero-art bg-none"
             aria-label="Ilustração de uma agenda organizada"
           >
-            <div className="art-orbit" />
             <span className="art-label z-10">
               <Sparkles size={15} /> O seu dia, mais leve.
             </span>
