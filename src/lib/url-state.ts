@@ -47,6 +47,7 @@ export const consumerSearch = {
   ),
 };
 export const loadConsumerSearch = createLoader(consumerSearch);
+export const serializeConsumer = createSerializer(consumerSearch);
 export type SearchInput = Promise<
   Record<string, string | string[] | undefined>
 >;

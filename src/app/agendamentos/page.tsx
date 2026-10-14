@@ -7,10 +7,15 @@ import {
   MapPin,
   Globe,
   CheckCircle2,
+  Star,
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { money, hourLabel, statusLabel } from "@/lib/format";
-import { loadConsumerSearch, type SearchInput } from "@/lib/url-state";
+import {
+  loadConsumerSearch,
+  serializeConsumer,
+  type SearchInput,
+} from "@/lib/url-state";
 import {
   PageHeading,
   EmptyState,
@@ -18,6 +23,8 @@ import {
 } from "@/components/internal/primitives";
 import { ListFilters } from "@/components/internal/filters";
 import { BookingActions } from "@/components/internal/booking-actions";
+import { BookingReview } from "@/components/internal/booking-review";
+import { reviewEligible } from "@/lib/review-rules";
 export default async function Page({
   searchParams,
 }: {
@@ -29,6 +36,7 @@ export default async function Page({
   const records = await prisma().booking.findMany({
     where: { consumerId: userId },
     include: {
+      review: true,
       session: {
         include: { establishment: true, service: true, professional: true },
       },
@@ -59,6 +67,10 @@ export default async function Page({
         .includes(query.busca.toLocaleLowerCase("pt-BR")),
   );
   if (query.periodo === "past") rows.reverse();
+  const awaitingReview = all.filter(
+    (b) =>
+      !b.review && reviewEligible(b.effectiveStatus, b.session.startsAt, now),
+  ).length;
   return (
     <>
       <PageHeading
@@ -99,6 +111,25 @@ export default async function Page({
           <span>aguardando aprovação</span>
         </div>
       </div>
+      {awaitingReview > 0 && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#e8e5f6] bg-[#F5F4FF] p-5">
+          <span className="inline-flex items-center gap-3 text-sm text-zinc-700">
+            <Star size={18} className="text-[#635BFF]" />
+            Você tem {awaitingReview}{" "}
+            {awaitingReview === 1
+              ? "atendimento para avaliar"
+              : "atendimentos para avaliar"}
+            .
+          </span>
+          <Link
+            href={serializeConsumer("/agendamentos", { periodo: "past" })}
+            className="inline-flex items-center gap-2 text-xs font-medium text-[#635BFF]"
+          >
+            Avaliar atendimentos
+            <ArrowUpRight size={14} />
+          </Link>
+        </div>
+      )}
       <ListFilters
         placeholder="Buscar serviço, espaço ou profissional"
         statuses
@@ -214,6 +245,19 @@ export default async function Page({
                     canCancel={canCancel}
                   />
                 </div>
+                {(b.review ||
+                  reviewEligible(
+                    b.effectiveStatus,
+                    b.session.startsAt,
+                    now,
+                  )) && (
+                  <BookingReview
+                    bookingId={b.id}
+                    establishment={e.name}
+                    professional={b.session.professional.name}
+                    saved={b.review}
+                  />
+                )}
               </article>
             );
           })}
