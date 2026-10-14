@@ -4,6 +4,7 @@
 
 - Usar **Tailwind CSS** em todos os componentes e alterações de interface. Evitar CSS puro; os arquivos legados permanecem em `@layer components` para permitir substituição gradual por utilidades.
 - Layout raiz: `max-w-440 mx-auto` (1.760 px), incluindo o painel. Sidebar fixa acompanha a margem do layout em telas largas.
+- A home `/` possui limite próprio de 1.200 px centralizado, como no visual original. Páginas internas continuam usando toda a largura disponível dentro do layout raiz.
 - `Container` centraliza o padding horizontal: 16 px no celular, 24 px a partir de `sm` e 36 px a partir de `lg`. Conteúdo interno ocupa toda a largura disponível, sem um segundo limite de largura.
 - Sidebar usa o `ScrollArea` Radix enviado pelo usuário, com classes Tailwind. Preservar teclado, foco e rolagem independente.
 - Categorias são cards selecionáveis, sem select. Ícones decorativos e números de seção aparecem ao fundo, com baixo contraste e `aria-hidden`, sem substituir rótulos.

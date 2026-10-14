@@ -12,6 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Use Tailwind CSS for interface work. Avoid new handwritten CSS; existing styles are in the components layer for gradual replacement.
 - Keep the root layout at `max-w-440 mx-auto`. Internal content fills the available width. Use `Container` for shared horizontal padding.
+- The home page (`/`) has a narrower centered `max-w-[1200px]`, preserving its original presentation. Do not apply this limit to internal pages.
 - Use React Hook Form with Zod for every application-owned form, including custom date/time/select controls. Show field errors and preserve entered values. Keep server authorization and business validation.
 - Format Brazilian phone numbers, currency and dates as the user types. Do not mask free text.
 - Use the shared Radix `ScrollArea` in sidebars, separate routes rather than tabs, and Nuqs for URL state.
