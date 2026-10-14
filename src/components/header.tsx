@@ -12,7 +12,10 @@ export function Header() {
       <nav>
         <Link href="/explorar">Explorar</Link>
         <Link href="/#como-funciona">Como funciona</Link>
-        <Link href="/planos" className="group inline-flex items-center gap-1.5">
+        <Link
+          href="/#planos"
+          className="group inline-flex items-center gap-1.5"
+        >
           Para seu negócio{" "}
           <ArrowUpRight size={13} className={`text-[#635BFF] ${arrowMotion}`} />
         </Link>

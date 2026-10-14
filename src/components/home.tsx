@@ -1,35 +1,60 @@
 "use client";
 import { Container } from "@/components/container";
 
-import { Check, CalendarDays, Heart, Scissors } from "lucide-react";
-import type { BusinessCard } from "@/lib/catalog";
+import { HeroBookingPreview } from "./hero-booking-preview";
+import type { BusinessCard, BusinessProfile } from "@/lib/catalog";
 import { Header } from "./header";
 import { Footer } from "./footer";
 import { BusinessDirectory } from "./business-directory";
 import { ArrowLink } from "./ui/arrow-link";
-export function Home({ businesses }: { businesses: BusinessCard[] }) {
+import { Plans } from "./plans";
+import { AgendaPreview } from "./agenda-preview";
+export function Home({
+  businesses,
+  previewBusiness,
+  managementBusiness,
+  currentPlan,
+  development,
+}: {
+  businesses: BusinessCard[];
+  previewBusiness: BusinessProfile | null;
+  managementBusiness: BusinessProfile | null;
+  currentPlan: string | null;
+  development: boolean;
+}) {
   return (
     <>
       <Header />
       <main>
-        <Container as="section" className="hero relative isolate">
-          <div className="hero-copy">
-            <div className="eyebrow">
+        <Container
+          as="section"
+          className="hero relative isolate items-center gap-10 min-[701px]:grid-cols-[1.1fr_1fr] min-[701px]:gap-8"
+        >
+          <div className="hero-copy relative isolate min-w-0 py-4 min-[701px]:py-8">
+            <img
+              src="/brand/icon.svg"
+              alt=""
+              aria-hidden="true"
+              width={486}
+              height={409}
+              className="pointer-events-none absolute top-12 left-0 -z-10 w-[85%] max-w-[480px] opacity-[0.035] brightness-0 select-none sm:top-16"
+            />
+            <div className="eyebrow inline-flex rounded-full border border-[#e8e5f6] bg-[#F5F4FF] px-3 py-2 text-[8px] tracking-[0.14em] sm:text-[9px]">
               <span className="dot" /> MAIS TEMPO PARA O QUE IMPORTA
             </div>
-            <h1>
+            <h1 className="my-7 text-[clamp(2.5rem,5.5vw,4.5rem)] leading-[1.08] tracking-[-0.055em]">
               Seu próximo
               <br />
               momento começa
               <br />
               com um <span>flow.</span>
             </h1>
-            <p>
+            <p className="max-w-[410px] text-base leading-relaxed sm:text-[17px]">
               Encontre quem cuida de você. Agende serviços com os melhores
               profissionais, no seu tempo.
             </p>
             <ArrowLink href="#explorar">Encontre seu próximo horário</ArrowLink>
-            <div className="hero-note">
+            <div className="hero-note mt-8 text-[11px]">
               <span className="mini-avatars">
                 <i>J</i>
                 <i>M</i>
@@ -42,87 +67,7 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
               </span>
             </div>
           </div>
-          <div
-            className="hero-art"
-            aria-label="Ilustração de uma agenda organizada"
-          >
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 rotate-[-22deg] scale-95 rounded-full border border-[#e8e5f6]"
-            >
-              <div className="absolute inset-8 rounded-full border border-[#e8e5f6]/70" />
-            </div>
-            <div className="absolute -top-1 right-2 z-10 flex rotate-3 items-center gap-3 rounded-2xl border border-[#e8e5f6] bg-white px-4 py-3 shadow-[0_8px_24px_#3023650a]">
-              <span
-                aria-hidden="true"
-                className="grid size-8 place-items-center rounded-xl bg-[#F5F4FF]"
-              >
-                <span className="size-2 rounded-full bg-[#635BFF]" />
-              </span>
-              <div>
-                <span className="block text-[8px] font-medium tracking-[0.15em] text-zinc-400 uppercase">
-                  Menos correria
-                </span>
-                <p className="mt-1 text-xs font-medium text-zinc-700">
-                  O seu dia, mais leve.
-                </p>
-              </div>
-            </div>
-            <div className="calendar-card">
-              <div className="calendar-title">
-                <div className="icon-square">
-                  <CalendarDays size={22} />
-                </div>
-                <div>
-                  <strong>Sua próxima pausa</strong>
-                  <small>Um cuidado só seu</small>
-                </div>
-                <span className="calendar-dots">•••</span>
-              </div>
-              <div className="month">
-                Outubro <span>‹　›</span>
-              </div>
-              <div className="week">
-                {["SEG", "TER", "QUA", "QUI", "SEX"].map((d, i) => (
-                  <div className={i === 2 ? "selected-day" : ""} key={d}>
-                    <small>{d}</small>
-                    <b>{12 + i}</b>
-                  </div>
-                ))}
-              </div>
-              <div className="appointment">
-                <span className="time">10:00</span>
-                <div>
-                  <strong>Corte e finalização</strong>
-                  <small>Studio Aurora · com Marina</small>
-                </div>
-                <span className="appt-icon">
-                  <Scissors size={20} />
-                </span>
-              </div>
-              <div className="appointment muted">
-                <span className="time">14:30</span>
-                <div>
-                  <strong>Um momento de equilíbrio</strong>
-                  <small>Movimento Yoga · com Beatriz</small>
-                </div>
-                <Heart size={19} />
-              </div>
-              <div className="card-bottom">
-                <span className="dot" /> Tudo no seu tempo.
-              </div>
-            </div>
-            <div className="confirmed">
-              <span>
-                <Check size={20} />
-              </span>
-              <div>
-                <strong>Horário confirmado!</strong>
-                <small>Agora é só aproveitar seu momento.</small>
-              </div>
-            </div>
-            <img className="art-brand" src="/brand/icon.svg" alt="" />
-          </div>
+          <HeroBookingPreview business={previewBusiness} />
         </Container>
         <Container as="section" className="explore" id="explorar">
           <div className="section-heading">
@@ -180,21 +125,25 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
             ))}
           </div>
         </Container>
-        <Container as="section">
-          <div className="business-cta px-6 py-9 sm:px-10 sm:py-11">
-            <div>
-              <div className="eyebrow">FLOW PARA SEU NEGÓCIO</div>
-              <h2>
-                Você cuida do seu talento.
-                <br />A gente organiza o caminho.
-              </h2>
-              <p>Sua página, sua equipe e sua agenda. Tudo em um só lugar.</p>
-              <ArrowLink href="/planos">Conheça o Flow para negócios</ArrowLink>
-            </div>
-            <div className="cta-symbol" aria-hidden="true">
-              ✳
-            </div>
+        <Container as="section" id="seu-negocio" className="scroll-mt-8">
+          <AgendaPreview business={managementBusiness} />
+        </Container>
+        <Container
+          as="section"
+          id="planos"
+          className="scroll-mt-8 py-16 sm:py-24"
+        >
+          <div className="mb-10 text-center">
+            <div className="eyebrow">MAIS FLOW NO SEU NEGÓCIO</div>
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
+              O plano certo para o seu próximo passo.
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-zinc-500">
+              Uma ou três unidades, o mesmo cuidado com sua agenda. Compare os
+              planos mensais e escolha o espaço para o seu negócio crescer.
+            </p>
           </div>
+          <Plans currentPlan={currentPlan} development={development} />
         </Container>
       </main>
       <Footer />
