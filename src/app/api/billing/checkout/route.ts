@@ -49,7 +49,7 @@ export async function POST(request: Request) {
         client_reference_id: userId,
         subscription_data: { metadata: { flowUserId: userId } },
         success_url: `${process.env.NEXT_PUBLIC_APP_URL}/painel?checkout=success`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/planos`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/#planos`,
       },
       {
         idempotencyKey: `flow-checkout-${userId}-${body.plan}-${Math.floor(Date.now() / 300000)}`,

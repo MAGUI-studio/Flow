@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client";
+import { planFeatures } from "./plan-features";
 export const categories = [
   "Beleza",
   "Barbearia",
@@ -65,6 +66,7 @@ export async function createEstablishment(
       "entrar",
       "sign-in",
       "sign-up",
+      "criar-conta",
       "api",
       "admin",
     ].includes(slug)
@@ -93,10 +95,13 @@ export async function createProfessional(
   input: Record<string, unknown>,
 ) {
   const e = await owned(tx, owner, text(input.establishmentId));
+  const subscription = await tx.subscription.findUniqueOrThrow({
+    where: { ownerId: owner },
+  });
   if (
     (await tx.professional.count({
       where: { establishmentId: e.id, active: true },
-    })) >= 10
+    })) >= planFeatures(subscription.plan).professionals
   )
     throw new Error("PROFESSIONAL_LIMIT");
   return tx.professional.create({

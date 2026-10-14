@@ -1,9 +1,12 @@
 import { currentUser, apiError } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
-import {developmentSubscriptionsEnabled} from '@/lib/development-subscriptions';
+import { developmentSubscriptionsEnabled } from "@/lib/development-subscriptions";
 export async function POST(request: Request) {
   if (
-    !developmentSubscriptionsEnabled(process.env.NODE_ENV,process.env.DEV_SUBSCRIPTIONS_ENABLED)
+    !developmentSubscriptionsEnabled(
+      process.env.NODE_ENV,
+      process.env.DEV_SUBSCRIPTIONS_ENABLED,
+    )
   )
     return Response.json({ error: "Recurso indisponível." }, { status: 404 });
   try {
@@ -22,6 +25,18 @@ export async function POST(request: Request) {
         (await tx.establishment.count({ where: { ownerId: owner } })) > 1
       )
         throw new Error("DOWNGRADE_SELECTION_REQUIRED");
+      if (plan === "basic") {
+        const establishments = await tx.establishment.findMany({
+          where: { ownerId: owner },
+          include: {
+            _count: { select: { professionals: { where: { active: true } } } },
+          },
+        });
+        if (
+          establishments.some((business) => business._count.professionals > 10)
+        )
+          throw new Error("PROFESSIONAL_DOWNGRADE_REQUIRED");
+      }
       const current = await tx.subscription.findUnique({
         where: { ownerId: owner },
       });

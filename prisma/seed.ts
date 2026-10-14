@@ -8,6 +8,7 @@ import {
   createService,
 } from "../src/lib/business-write";
 import { businesses } from "./seed-data";
+import { seedReviews } from "./seed-reviews";
 config({ path: ".env.local", quiet: true });
 if (
   process.env.NODE_ENV === "production" ||
@@ -210,6 +211,10 @@ try {
         await db.$queryRaw`SELECT reserve_session(${session.id}::uuid,${consumer}::text,${"+5511999990000"}::text,${randomUUID()}::uuid)`;
     }
   }
+  const reviewsCreated = await seedReviews(db);
+  console.log(
+    `${reviewsCreated} avaliações adicionadas a agendamentos históricos do seed.`,
+  );
   console.log(
     "Seed concluído: estabelecimentos, profissionais, serviços e agendas persistidos.",
   );

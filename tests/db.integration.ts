@@ -13,6 +13,8 @@ import {
 import { getAvailability } from "../src/lib/availability";
 import { dayKey } from "../src/lib/format";
 import { upcomingBookings } from "../src/lib/upcoming-bookings";
+import { createReview } from "../src/lib/reviews";
+import { publicRatings } from "../src/lib/public-ratings";
 
 test("PostgreSQL prevents overlapping sessions and overselling concurrent bookings", async () => {
   // Isolated schema in the explicitly local Docker database. Never use production.
@@ -210,6 +212,37 @@ test("PostgreSQL prevents overlapping sessions and overselling concurrent bookin
       ),
       /PROFESSIONAL_LIMIT/,
     );
+    await pool.query(
+      "UPDATE subscriptions SET plan='multi' WHERE owner_id='owner'",
+    );
+    for (let i = 10; i < 20; i++)
+      await orm.$transaction((tx) =>
+        createProfessional(tx, "owner", {
+          establishmentId: e,
+          name: `Pro professional ${i}`,
+        }),
+      );
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        createProfessional(tx, "owner", {
+          establishmentId: e,
+          name: "Twenty-first",
+        }),
+      ),
+      /PROFESSIONAL_LIMIT/,
+    );
+    await pool.query(
+      "UPDATE subscriptions SET plan='basic' WHERE owner_id='owner'",
+    );
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        createProfessional(tx, "owner", {
+          establishmentId: e,
+          name: "Over basic limit",
+        }),
+      ),
+      /PROFESSIONAL_LIMIT/,
+    );
     const individual = await orm.$transaction((tx) =>
       createService(tx, "owner", {
         establishmentId: e,
@@ -270,6 +303,71 @@ test("PostgreSQL prevents overlapping sessions and overselling concurrent bookin
       !(await upcomingBookings("b", e, orm)).some(
         (b) => b.id === bReservation.id,
       ),
+    );
+    const reviewBooking = await orm.booking.findFirstOrThrow({
+      where: { status: "confirmed" },
+      include: { session: true },
+    });
+    const eligibleAt = new Date(
+      reviewBooking.session.startsAt.getTime() + 24 * 3600000,
+    );
+    const reviewInput = {
+      bookingId: reviewBooking.id,
+      establishmentScore: 4.5,
+      professionalScore: 3,
+    };
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        createReview(tx, "nonexistent-user", reviewInput, eligibleAt),
+      ),
+      /FORBIDDEN/,
+    );
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        createReview(
+          tx,
+          reviewBooking.consumerId,
+          reviewInput,
+          new Date(eligibleAt.getTime() - 1),
+        ),
+      ),
+      /REVIEW_NOT_ELIGIBLE/,
+    );
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        createReview(
+          tx,
+          "b",
+          { ...reviewInput, bookingId: bReservation.id },
+          new Date(eligibleAt.getTime() + 86400000),
+        ),
+      ),
+      /REVIEW_NOT_ELIGIBLE/,
+    );
+    const reviewRace = await Promise.allSettled(
+      [0, 1].map(() =>
+        orm.$transaction((tx) =>
+          createReview(tx, reviewBooking.consumerId, reviewInput, eligibleAt),
+        ),
+      ),
+    );
+    assert.equal(
+      reviewRace.filter((result) => result.status === "fulfilled").length,
+      1,
+    );
+    assert.equal(
+      reviewRace.filter((result) => result.status === "rejected").length,
+      1,
+    );
+    const aggregate = (await publicRatings([e], orm)).get(e);
+    assert.equal(aggregate?.rating, 3.75);
+    assert.equal(aggregate?.ratingCount, 1);
+    await assert.rejects(
+      pool.query(
+        "INSERT INTO reviews(booking_id,establishment_score,professional_score) VALUES($1,11,0)",
+        [bReservation.id],
+      ),
+      /check constraint/,
     );
     await pool.query(
       "UPDATE subscriptions SET paid_until=now()-interval '1 minute' WHERE owner_id='owner'",
