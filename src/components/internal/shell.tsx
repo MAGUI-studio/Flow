@@ -20,6 +20,8 @@ import {
   Wallet,
 } from "lucide-react";
 import { FlowSelect } from "@/components/ui/flow-select";
+import { ScrollArea } from "@/components/ui/scrollArea";
+import { Container } from "@/components/container";
 import { panelHref, panelSearch } from "@/lib/url-state";
 type Business = { id: string; name: string; slug: string; color: string };
 const navigation = [
@@ -86,7 +88,7 @@ export function InternalShell({
       />
       <aside
         ref={sidebar}
-        className={`internal-sidebar ${mobile ? "open" : ""}`}
+        className={`internal-sidebar left-[max(0px,calc((100vw-1760px)/2))] overflow-hidden p-0 ${mobile ? "open" : ""}`}
         role={mobile ? "dialog" : undefined}
         aria-modal={mobile ? true : undefined}
         aria-label={mobile ? "Menu do Flow" : undefined}
@@ -115,146 +117,163 @@ export function InternalShell({
           }
         }}
       >
-        <div className="internal-logo-row">
-          <Link href="/" aria-label="Flow início">
-            <img src="/brand/logo_black.svg" alt="Flow" />
-          </Link>
-          <span>workspace</span>
-          <button
-            className="internal-icon mobile-only"
-            aria-label="Fechar menu"
-            onClick={() => setMobile(false)}
-          >
-            <X size={18} />
-          </button>
-        </div>
-        {mode === "business" && (
-          <div className="workspace-picker">
-            <span>SEU ESTABELECIMENTO</span>
-            {businesses.length > 1 ? (
-              <FlowSelect
-                value={current?.id ?? ""}
-                onValueChange={(value) => {
-                  void setQuery({
-                    estabelecimento: value,
-                    profissional: null,
-                    busca: null,
-                    status: null,
-                  });
-                }}
-                aria-label="Selecionar estabelecimento"
-              >
-                {businesses.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </FlowSelect>
-            ) : current ? (
-              <div className="workspace-name">
-                <i style={{ background: current.color }}>{current.name[0]}</i>
-                <strong>{current.name}</strong>
-                <ChevronRight size={14} />
-              </div>
-            ) : (
-              <Link
-                href="/painel/estabelecimentos/novo"
-                className="workspace-name"
-              >
-                <i>
-                  <Plus size={16} />
-                </i>
-                <strong>Adicionar negócio</strong>
+        <ScrollArea className="h-full w-full">
+          <div className="flex min-h-dvh flex-col px-4 pt-6 pb-4">
+            <div className="internal-logo-row">
+              <Link href="/" aria-label="Flow início">
+                <img src="/brand/logo_black.svg" alt="Flow" />
               </Link>
+              <span>workspace</span>
+              <button
+                className="internal-icon mobile-only"
+                aria-label="Fechar menu"
+                onClick={() => setMobile(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            {mode === "business" && (
+              <div className="workspace-picker">
+                <span>SEU ESTABELECIMENTO</span>
+                {businesses.length > 1 ? (
+                  <FlowSelect
+                    value={current?.id ?? ""}
+                    onValueChange={(value) => {
+                      void setQuery({
+                        estabelecimento: value,
+                        profissional: null,
+                        busca: null,
+                        status: null,
+                      });
+                    }}
+                    aria-label="Selecionar estabelecimento"
+                  >
+                    {businesses.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </FlowSelect>
+                ) : current ? (
+                  <div className="workspace-name">
+                    <i style={{ background: current.color }}>
+                      {current.name[0]}
+                    </i>
+                    <strong>{current.name}</strong>
+                    <ChevronRight size={14} />
+                  </div>
+                ) : (
+                  <Link
+                    href="/painel/estabelecimentos/novo"
+                    className="workspace-name"
+                  >
+                    <i>
+                      <Plus size={16} />
+                    </i>
+                    <strong>Adicionar negócio</strong>
+                  </Link>
+                )}
+              </div>
             )}
-          </div>
-        )}
-        <nav className="internal-navigation" aria-label="Navegação principal">
-          <span className="nav-caption">
-            {mode === "business" ? "GESTÃO DO NEGÓCIO" : "SEU ESPAÇO"}
-          </span>
-          {mode === "business" ? (
-            navigation.map((n) => {
-              const active =
-                n.href === "/painel"
-                  ? pathname === n.href
-                  : pathname.startsWith(n.href);
-              return (
-                <Link
-                  key={n.href}
-                  href={panelHref(n.href, current?.id)}
-                  className={active ? "active" : ""}
-                  aria-current={active ? "page" : undefined}
-                  onClick={() => setMobile(false)}
-                >
-                  <n.icon size={18} />
-                  <span>{n.label}</span>
-                  {active && <i />}
-                </Link>
-              );
-            })
-          ) : (
-            <>
-              <Link className="active" href="/agendamentos" aria-current="page">
-                <CalendarDays size={18} />
-                Meus agendamentos
-                <i />
+            <nav
+              className="internal-navigation"
+              aria-label="Navegação principal"
+            >
+              <span className="nav-caption">
+                {mode === "business" ? "GESTÃO DO NEGÓCIO" : "SEU ESPAÇO"}
+              </span>
+              {mode === "business" ? (
+                navigation.map((n) => {
+                  const active =
+                    n.href === "/painel"
+                      ? pathname === n.href
+                      : pathname.startsWith(n.href);
+                  return (
+                    <Link
+                      key={n.href}
+                      href={panelHref(n.href, current?.id)}
+                      className={active ? "active" : ""}
+                      aria-current={active ? "page" : undefined}
+                      onClick={() => setMobile(false)}
+                    >
+                      <n.icon size={18} />
+                      <span>{n.label}</span>
+                      {active && <i />}
+                    </Link>
+                  );
+                })
+              ) : (
+                <>
+                  <Link
+                    className="active"
+                    href="/agendamentos"
+                    aria-current="page"
+                  >
+                    <CalendarDays size={18} />
+                    Meus agendamentos
+                    <i />
+                  </Link>
+                  <Link href="/#explorar">
+                    <Scissors size={18} />
+                    Explorar profissionais
+                    <ArrowUpRight size={14} />
+                  </Link>
+                </>
+              )}
+              <span className="nav-caption secondary">CONTA</span>
+              <Link
+                href={
+                  mode === "business"
+                    ? panelHref("/painel/assinatura", current?.id)
+                    : "/painel"
+                }
+                className={pathname === "/painel/assinatura" ? "active" : ""}
+              >
+                <Wallet size={18} />
+                {mode === "business" ? "Minha assinatura" : "Meu negócio"}
               </Link>
-              <Link href="/#explorar">
-                <Scissors size={18} />
-                Explorar profissionais
-                <ArrowUpRight size={14} />
-              </Link>
-            </>
-          )}
-          <span className="nav-caption secondary">CONTA</span>
-          <Link
-            href={
-              mode === "business"
-                ? panelHref("/painel/assinatura", current?.id)
-                : "/painel"
-            }
-            className={pathname === "/painel/assinatura" ? "active" : ""}
-          >
-            <Wallet size={18} />
-            {mode === "business" ? "Minha assinatura" : "Meu negócio"}
-          </Link>
-          <Link href={mode === "business" ? "/agendamentos" : "/planos"}>
-            <Users size={18} />
-            {mode === "business" ? "Meus agendamentos" : "Flow para negócios"}
-          </Link>
-        </nav>
-        <div className="internal-sidebar-bottom">
-          {mode === "business" ? (
-            <div className="plan-mini">
-              <span className="plan-mini-icon">✳</span>
-              <div>
-                <small>SEU PLANO</small>
-                <strong>{plan === "multi" ? "Expandir" : "Essencial"}</strong>
-              </div>
-              <Link href="/planos" aria-label="Ver planos">
-                <ArrowUpRight size={17} />
-              </Link>
-            </div>
-          ) : (
-            <div className="consumer-note">
-              <span>✳</span>
-              <strong>Seu tempo merece fluir.</strong>
-              <p>Um cuidado, uma pausa, um próximo momento.</p>
-            </div>
-          )}
-          <div className="internal-profile">
-            <UserButton />
-            <div>
-              <strong>{user?.firstName ?? "Sua conta"}</strong>
-              <small>
+              <Link href={mode === "business" ? "/agendamentos" : "/planos"}>
+                <Users size={18} />
                 {mode === "business"
-                  ? "Responsável pelo negócio"
-                  : "Sua conta Flow"}
-              </small>
+                  ? "Meus agendamentos"
+                  : "Flow para negócios"}
+              </Link>
+            </nav>
+            <div className="internal-sidebar-bottom">
+              {mode === "business" ? (
+                <div className="plan-mini">
+                  <span className="plan-mini-icon">✳</span>
+                  <div>
+                    <small>SEU PLANO</small>
+                    <strong>
+                      {plan === "multi" ? "Expandir" : "Essencial"}
+                    </strong>
+                  </div>
+                  <Link href="/planos" aria-label="Ver planos">
+                    <ArrowUpRight size={17} />
+                  </Link>
+                </div>
+              ) : (
+                <div className="consumer-note">
+                  <span>✳</span>
+                  <strong>Seu tempo merece fluir.</strong>
+                  <p>Um cuidado, uma pausa, um próximo momento.</p>
+                </div>
+              )}
+              <div className="internal-profile">
+                <UserButton />
+                <div>
+                  <strong>{user?.firstName ?? "Sua conta"}</strong>
+                  <small>
+                    {mode === "business"
+                      ? "Responsável pelo negócio"
+                      : "Sua conta Flow"}
+                  </small>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </ScrollArea>
       </aside>
       <div className="internal-stage" inert={mobile ? true : undefined}>
         <header className="internal-topbar">
@@ -295,7 +314,12 @@ export function InternalShell({
             )}
           </div>
         </header>
-        <main className="internal-content">{children}</main>
+        <Container
+          as="main"
+          className="internal-content max-w-none px-4 sm:px-6 lg:px-9"
+        >
+          {children}
+        </Container>
         <footer className="internal-footer">
           <span>Flow · Seu tempo, organizado.</span>
           <span>

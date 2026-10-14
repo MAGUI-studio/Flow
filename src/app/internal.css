@@ -1,3 +1,4 @@
+@layer components {
 /* Flow workspace: shared navigation, forms and operational pages. */
 .internal-app {
   min-height: 100vh;
@@ -2407,4 +2408,6 @@
   .spinning {
     animation: none;
   }
+}
+
 }

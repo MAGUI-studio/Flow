@@ -1,3 +1,4 @@
+import { Container } from "@/components/container";
 import { SignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { Header } from "@/components/header";
@@ -5,7 +6,7 @@ export default function Page() {
   return (
     <>
       <Header />
-      <main className="wrap">
+      <Container as="main" className="">
         <section className="panel login-panel">
           <div className="eyebrow" style={{ justifyContent: "flex-start" }}>
             BEM-VINDO AO FLOW
@@ -30,7 +31,7 @@ export default function Page() {
             ← Voltar para explorar
           </Link>
         </section>
-      </main>
+      </Container>
     </>
   );
 }

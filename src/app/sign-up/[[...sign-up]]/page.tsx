@@ -1,16 +1,10 @@
 import { SignUp } from "@clerk/nextjs";
+import { Container } from "@/components/container";
 
 export default function SignUpPage() {
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
+    <Container className="flex min-h-dvh items-center justify-center">
       <SignUp />
-    </div>
+    </Container>
   );
 }

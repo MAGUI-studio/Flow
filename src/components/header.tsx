@@ -1,8 +1,9 @@
+import { Container } from "@/components/container";
 import Link from "next/link";
 import { AccountControls } from "./account-controls";
 export function Header() {
   return (
-    <header className="header wrap">
+    <Container as="header" className="header">
       <Link href="/" aria-label="Flow início">
         <img className="logo" src="/brand/logo_black.svg" alt="Flow" />
       </Link>
@@ -14,6 +15,6 @@ export function Header() {
         </Link>
       </nav>
       <AccountControls />
-    </header>
+    </Container>
   );
 }

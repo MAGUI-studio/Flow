@@ -1,3 +1,4 @@
+import { Container } from "@/components/container";
 import { auth } from "@clerk/nextjs/server";
 import { Header } from "@/components/header";
 import { Plans } from "@/components/plans";
@@ -10,7 +11,7 @@ export default async function Page() {
   return (
     <>
       <Header />
-      <main className="wrap page-intro">
+      <Container as="main" className="page-intro">
         <div className="section-heading">
           <div className="eyebrow">MAIS FLOW NO SEU NEGÓCIO</div>
           <h1>Sua agenda merece esse cuidado.</h1>
@@ -30,7 +31,7 @@ export default async function Page() {
             process.env.DEV_SUBSCRIPTIONS_ENABLED === "true"
           }
         />
-      </main>
+      </Container>
     </>
   );
 }

@@ -13,7 +13,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" data-scroll-behavior="smooth">
       <body>
         <ClerkProvider
           localization={ptBR}
@@ -33,7 +33,11 @@ export default function RootLayout({
             },
           }}
         >
-          <NuqsAdapter>{children}</NuqsAdapter>
+          <NuqsAdapter>
+            <div className="relative mx-auto w-full max-w-440 [&_h2]:font-bold [&_h3]:font-semibold">
+              {children}
+            </div>
+          </NuqsAdapter>
         </ClerkProvider>
       </body>
     </html>
