@@ -311,19 +311,23 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
             ))}
           </div>
         </Container>
-        <Container as="section" className="business-cta">
-          <div>
-            <div className="eyebrow">FLOW PARA SEU NEGÓCIO</div>
-            <h2>
-              Você cuida do seu talento.
-              <br />A gente organiza o caminho.
-            </h2>
-            <p>Sua página, sua equipe e sua agenda. Tudo em um só lugar.</p>
-            <Link className="button" href="/planos">
-              Conheça o Flow para negócios <ArrowUpRight size={18} />
-            </Link>
+        <Container as="section">
+          <div className="business-cta px-6 py-9 sm:px-10 sm:py-11">
+            <div>
+              <div className="eyebrow">FLOW PARA SEU NEGÓCIO</div>
+              <h2>
+                Você cuida do seu talento.
+                <br />A gente organiza o caminho.
+              </h2>
+              <p>Sua página, sua equipe e sua agenda. Tudo em um só lugar.</p>
+              <Link className="button" href="/planos">
+                Conheça o Flow para negócios <ArrowUpRight size={18} />
+              </Link>
+            </div>
+            <div className="cta-symbol" aria-hidden="true">
+              ✳
+            </div>
           </div>
-          <div className="cta-symbol">✳</div>
         </Container>
       </main>
       <Footer />
