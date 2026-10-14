@@ -2,6 +2,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { ptBR } from "@clerk/localizations";
 import type { Metadata } from "next";
 import "./globals.css";
+import "./internal.css";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 export const metadata: Metadata = {
   title: "Flow · Seu tempo, em boa companhia",
   description:
@@ -25,13 +27,13 @@ export default function RootLayout({
               borderRadius: "11px",
               colorForeground: "#18181B",
               colorInput: "#FFFFFF",
-              colorRing:'#635BFF',
-              colorBorder:'#e4e1ed',
+              colorRing: "#635BFF",
+              colorBorder: "#e4e1ed",
               fontFamily: "'DM Sans', Arial, sans-serif",
             },
           }}
         >
-          {children}
+          <NuqsAdapter>{children}</NuqsAdapter>
         </ClerkProvider>
       </body>
     </html>
