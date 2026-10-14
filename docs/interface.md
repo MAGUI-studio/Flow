@@ -1,5 +1,15 @@
 # Controles e identidade visual
 
+## Padrões de implementação
+
+- Usar **Tailwind CSS** em todos os componentes e alterações de interface. Evitar CSS puro; os arquivos legados permanecem em `@layer components` para permitir substituição gradual por utilidades.
+- Layout raiz: `max-w-440 mx-auto` (1.760 px), incluindo o painel. Sidebar fixa acompanha a margem do layout em telas largas.
+- `Container` centraliza o padding horizontal: 16 px no celular, 24 px a partir de `sm` e 36 px a partir de `lg`. Conteúdo interno ocupa toda a largura disponível, sem um segundo limite de largura.
+- Sidebar usa o `ScrollArea` Radix enviado pelo usuário, com classes Tailwind. Preservar teclado, foco e rolagem independente.
+- Categorias são cards selecionáveis, sem select. Ícones decorativos e números de seção aparecem ao fundo, com baixo contraste e `aria-hidden`, sem substituir rótulos.
+- Formulários próprios usam **React Hook Form + Zod**: schemas em `form-schemas.ts`, controles customizados integrados por `useController`, erros junto aos campos e foco no primeiro inválido. O servidor mantém validações de autorização, assinatura e disponibilidade.
+- WhatsApp brasileiro tem máscara de DDD + telefone, aceita 10 ou 11 dígitos; valor monetário usa `1.234,56`, convertido para centavos inteiros; datas já possuem máscara `dd/mm/aaaa`. Não aplicar máscara a campos de texto livre como cidade ou endereço.
+
 Todos os controles do projeto usam a identidade do Flow: bordas suaves, fundo branco, roxo de seleção/foco, estados de erro e desabilitado. Não usar menus visuais nativos de select, data ou hora nas novas telas.
 
 - `FlowSelect`: opções com menu próprio, Radix para teclado, Escape, navegação por texto, seleção e foco. Preserva `name`, valor e `required` para formulários. Opções JSX são declarativas; não renderizam um menu nativo visível.

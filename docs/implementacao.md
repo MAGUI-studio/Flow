@@ -14,6 +14,8 @@ Atualizado em 14/10/2026.
 - Painel restrito à assinatura ativa e ao proprietário, com cadastro de estabelecimento, equipe, serviços, janelas por data, bloqueios e sessões coletivas.
 - Páginas internas com navegação lateral e rotas próprias para listas e cadastros, sem abas. Agendamentos do consumidor redesenhados, filtros persistidos com Nuqs, contadores reais e confirmações de ações. Ver `paginas-internas.md`.
 - Controles de formulário padronizados: menus Select próprios, calendário, seleção de hora/minuto, inputs, textos longos e checkboxes com visual Flow. Componentes reutilizáveis em `src/components/ui`.
+- Tailwind CSS configurado como padrão; ScrollArea Radix na sidebar, limite global de 1.760 px e Container com padding compartilhado. Categorias em cards, ícones/números decorativos ao fundo e campo de URL alinhado.
+- Formulários próprios de cadastro, busca e reserva usam React Hook Form + Zod. WhatsApp e valores recebem máscaras durante a digitação; mensagens por campo preservam os dados e impedem envio inválido.
 
 ## Ativação temporária de planos
 

@@ -16,6 +16,8 @@ O painel usa navegação lateral com rotas reais, sem abas. O menu vira uma gave
 
 Cadastros ficam em `/novo`, exceto sessões, que usam `/nova`. Não existem formulários escondidos em abas. Os formulários possuem seções, instruções próximas dos campos, indicação de obrigatoriedade, seleção visual para alternativas curtas e controles Flow para calendário, hora e seleções maiores. Salvar volta para a listagem; erros preservam os campos.
 
+Usar Tailwind para novas interfaces. O layout global limita a página a `max-w-440 mx-auto`, e o conteúdo ocupa toda a largura restante. `Container` padroniza o padding, e a sidebar usa o ScrollArea enviado pelo usuário. Formulários próprios usam React Hook Form + Zod; login continua administrado pelo Clerk.
+
 ## Estado na URL
 
 Usar Nuqs para estado de interface que pertence à URL. `NuqsAdapter` está no layout raiz; parsers, loaders e serializer compartilhados ficam em `src/lib/url-state.ts`.
