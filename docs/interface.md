@@ -3,7 +3,7 @@
 ## Padrões de implementação
 
 - Usar **Tailwind CSS** em todos os componentes e alterações de interface. Evitar CSS puro; os arquivos legados permanecem em `@layer components` para permitir substituição gradual por utilidades.
-- Usar fundos sólidos. Única exceção aprovada: brilho radial atrás do calendário à direita do hero, com círculos também à direita. Evitar sparkles na etiqueta do hero; categorias da faixa de descoberta usam ícones grandes decorativos ao fundo.
+- Usar fundos sólidos. Única exceção aprovada: brilho radial atrás do calendário à direita do hero, com círculos também à direita. Evitar sparkles na etiqueta do hero. O hero é seguido diretamente pela busca de estabelecimentos, sem faixa intermediária de categorias.
 - Layout raiz: `max-w-440 mx-auto` (1.760 px), incluindo o painel. Sidebar fixa acompanha a margem do layout em telas largas.
 - A home `/` possui limite próprio de 1.200 px centralizado, como no visual original. Páginas internas continuam usando toda a largura disponível dentro do layout raiz.
 - Home mostra até oito estabelecimentos após os filtros. `/explorar` é a pesquisa completa, com o mesmo limite visual de 1.200 px; a busca e “Explorar todos os espaços” preservam os filtros via Nuqs (`busca`, `cidade`, `categoria`, `modalidade`). A categoria ativa é roxa, e o botão Buscar usa o estilo do hero com seta horizontal animada.

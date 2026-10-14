@@ -1,16 +1,7 @@
 "use client";
 import { Container } from "@/components/container";
 
-import Link from "next/link";
-
-import {
-  ArrowUpRight,
-  Check,
-  CalendarDays,
-  Heart,
-  Scissors,
-  Stethoscope,
-} from "lucide-react";
+import { Check, CalendarDays, Heart, Scissors } from "lucide-react";
 import type { BusinessCard } from "@/lib/catalog";
 import { Header } from "./header";
 import { Footer } from "./footer";
@@ -133,40 +124,6 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
             <img className="art-brand" src="/brand/icon.svg" alt="" />
           </div>
         </Container>
-        <Container
-          as="section"
-          aria-label="Cuidados para cada momento"
-          className="grid items-center gap-6 py-6 lg:grid-cols-[1fr_2fr] lg:gap-12"
-        >
-          <div>
-            <span className="text-[9px] font-medium tracking-[0.15em] text-[#635BFF] uppercase">
-              Encontre seu momento
-            </span>
-            <h2 className="mt-3 max-w-72 text-xl leading-snug tracking-tight text-zinc-800">
-              Do cuidado de todo dia à sua próxima descoberta.
-            </h2>
-          </div>
-          <ul className="grid grid-cols-3 gap-3">
-            {[
-              { label: "Beleza & estilo", icon: Scissors },
-              { label: "Saúde", icon: Stethoscope },
-              { label: "Bem-estar", icon: Heart },
-            ].map(({ label, icon: Icon }) => (
-              <li
-                key={label}
-                className="relative isolate flex min-h-28 items-end overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-5"
-              >
-                <Icon
-                  aria-hidden="true"
-                  className="pointer-events-none absolute -right-8 -bottom-8 -z-10 size-40 rotate-[-12deg] stroke-[1.1] text-zinc-900/6"
-                />
-                <span className="max-w-28 text-xs font-medium leading-relaxed text-zinc-700 sm:text-sm">
-                  {label}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Container>
         <Container as="section" className="explore" id="explorar">
           <div className="section-heading">
             <div className="eyebrow">DESCUBRA SEU PRÓXIMO MOMENTO</div>
@@ -232,9 +189,7 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
                 <br />A gente organiza o caminho.
               </h2>
               <p>Sua página, sua equipe e sua agenda. Tudo em um só lugar.</p>
-              <Link className="button" href="/planos">
-                Conheça o Flow para negócios <ArrowUpRight size={18} />
-              </Link>
+              <ArrowLink href="/planos">Conheça o Flow para negócios</ArrowLink>
             </div>
             <div className="cta-symbol" aria-hidden="true">
               ✳
