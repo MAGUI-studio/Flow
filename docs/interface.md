@@ -6,6 +6,7 @@
 - Usar fundos sólidos. Única exceção aprovada: brilho radial atrás do calendário à direita do hero, com círculos também à direita. Evitar sparkles na etiqueta do hero; categorias da faixa de descoberta usam ícones grandes decorativos ao fundo.
 - Layout raiz: `max-w-440 mx-auto` (1.760 px), incluindo o painel. Sidebar fixa acompanha a margem do layout em telas largas.
 - A home `/` possui limite próprio de 1.200 px centralizado, como no visual original. Páginas internas continuam usando toda a largura disponível dentro do layout raiz.
+- Home mostra até oito estabelecimentos após os filtros. `/explorar` é a pesquisa completa, com o mesmo limite visual de 1.200 px; a busca e “Explorar todos os espaços” preservam os filtros via Nuqs (`busca`, `cidade`, `categoria`, `modalidade`). A categoria ativa é roxa, e o botão Buscar usa o estilo do hero com seta horizontal animada.
 - `Container` centraliza o padding horizontal: 16 px no celular, 24 px a partir de `sm` e 36 px a partir de `lg`. Conteúdo interno ocupa toda a largura disponível, sem um segundo limite de largura.
 - Sidebar usa o `ScrollArea` Radix enviado pelo usuário, com classes Tailwind. Preservar teclado, foco e rolagem independente.
 - Categorias são cards selecionáveis, sem select. Ícones decorativos e números de seção aparecem ao fundo, com baixo contraste e `aria-hidden`, sem substituir rótulos.

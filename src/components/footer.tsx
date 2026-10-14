@@ -55,7 +55,7 @@ const groups = [
   {
     title: "Explore o Flow",
     links: [
-      { label: "Encontre um serviço", href: "/#explorar" },
+      { label: "Encontre um serviço", href: "/explorar" },
       { label: "Como funciona", href: "/#como-funciona" },
       { label: "Flow para negócios", href: "/planos" },
     ],
@@ -73,6 +73,7 @@ const groups = [
     links: [
       { label: "MAGUI.studio", href: studio },
       { label: "Nosso portfólio", href: "https://portfolio.magui.studio/" },
+      { label: "Forever", href: "https://forever.magui.studio/" },
     ],
   },
 ];
@@ -190,7 +191,7 @@ export function Footer() {
               © {new Date().getFullYear()} Flow. Todos os direitos reservados.
             </span>
             <Link
-              href="/#inicio"
+              href="#inicio"
               className="inline-flex shrink-0 items-center gap-2 transition-colors hover:text-white"
             >
               Voltar ao topo
