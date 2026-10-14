@@ -12,6 +12,7 @@ Atualizado em 14/10/2026.
 - Google obrigatório para confirmar; seleção recuperada no retorno do login e revalidada no servidor.
 - Histórico do consumidor e cancelamento dentro do prazo; aprovação/recusa/conclusão/cancelamento pelo responsável.
 - Painel restrito à assinatura ativa e ao proprietário, com cadastro de estabelecimento, equipe, serviços, janelas por data, bloqueios e sessões coletivas.
+- Páginas internas com navegação lateral e rotas próprias para listas e cadastros, sem abas. Agendamentos do consumidor redesenhados, filtros persistidos com Nuqs, contadores reais e confirmações de ações. Ver `paginas-internas.md`.
 - Controles de formulário padronizados: menus Select próprios, calendário, seleção de hora/minuto, inputs, textos longos e checkboxes com visual Flow. Componentes reutilizáveis em `src/components/ui`.
 
 ## Ativação temporária de planos

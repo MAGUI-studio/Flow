@@ -11,3 +11,5 @@ Todos os controles do projeto usam a identidade do Flow: bordas suaves, fundo br
 - Clerk recebe tipografia, texto, bordas e roxo Flow pelo provider.
 
 Não remover semântica de formulário, labels, foco de teclado ou validações ao estilizar. Respeitar redução de movimento. Campos devem resetar após salvar e ao mudar de estabelecimento.
+
+Páginas internas seguem `paginas-internas.md`: layout próprio em `internal.css`, menu lateral, listas e cadastros em rotas separadas, alternativas curtas em cartões selecionáveis e Nuqs para estado de URL. Não introduzir abas para separar áreas do painel.

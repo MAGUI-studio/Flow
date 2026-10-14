@@ -10,5 +10,6 @@ Fonte de consulta para decisões e regras acordadas com Guilherme. Atualizada em
 - [Desenvolvimento e banco local](desenvolvimento.md)
 - [Cenários do seed](seed.md)
 - [Interface e controles](interface.md)
+- [Páginas internas e URLs](paginas-internas.md)
 
 Alterações de comportamento devem atualizar os documentos correspondentes. Distinguir decisões confirmadas, propostas técnicas e pendências; não transformar sugestões em requisitos silenciosamente.
