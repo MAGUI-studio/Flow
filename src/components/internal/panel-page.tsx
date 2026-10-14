@@ -16,6 +16,7 @@ import {
   Sparkles,
   ChevronRight,
 } from "lucide-react";
+import { planFeatures } from "@/lib/plan-features";
 import { panelContext } from "@/lib/panel-context";
 import { panelHref, type SearchInput } from "@/lib/url-state";
 import { prisma } from "@/lib/prisma";
@@ -23,6 +24,7 @@ import { money, statusLabel, hourLabel, dayKey } from "@/lib/format";
 import { PageHeading, EmptyState, SectionCard, StatusPill } from "./primitives";
 import { ListFilters } from "./filters";
 import { BusinessForm, type FormKind } from "./business-form";
+import { OwnerAppointment } from "./owner-appointment";
 import { BookingActions } from "./booking-actions";
 type Section =
   | "overview"
@@ -145,7 +147,8 @@ export async function PanelPage({
   const context = await panelContext(searchParams);
   const { business: b, businesses, subscription, query } = context;
   const meta = metadata[section];
-  const limit = subscription.plan === "multi" ? 3 : 1;
+  const features = planFeatures(subscription.plan);
+  const limit = features.establishments;
   const link = (path: string) => panelHref(path, b?.id);
   const professionals = b
     ? await prisma().professional.findMany({
@@ -169,6 +172,24 @@ export async function PanelPage({
   if (form) {
     const fm = formMetadata[form];
     const parent = metadata[fm.section];
+    if (
+      form === "professional" &&
+      professionals.length >= features.professionals
+    )
+      return (
+        <>
+          <PageHeading
+            title="Sua equipe chegou ao limite do plano."
+            description={`Seu plano permite até ${features.professionals} profissionais por estabelecimento.`}
+          />
+          <EmptyState
+            title="Mais espaço para sua equipe"
+            description="Confira os planos para ampliar a capacidade do seu negócio."
+            href="/#planos"
+            label="Ver planos"
+          />
+        </>
+      );
     if (form === "establishment" && businesses.length >= limit)
       return (
         <>
@@ -180,7 +201,7 @@ export async function PanelPage({
           <EmptyState
             title="Mais espaço para seu negócio"
             description="Conheça os planos disponíveis ou gerencie seus estabelecimentos atuais."
-            href="/planos"
+            href="/#planos"
             label="Ver planos"
           />
         </>
@@ -272,7 +293,7 @@ export async function PanelPage({
             rows.length < limit ? (
               createAction
             ) : (
-              <Link href="/planos" className="button secondary">
+              <Link href="/#planos" className="button secondary">
                 Ver planos
                 <ArrowUpRight size={15} />
               </Link>
@@ -284,7 +305,7 @@ export async function PanelPage({
             {rows.length} de {limit} estabelecimentos no seu plano
           </span>
           <span>
-            Plano {subscription.plan === "multi" ? "Expandir" : "Essencial"}
+            Plano {subscription.plan === "multi" ? "Pro" : "Essencial"}
           </span>
         </div>
         {!rows.length ? (
@@ -368,7 +389,7 @@ export async function PanelPage({
             <span className="subscription-flower">✳</span>
             <StatusPill status="confirmed" label="Assinatura ativa" />
             <small>SEU PLANO ATUAL</small>
-            <h2>{subscription.plan === "multi" ? "Expandir" : "Essencial"}</h2>
+            <h2>{subscription.plan === "multi" ? "Pro" : "Essencial"}</h2>
             <p>Mais organização para cada próximo momento.</p>
             <div className="subscription-period">
               <span>Período atual</span>
@@ -377,7 +398,7 @@ export async function PanelPage({
                 {subscription.paidUntil.toLocaleDateString("pt-BR")}
               </strong>
             </div>
-            <Link href="/planos" className="button">
+            <Link href="/#planos" className="button">
               Conhecer os planos
               <ArrowUpRight size={15} />
             </Link>
@@ -398,10 +419,16 @@ export async function PanelPage({
             <ul className="subscription-benefits">
               {[
                 `Até ${limit} ${limit === 1 ? "estabelecimento" : "estabelecimentos"}`,
-                "10 profissionais por estabelecimento",
+                `${features.professionals} profissionais por estabelecimento`,
                 "Serviços individuais e em grupo",
                 "Página de agendamentos personalizada",
                 "Aprovação automática ou manual",
+                ...(features.reports
+                  ? [
+                      "Relatórios avançados e exportação CSV",
+                      "4 templates, incluindo Editorial e Noturno",
+                    ]
+                  : ["2 templates: Flow e Essência"]),
               ].map((feature) => (
                 <li key={feature}>
                   <Check size={15} />
@@ -409,11 +436,6 @@ export async function PanelPage({
                 </li>
               ))}
             </ul>
-            {subscription.provider === "development" && (
-              <p className="inline-information">
-                Plano ativado sem cobrança no ambiente de desenvolvimento.
-              </p>
-            )}
           </SectionCard>
         </div>
       </>
@@ -558,7 +580,7 @@ export async function PanelPage({
               label: "Profissionais ativos",
               value: professionals.length,
               icon: Users,
-              note: `Até 10 no seu estabelecimento`,
+              note: `Até ${features.professionals} no seu estabelecimento`,
             },
             {
               label: "Serviços disponíveis",
@@ -689,11 +711,17 @@ export async function PanelPage({
           eyebrow={b.name}
           title={meta.title}
           description={meta.description}
-          action={professionals.length < 10 ? createAction : undefined}
+          action={
+            professionals.length < features.professionals
+              ? createAction
+              : undefined
+          }
         />
         <ListFilters placeholder="Buscar profissional pelo nome" />
         <div className="section-subline">
-          <span>{professionals.length} de 10 profissionais</span>
+          <span>
+            {professionals.length} de {features.professionals} profissionais
+          </span>
           <span>Estabelecimento: {b.name}</span>
         </div>
         {!rows.length ? (
@@ -1117,46 +1145,24 @@ export async function PanelPage({
       ) : (
         <div className="owner-appointments">
           {bookings.map((a) => (
-            <article className="owner-appointment" key={a.id}>
-              <div className="appointment-date-block">
-                <strong>
-                  {a.session.startsAt.toLocaleDateString("pt-BR", {
-                    timeZone: b.timezone,
-                    day: "2-digit",
-                  })}
-                </strong>
-                <span>
-                  {a.session.startsAt.toLocaleDateString("pt-BR", {
-                    timeZone: b.timezone,
-                    month: "short",
-                  })}
-                </span>
-              </div>
-              <div className="owner-appointment-main">
-                <div>
-                  <h2>{a.session.service.name}</h2>
-                  <StatusPill
-                    status={a.effectiveStatus}
-                    label={statusLabel[a.effectiveStatus]}
-                  />
-                </div>
-                <p>
-                  <Clock size={13} />
-                  {hourLabel(a.session.startsAt, b.timezone)} ·{" "}
-                  {a.durationMinutes} min
-                  <span>Com {a.session.professional.name}</span>
-                </p>
-                {a.whatsapp && <small>WhatsApp: {a.whatsapp}</small>}
-              </div>
-              <strong className="owner-appointment-price">
-                {money(a.priceCents)}
-              </strong>
-              <BookingActions
-                id={a.id}
-                status={a.effectiveStatus}
-                canComplete={a.session.startsAt <= now}
-              />
-            </article>
+            <OwnerAppointment
+              key={a.id}
+              startsAt={a.session.startsAt}
+              timezone={b.timezone}
+              service={a.session.service.name}
+              professional={a.session.professional.name}
+              durationMinutes={a.durationMinutes}
+              priceCents={a.priceCents}
+              status={a.effectiveStatus}
+              whatsapp={a.whatsapp}
+              actions={
+                <BookingActions
+                  id={a.id}
+                  status={a.effectiveStatus}
+                  canComplete={a.session.startsAt <= now}
+                />
+              }
+            />
           ))}
         </div>
       )}

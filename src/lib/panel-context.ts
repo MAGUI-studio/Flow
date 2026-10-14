@@ -13,7 +13,7 @@ export const ownerContext = cache(async () => {
     subscription.status !== "active" ||
     subscription.paidUntil <= new Date()
   )
-    redirect("/planos");
+    redirect("/#planos");
   const businesses = await prisma().establishment.findMany({
     where: { ownerId: userId, active: true },
     orderBy: { name: "asc" },
@@ -25,6 +25,7 @@ export const ownerContext = cache(async () => {
       city: true,
       description: true,
       color: true,
+      templateId: true,
       timezone: true,
       approvalMode: true,
       cancelNoticeHours: true,

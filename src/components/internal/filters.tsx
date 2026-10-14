@@ -9,19 +9,30 @@ export function ListFilters({
   statuses = false,
   period = false,
   professionals = [],
+  preview = false,
 }: {
   placeholder?: string;
   statuses?: boolean;
   period?: boolean;
   professionals?: { id: string; name: string }[];
+  preview?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
-  const [query, setQuery] = useQueryStates(panelSearch, {
+  const [urlQuery, setQuery] = useQueryStates(panelSearch, {
     shallow: false,
     history: "replace",
     scroll: false,
     startTransition,
   });
+  const query = preview
+    ? {
+        ...urlQuery,
+        busca: "",
+        status: "all",
+        profissional: "all",
+        periodo: "upcoming",
+      }
+    : urlQuery;
   const active =
     query.busca || query.status !== "all" || query.profissional !== "all";
   return (

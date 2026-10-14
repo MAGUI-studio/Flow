@@ -5,13 +5,9 @@ import { usePathname } from "next/navigation";
 import { useQueryStates } from "nuqs";
 import { useUser, UserButton } from "@clerk/nextjs";
 import {
-  LayoutDashboard,
   CalendarDays,
   Users,
   Scissors,
-  Clock,
-  Building2,
-  Layers,
   ArrowUpRight,
   ChevronRight,
   Menu,
@@ -24,19 +20,7 @@ import { ScrollArea } from "@/components/ui/scrollArea";
 import { Container } from "@/components/container";
 import { panelHref, panelSearch } from "@/lib/url-state";
 type Business = { id: string; name: string; slug: string; color: string };
-const navigation = [
-  { href: "/painel", label: "Visão geral", icon: LayoutDashboard },
-  { href: "/painel/agenda", label: "Agenda", icon: CalendarDays },
-  {
-    href: "/painel/estabelecimentos",
-    label: "Estabelecimentos",
-    icon: Building2,
-  },
-  { href: "/painel/profissionais", label: "Profissionais", icon: Users },
-  { href: "/painel/servicos", label: "Serviços", icon: Scissors },
-  { href: "/painel/disponibilidade", label: "Disponibilidade", icon: Clock },
-  { href: "/painel/sessoes", label: "Sessões em grupo", icon: Layers },
-];
+import { businessNavigation as navigation } from "@/lib/navigation";
 export function InternalShell({
   children,
   mode,
@@ -232,7 +216,7 @@ export function InternalShell({
                 <Wallet size={18} />
                 {mode === "business" ? "Minha assinatura" : "Meu negócio"}
               </Link>
-              <Link href={mode === "business" ? "/agendamentos" : "/planos"}>
+              <Link href={mode === "business" ? "/agendamentos" : "/#planos"}>
                 <Users size={18} />
                 {mode === "business"
                   ? "Meus agendamentos"
@@ -242,14 +226,23 @@ export function InternalShell({
             <div className="internal-sidebar-bottom">
               {mode === "business" ? (
                 <div className="plan-mini">
-                  <span className="plan-mini-icon">✳</span>
+                  <span className="grid size-10 shrink-0 place-items-center">
+                    <img
+                      src={
+                        plan === "multi"
+                          ? "/brand/subscription/pro_plan.svg"
+                          : "/brand/subscription/essential_plan.svg"
+                      }
+                      alt=""
+                      aria-hidden="true"
+                      className="size-8 object-contain"
+                    />
+                  </span>
                   <div>
                     <small>SEU PLANO</small>
-                    <strong>
-                      {plan === "multi" ? "Expandir" : "Essencial"}
-                    </strong>
+                    <strong>{plan === "multi" ? "Pro" : "Essencial"}</strong>
                   </div>
-                  <Link href="/planos" aria-label="Ver planos">
+                  <Link href="/#planos" aria-label="Ver planos">
                     <ArrowUpRight size={17} />
                   </Link>
                 </div>

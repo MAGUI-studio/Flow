@@ -1,4 +1,5 @@
 "use client";
+import { BookingActionControls } from "./booking-action-controls";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
@@ -45,42 +46,15 @@ export function BookingActions({
   }
   return (
     <div className="appointment-actions">
-      {!consumer && status === "pending" && (
-        <button
-          className="button small"
-          disabled={!!busy}
-          onClick={() => void action("approve")}
-        >
-          {busy === "approve" ? "Aprovando…" : "Aprovar"}
-        </button>
-      )}
-      {!consumer && status === "pending" && (
-        <button
-          className="action-secondary"
-          disabled={!!busy}
-          onClick={() => setConfirm("decline")}
-        >
-          Recusar
-        </button>
-      )}
-      {!consumer && status === "confirmed" && canComplete && (
-        <button
-          className="action-secondary"
-          disabled={!!busy}
-          onClick={() => setConfirm("complete")}
-        >
-          Concluir
-        </button>
-      )}
-      {canCancel && ["confirmed", "pending"].includes(status) && (
-        <button
-          className="action-text"
-          disabled={!!busy}
-          onClick={() => setConfirm("cancel")}
-        >
-          {consumer ? "Cancelar agendamento" : "Cancelar"}
-        </button>
-      )}
+      <BookingActionControls
+        status={status}
+        busy={busy}
+        consumer={consumer}
+        canCancel={canCancel}
+        canComplete={canComplete}
+        onAction={(value) => void action(value)}
+        onConfirm={setConfirm}
+      />
       {error && !confirm && (
         <p className="action-error" role="alert">
           {error}
