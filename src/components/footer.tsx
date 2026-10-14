@@ -86,10 +86,6 @@ export function Footer() {
       className="pt-6 pb-6 sm:pb-9"
     >
       <div className="relative isolate overflow-hidden rounded-3xl bg-[#101014] text-white">
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-28 -left-20 -z-10 size-96 rounded-full bg-[#635BFF]/15 blur-3xl"
-        />
         <div className="grid gap-10 px-7 pt-10 pb-9 sm:px-10 sm:pt-12 lg:grid-cols-[1.2fr_2fr] lg:gap-16">
           <div>
             <Link

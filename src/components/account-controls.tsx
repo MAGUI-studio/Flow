@@ -1,16 +1,15 @@
 "use client";
 import Link from "next/link";
 import { Show, UserButton } from "@clerk/nextjs";
+import { ArrowLink } from "./ui/arrow-link";
 export function AccountControls() {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 15 }}>
+    <div className="flex items-center gap-4">
       <Show when="signed-out">
-        <Link className="button small dark" href="/entrar">
-          Entrar <span>↗</span>
-        </Link>
+        <ArrowLink href="/entrar">Entrar</ArrowLink>
       </Show>
       <Show when="signed-in">
-        <Link href="/agendamentos" style={{ fontSize: 12 }}>
+        <Link href="/agendamentos" className="text-xs">
           Minha conta
         </Link>
         <UserButton />

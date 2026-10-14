@@ -13,7 +13,6 @@ import {
   ArrowRight,
   Check,
   CalendarDays,
-  Sparkles,
   Heart,
   Scissors,
   Stethoscope,
@@ -22,6 +21,7 @@ import {
 import type { BusinessCard } from "@/lib/catalog";
 import { Header } from "./header";
 import { Footer } from "./footer";
+import { ArrowLink } from "./ui/arrow-link";
 export function Home({ businesses }: { businesses: BusinessCard[] }) {
   const searchForm = useForm({
     resolver: zodResolver(catalogSearchSchema),
@@ -48,12 +48,6 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
       <Header />
       <main>
         <Container as="section" className="hero relative isolate">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -left-36 top-8 -z-10 size-[520px] rounded-full border border-[#e8e5f6] bg-[radial-gradient(ellipse,rgba(99,91,255,0.06),transparent_70%)] sm:-left-28 sm:size-[620px]"
-          >
-            <div className="absolute inset-12 rounded-full border border-[#e8e5f6]/70" />
-          </div>
           <div className="hero-copy">
             <div className="eyebrow">
               <span className="dot" /> MAIS TEMPO PARA O QUE IMPORTA
@@ -69,13 +63,7 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
               Encontre quem cuida de você. Agende serviços com os melhores
               profissionais, no seu tempo.
             </p>
-            <a href="#explorar" className="button group">
-              Encontre seu próximo horário{" "}
-              <ArrowUpRight
-                size={19}
-                className="transition-transform duration-200 ease-out group-hover:translate-x-1 group-hover:-translate-y-1 group-focus-visible:translate-x-1 group-focus-visible:-translate-y-1 motion-reduce:transition-none"
-              />
-            </a>
+            <ArrowLink href="#explorar">Encontre seu próximo horário</ArrowLink>
             <div className="hero-note">
               <span className="mini-avatars">
                 <i>J</i>
@@ -90,12 +78,31 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
             </div>
           </div>
           <div
-            className="hero-art bg-none"
+            className="hero-art"
             aria-label="Ilustração de uma agenda organizada"
           >
-            <span className="art-label z-10">
-              <Sparkles size={15} /> O seu dia, mais leve.
-            </span>
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rotate-[-22deg] scale-95 rounded-full border border-[#e8e5f6]"
+            >
+              <div className="absolute inset-8 rounded-full border border-[#e8e5f6]/70" />
+            </div>
+            <div className="absolute -top-1 right-2 z-10 flex rotate-3 items-center gap-3 rounded-2xl border border-[#e8e5f6] bg-white px-4 py-3 shadow-[0_8px_24px_#3023650a]">
+              <span
+                aria-hidden="true"
+                className="grid size-8 place-items-center rounded-xl bg-[#F5F4FF]"
+              >
+                <span className="size-2 rounded-full bg-[#635BFF]" />
+              </span>
+              <div>
+                <span className="block text-[8px] font-medium tracking-[0.15em] text-zinc-400 uppercase">
+                  Menos correria
+                </span>
+                <p className="mt-1 text-xs font-medium text-zinc-700">
+                  O seu dia, mais leve.
+                </p>
+              </div>
+            </div>
             <div className="calendar-card">
               <div className="calendar-title">
                 <div className="icon-square">
@@ -152,20 +159,40 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
             <img className="art-brand" src="/brand/icon.svg" alt="" />
           </div>
         </Container>
-        <div className="trust-strip">
-          <Container className="flex flex-wrap items-center justify-between gap-4 py-5 text-xs text-zinc-500">
-            Do cuidado de todo dia à sua próxima descoberta.
-            <span>
-              <Scissors size={17} /> Beleza & estilo
+        <Container
+          as="section"
+          aria-label="Cuidados para cada momento"
+          className="grid items-center gap-6 py-6 lg:grid-cols-[1fr_2fr] lg:gap-12"
+        >
+          <div>
+            <span className="text-[9px] font-medium tracking-[0.15em] text-[#635BFF] uppercase">
+              Encontre seu momento
             </span>
-            <span>
-              <Stethoscope size={17} /> Saúde
-            </span>
-            <span>
-              <Heart size={17} /> Bem-estar
-            </span>
-          </Container>
-        </div>
+            <h2 className="mt-3 max-w-72 text-xl leading-snug tracking-tight text-zinc-800">
+              Do cuidado de todo dia à sua próxima descoberta.
+            </h2>
+          </div>
+          <ul className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Beleza & estilo", icon: Scissors },
+              { label: "Saúde", icon: Stethoscope },
+              { label: "Bem-estar", icon: Heart },
+            ].map(({ label, icon: Icon }) => (
+              <li
+                key={label}
+                className="relative isolate flex min-h-28 items-end overflow-hidden rounded-2xl border border-[#eae7f3] bg-[#faf9ff] p-4 sm:p-5"
+              >
+                <Icon
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -right-3 -bottom-3 -z-10 size-24 rotate-[-12deg] stroke-[1.2] text-[#635BFF]/10"
+                />
+                <span className="max-w-28 text-xs font-medium leading-relaxed text-zinc-700 sm:text-sm">
+                  {label}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Container>
         <Container as="section" className="explore" id="explorar">
           <div className="section-heading">
             <div className="eyebrow">DESCUBRA SEU PRÓXIMO MOMENTO</div>
