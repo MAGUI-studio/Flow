@@ -17,3 +17,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Format Brazilian phone numbers, currency and dates as the user types. Do not mask free text.
 - Use the shared Radix `ScrollArea` in sidebars, separate routes rather than tabs, and Nuqs for URL state.
 - Use low-contrast background icons or section numbers where appropriate; decorative elements must be `aria-hidden` and must not reduce readability.
+- Use solid backgrounds, not gradients. The only approved exception is the soft radial gradient behind the calendar card on the right side of the landing hero. Keep its decorative circles on the right as well.
