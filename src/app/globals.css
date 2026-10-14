@@ -1894,14 +1894,7 @@ input[type="hidden"] {
 }
 .date-rail-skeleton {
   border-color: #f0edf6;
-  background: linear-gradient(110deg, #f8f6fc 25%, #f0ecfa 45%, #f8f6fc 65%);
-  background-size: 200% 100%;
-  animation: date-shimmer 1.4s infinite;
-}
-@keyframes date-shimmer {
-  to {
-    background-position: -200% 0;
-  }
+  background: #f3f0fa;
 }
 @media (max-width: 700px) {
   .date-rail-days {

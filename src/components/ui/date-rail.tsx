@@ -142,7 +142,7 @@ export function DateRail({
         {loading &&
           !dates.length &&
           Array.from({ length: 7 }, (_, i) => (
-            <div className="date-rail-skeleton" key={i} />
+            <div className="date-rail-skeleton animate-pulse motion-reduce:animate-none" key={i} />
           ))}
       </div>
       {dates.length > 0 && !value && (
