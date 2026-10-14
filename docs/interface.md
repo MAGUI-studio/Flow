@@ -8,6 +8,7 @@
 - `Container` centraliza o padding horizontal: 16 px no celular, 24 px a partir de `sm` e 36 px a partir de `lg`. Conteúdo interno ocupa toda a largura disponível, sem um segundo limite de largura.
 - Sidebar usa o `ScrollArea` Radix enviado pelo usuário, com classes Tailwind. Preservar teclado, foco e rolagem independente.
 - Categorias são cards selecionáveis, sem select. Ícones decorativos e números de seção aparecem ao fundo, com baixo contraste e `aria-hidden`, sem substituir rótulos.
+- Footer público reutilizável em `src/components/footer.tsx`: fundo escuro, navegação do produto/conta, links do studio e redes oficiais verificadas em `magui.studio` (Instagram `_magui.studio`, LinkedIn `magui-studio`, X `magui_studio`). Links externos abrem em nova aba com `noopener noreferrer`; não criar links para páginas legais inexistentes.
 - Formulários próprios usam **React Hook Form + Zod**: schemas em `form-schemas.ts`, controles customizados integrados por `useController`, erros junto aos campos e foco no primeiro inválido. O servidor mantém validações de autorização, assinatura e disponibilidade.
 - WhatsApp brasileiro tem máscara de DDD + telefone, aceita 10 ou 11 dígitos; valor monetário usa `1.234,56`, convertido para centavos inteiros; datas já possuem máscara `dd/mm/aaaa`. Não aplicar máscara a campos de texto livre como cidade ou endereço.
 

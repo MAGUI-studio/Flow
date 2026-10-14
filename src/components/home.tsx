@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import type { BusinessCard } from "@/lib/catalog";
 import { Header } from "./header";
+import { Footer } from "./footer";
 export function Home({ businesses }: { businesses: BusinessCard[] }) {
   const searchForm = useForm({
     resolver: zodResolver(catalogSearchSchema),
@@ -325,16 +326,7 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
           <div className="cta-symbol">✳</div>
         </Container>
       </main>
-      <Container as="footer" className="footer">
-        <div>
-          <img className="logo" src="/brand/logo_black.svg" alt="Flow" />
-          <span>Seu tempo merece fluir.</span>
-        </div>
-        <span>
-          Um produto <strong>MAGUI.studio</strong>
-        </span>
-        <span>© {new Date().getFullYear()} Flow</span>
-      </Container>
+      <Footer />
     </>
   );
 }
