@@ -1,0 +1,144 @@
+import { prisma } from "./prisma";
+import { availableSlots } from "./rules";
+import { dayKey } from "./format";
+import type { Prisma } from "@/generated/prisma/client";
+export type Slot = { startsAt: string; sessionId?: string; remaining: number };
+export async function getAvailability(
+  serviceId: string,
+  professionalId: string,
+  date?: string,
+  tx: Prisma.TransactionClient = prisma(),
+): Promise<{ dates: string[]; slots: Slot[] }> {
+  const service = await tx.service.findFirst({
+    where: {
+      id: serviceId,
+      active: true,
+      professionals: {
+        some: { professionalId, professional: { active: true } },
+      },
+    },
+    include: {
+      establishment: {
+        include: { owner: { include: { subscription: true } } },
+      },
+    },
+  });
+  if (!service) throw new Error("SERVICE_UNAVAILABLE");
+  const e = service.establishment;
+  if (
+    !e.active ||
+    e.owner.subscription?.status !== "active" ||
+    e.owner.subscription.paidUntil <= new Date()
+  )
+    throw new Error("ESTABLISHMENT_FROZEN");
+  const now = new Date();
+  const windows = await tx.availabilityWindow.findMany({
+    where: { professionalId, endsAt: { gt: now } },
+    orderBy: { startsAt: "asc" },
+  });
+  let dates: string[] = [];
+  if (service.kind === "collective") {
+    const sessions = await tx.session.findMany({
+      where: { professionalId, serviceId, active: true, startsAt: { gt: now } },
+      include: {
+        bookings: {
+          where: {
+            OR: [
+              { status: "confirmed" },
+              { status: "pending", expiresAt: { gt: now } },
+            ],
+          },
+          select: { id: true },
+        },
+      },
+      orderBy: { startsAt: "asc" },
+    });
+    const available = sessions.filter((s) => s.bookings.length < s.capacity);
+    dates = [...new Set(available.map((s) => dayKey(s.startsAt, e.timezone)))];
+    return {
+      dates,
+      slots: available
+        .filter((s) => dayKey(s.startsAt, e.timezone) === date)
+        .map((s) => ({
+          startsAt: s.startsAt.toISOString(),
+          sessionId: s.id,
+          remaining: s.capacity - s.bookings.length,
+        })),
+    };
+  }
+  const daySet = new Set<string>();
+  for (const w of windows) {
+    const start = new Date(Math.max(w.startsAt.getTime(), now.getTime()));
+    for (
+      let cursor = start.getTime();
+      cursor < w.endsAt.getTime();
+      cursor += 86400000
+    )
+      daySet.add(dayKey(new Date(cursor), e.timezone));
+    daySet.add(dayKey(new Date(w.endsAt.getTime() - 1), e.timezone));
+  }
+  dates = [...daySet].sort();
+  if (!date) return { dates, slots: [] };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("INVALID_INPUT");
+  const boundary = (
+    await tx.$queryRaw<
+      { start: Date; end: Date }[]
+    >`SELECT (${date}::date::timestamp AT TIME ZONE ${e.timezone}) AS start,((${date}::date+1)::timestamp AT TIME ZONE ${e.timezone}) AS end`
+  )[0];
+  const sessions = await tx.session.findMany({
+    where: {
+      professionalId,
+      active: true,
+      occupiedStart: { lt: boundary.end },
+      occupiedEnd: { gt: boundary.start },
+      OR: [
+        { service: { kind: "collective" } },
+        {
+          bookings: {
+            some: {
+              OR: [
+                { status: "confirmed" },
+                { status: "pending", expiresAt: { gt: now } },
+              ],
+            },
+          },
+        },
+      ],
+    },
+    select: { occupiedStart: true, occupiedEnd: true },
+  });
+  const blocks = await tx.professionalBlock.findMany({
+    where: {
+      professionalId,
+      startsAt: { lt: boundary.end },
+      endsAt: { gt: boundary.start },
+    },
+  });
+  const busy = [
+    ...sessions.map((s) => ({ start: s.occupiedStart, end: s.occupiedEnd })),
+    ...blocks.map((b) => ({ start: b.startsAt, end: b.endsAt })),
+  ];
+  const slots = windows
+    .flatMap((w) =>
+      availableSlots(
+        { start: w.startsAt, end: w.endsAt },
+        service.durationMinutes,
+        service.stepMinutes,
+        busy,
+        service.bufferBefore,
+        service.bufferAfter,
+      ),
+    )
+    .filter((s) => s > now && s >= boundary.start && s < boundary.end);
+  return {
+    dates,
+    slots: [
+      ...new Map(
+        slots.map((s) => [
+          s.toISOString(),
+          { startsAt: s.toISOString(), remaining: 1 },
+        ]),
+      ).values(),
+    ].sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
+  };
+}
