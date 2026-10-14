@@ -1,10 +1,14 @@
-import { SignUp } from "@clerk/nextjs";
-import { Container } from "@/components/container";
-
-export default function SignUpPage() {
-  return (
-    <Container className="flex min-h-dvh items-center justify-center">
-      <SignUp />
-    </Container>
+import { redirectAuth } from "@/lib/auth-redirect";
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ "sign-up"?: string[] }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return redirectAuth(
+    "/criar-conta",
+    (await params)["sign-up"],
+    await searchParams,
   );
 }

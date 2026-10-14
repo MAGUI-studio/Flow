@@ -47,6 +47,7 @@ export const establishmentSchema = z.object({
           "entrar",
           "sign-in",
           "sign-up",
+          "criar-conta",
           "api",
           "admin",
         ].includes(v),

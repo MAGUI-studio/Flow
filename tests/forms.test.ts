@@ -41,6 +41,10 @@ test("establishment validation requires a category, validates phones and protect
     false,
   );
   assert.equal(
+    establishmentSchema.safeParse({ ...base, slug: "criar-conta" }).success,
+    false,
+  );
+  assert.equal(
     establishmentSchema.safeParse({ ...base, contactPhone: "123" }).success,
     false,
   );

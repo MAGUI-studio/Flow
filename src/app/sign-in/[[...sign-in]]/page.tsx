@@ -1,10 +1,10 @@
-import { SignIn } from "@clerk/nextjs";
-import { Container } from "@/components/container";
-
-export default function SignInPage() {
-  return (
-    <Container className="flex min-h-dvh items-center justify-center">
-      <SignIn />
-    </Container>
-  );
+import { redirectAuth } from "@/lib/auth-redirect";
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ "sign-in"?: string[] }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return redirectAuth("/entrar", (await params)["sign-in"], await searchParams);
 }
