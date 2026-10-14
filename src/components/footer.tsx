@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, ArrowUp } from "lucide-react";
 import { Container } from "./container";
+import { StudioCredit } from "./studio-credit";
 
 const studio = "https://magui.studio/";
 function Instagram({
@@ -57,7 +58,7 @@ const groups = [
     links: [
       { label: "Encontre um serviço", href: "/explorar" },
       { label: "Como funciona", href: "/#como-funciona" },
-      { label: "Flow para negócios", href: "/planos" },
+      { label: "Flow para negócios", href: "/#planos" },
     ],
   },
   {
@@ -87,6 +88,14 @@ export function Footer() {
       className="pt-6 pb-6 sm:pb-9"
     >
       <div className="relative isolate overflow-hidden rounded-3xl bg-[#101014] text-white">
+        <img
+          src="/brand/icon.svg"
+          alt=""
+          aria-hidden="true"
+          width={486}
+          height={409}
+          className="pointer-events-none absolute -right-20 -bottom-20 -z-10 w-[420px] max-w-none opacity-[0.045] brightness-0 invert select-none sm:-right-28 sm:-bottom-32 sm:w-[640px] lg:w-[760px]"
+        />
         <div className="grid gap-10 px-7 pt-10 pb-9 sm:px-10 sm:pt-12 lg:grid-cols-[1.2fr_2fr] lg:gap-16">
           <div>
             <Link
@@ -174,18 +183,7 @@ export function Footer() {
           </div>
         </div>
         <div className="mx-7 flex flex-col gap-5 border-t border-white/8 py-6 sm:mx-10 sm:flex-row sm:items-center sm:justify-between">
-          <a
-            href={studio}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex w-fit items-center gap-2 text-[10px] text-zinc-400"
-          >
-            Um produto{" "}
-            <strong className="font-medium text-zinc-300 transition-colors group-hover:text-white">
-              MAGUI.studio
-            </strong>
-            <ArrowUpRight size={12} />
-          </a>
+          <StudioCredit />
           <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 text-[10px] text-zinc-400">
             <span>
               © {new Date().getFullYear()} Flow. Todos os direitos reservados.
