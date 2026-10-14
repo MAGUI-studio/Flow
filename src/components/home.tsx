@@ -83,7 +83,7 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
             aria-label="Ilustração de uma agenda organizada"
           >
             <div className="art-orbit" />
-            <span className="art-label">
+            <span className="art-label z-10">
               <Sparkles size={15} /> O seu dia, mais leve.
             </span>
             <div className="calendar-card">
