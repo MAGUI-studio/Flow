@@ -1,17 +1,19 @@
 "use client";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { debounce, useQueryStates } from "nuqs";
-import { Search, MapPin, ArrowUpRight, ArrowRight, Globe } from "lucide-react";
+import { Search, MapPin } from "lucide-react";
+import { BusinessListingCard } from "./business-listing-card";
 import { FlowSelect } from "./ui/flow-select";
 import { ArrowButton, ArrowLink } from "./ui/arrow-link";
+import { Pagination } from "./ui/pagination";
 import { catalogSearchSchema } from "@/lib/form-schemas";
 import {
   directorySearch,
   directoryHref,
   filterDirectory,
+  paginateDirectory,
 } from "@/lib/directory-state";
 import type { BusinessCard } from "@/lib/catalog";
 export function BusinessDirectory({
@@ -36,7 +38,8 @@ export function BusinessDirectory({
   });
   const categories = ["Todos", ...new Set(businesses.map((b) => b.category))];
   const found = filterDirectory(businesses, query);
-  const visible = featured ? found.slice(0, 8) : found;
+  const pagination = paginateDirectory(found, query.pagina);
+  const visible = featured ? found.slice(0, 8) : pagination.rows;
   return (
     <>
       <form
@@ -57,7 +60,7 @@ export function BusinessDirectory({
           {...searchForm.register("query", {
             onChange: (e) =>
               void setQuery(
-                { busca: e.target.value },
+                { busca: e.target.value, pagina: null },
                 { limitUrlUpdates: debounce(300) },
               ),
           })}
@@ -70,7 +73,7 @@ export function BusinessDirectory({
             {...searchForm.register("city", {
               onChange: (e) =>
                 void setQuery(
-                  { cidade: e.target.value },
+                  { cidade: e.target.value, pagina: null },
                   { limitUrlUpdates: debounce(300) },
                 ),
             })}
@@ -83,6 +86,7 @@ export function BusinessDirectory({
           onValueChange={(v) =>
             void setQuery({
               modalidade: catalogSearchSchema.shape.modality.parse(v),
+              pagina: null,
             })
           }
         >
@@ -103,7 +107,7 @@ export function BusinessDirectory({
         {categories.map((c) => (
           <button
             key={c}
-            onClick={() => void setQuery({ categoria: c })}
+            onClick={() => void setQuery({ categoria: c, pagina: null })}
             aria-pressed={c === query.categoria}
             className={
               c === query.categoria
@@ -123,30 +127,7 @@ export function BusinessDirectory({
       </div>
       <div id="results" className="business-grid">
         {visible.map((b) => (
-          <Link className="business-card" key={b.slug} href={`/${b.slug}`}>
-            <div className="business-cover" style={{ background: b.color }}>
-              <div className="cover-lines" />
-              <span className="business-monogram">
-                {b.initials}
-                <span>✳</span>
-              </span>
-              <span className="cover-tag">
-                {b.online ? <Globe size={12} /> : <MapPin size={12} />}{" "}
-                {b.online ? "Atendimento online" : b.city}
-              </span>
-              <span className="cover-arrow">
-                <ArrowUpRight size={19} />
-              </span>
-            </div>
-            <div className="business-info">
-              <small>{b.tag}</small>
-              <h3>{b.name}</h3>
-              <p>{b.description}</p>
-              <div>
-                Conhecer e agendar <ArrowRight size={16} />
-              </div>
-            </div>
-          </Link>
+          <BusinessListingCard key={b.slug} business={b} />
         ))}
       </div>
       {found.length === 0 && (
@@ -161,6 +142,7 @@ export function BusinessDirectory({
                 cidade: null,
                 categoria: null,
                 modalidade: null,
+                pagina: null,
               })
             }
           >
@@ -169,6 +151,25 @@ export function BusinessDirectory({
         </div>
       )}
 
+      {!featured && found.length > 0 && (
+        <div>
+          <p role="status" className="mt-8 text-center text-xs text-zinc-500">
+            Mostrando {(pagination.page - 1) * 8 + 1}–
+            {Math.min(pagination.page * 8, found.length)} de {found.length}{" "}
+            espaços
+          </p>
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={(pagina) => {
+              void setQuery({ pagina }, { history: "push" });
+              document
+                .getElementById("results")
+                ?.scrollIntoView({ block: "start" });
+            }}
+          />
+        </div>
+      )}
       {featured && (
         <div className="mt-10 flex flex-col items-center gap-3">
           <p className="text-xs text-zinc-500">

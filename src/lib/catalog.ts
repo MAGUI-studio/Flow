@@ -1,4 +1,7 @@
 import { prisma } from "./prisma";
+import { effectiveTemplate, type TemplateId } from "./plan-features";
+import { publicRatings } from "./public-ratings";
+import { topRatedBusinessIds } from "./business-ranking";
 export type BusinessCard = {
   id: string;
   slug: string;
@@ -12,8 +15,14 @@ export type BusinessCard = {
   online: boolean;
   serviceNames: string[];
   modalities: string[];
+  logoUrl?: string | null;
+  coverUrl?: string | null;
+  rating?: number | null;
+  ratingCount?: number;
+  isTopRated?: boolean;
 };
 export type BusinessProfile = BusinessCard & {
+  templateId: TemplateId;
   timezone: string;
   address: string | null;
   contactPhone: string | null;
@@ -45,7 +54,12 @@ export async function catalog() {
     include: { services: { where: { active: true } } },
     orderBy: { name: "asc" },
   });
-  return rows.map((e) => ({
+  const ratings = await publicRatings(rows.map((e) => e.id));
+  const cards = rows.map((e) => ({
+    rating: ratings.get(e.id)?.rating ?? null,
+    ratingCount: ratings.get(e.id)?.ratingCount ?? 0,
+    logoUrl: e.logoUrl,
+    coverUrl: e.coverUrl,
     id: e.id,
     slug: e.slug,
     name: e.name,
@@ -65,6 +79,8 @@ export async function catalog() {
     online:
       e.services.length > 0 && e.services.every((s) => s.modality === "online"),
   }));
+  const topRated = topRatedBusinessIds(cards);
+  return cards.map((card) => ({ ...card, isTopRated: topRated.has(card.id) }));
 }
 export async function profile(slug: string): Promise<BusinessProfile | null> {
   const e = await prisma().establishment.findUnique({
@@ -86,7 +102,12 @@ export async function profile(slug: string): Promise<BusinessProfile | null> {
     e.owner.subscription.paidUntil <= new Date()
   )
     return null;
+  const card = (await catalog()).find((business) => business.id === e.id);
   return {
+    rating: card?.rating ?? null,
+    ratingCount: card?.ratingCount ?? 0,
+    isTopRated: card?.isTopRated ?? false,
+    templateId: effectiveTemplate(e.templateId, e.owner.subscription.plan),
     id: e.id,
     slug: e.slug,
     name: e.name,

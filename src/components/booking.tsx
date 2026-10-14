@@ -7,13 +7,12 @@ import { bookingSchema } from "@/lib/form-schemas";
 import { phoneMask } from "@/lib/masks";
 import { useQueryState, parseAsString } from "nuqs";
 import Link from "next/link";
+import { BusinessProfileHero } from "./business-profile-hero";
 import { DateRail } from "@/components/ui/date-rail";
 import { useUser, useClerk } from "@clerk/nextjs";
 import {
   ArrowLeft,
   ArrowRight,
-  MapPin,
-  Globe,
   Check,
   CalendarDays,
   LoaderCircle,
@@ -216,28 +215,7 @@ export function Booking({
           <ArrowLeft size={14} />
           Explorar espaços
         </Link>
-        <div className="profile-cover" style={{ background: b.color }}>
-          {b.coverUrl && (
-            <img className="profile-image" src={b.coverUrl} alt={b.name} />
-          )}
-          <span className="business-monogram">
-            {b.logoUrl ? <img src={b.logoUrl} alt={b.name} /> : b.initials}
-            <span>✳</span>
-          </span>
-        </div>
-        <div className="profile-heading">
-          <div>
-            <div className="eyebrow" style={{ justifyContent: "flex-start" }}>
-              {b.tag}
-            </div>
-            <h1>{b.name}</h1>
-            <p>{b.description}</p>
-            {b.address && <p>{b.address}</p>}
-          </div>
-          <span className="badge">
-            {b.online ? <Globe size={12} /> : <MapPin size={12} />} {b.city}
-          </span>
-        </div>
+        <BusinessProfileHero business={b} />
         {ownBookings.length > 0 && !success && (
           <section
             className="existing-bookings"
@@ -330,7 +308,7 @@ export function Booking({
                 <>
                   {!b.services.length && (
                     <p className="muted-text">
-                      Os serviços deste espaço estarão disponíveis em breve.
+                      Nenhum serviço disponível para agendamento.
                     </p>
                   )}
                   {b.services.map((s) => (

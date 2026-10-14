@@ -1,9 +1,11 @@
 import {
   createSerializer,
   parseAsString,
+  parseAsInteger,
   parseAsStringEnum,
 } from "nuqs/server";
 export const directorySearch = {
+  pagina: parseAsInteger.withDefault(1),
   busca: parseAsString.withDefault(""),
   cidade: parseAsString.withDefault(""),
   categoria: parseAsString.withDefault("Todos"),
@@ -12,6 +14,11 @@ export const directorySearch = {
   ),
 };
 export const directoryHref = createSerializer(directorySearch);
+export function paginateDirectory<T>(rows: T[], requestedPage: number) {
+  const totalPages = Math.max(1, Math.ceil(rows.length / 8));
+  const page = Math.max(1, Math.min(totalPages, requestedPage));
+  return { page, totalPages, rows: rows.slice((page - 1) * 8, page * 8) };
+}
 export function filterDirectory<
   T extends {
     name: string;
