@@ -1,5 +1,9 @@
 "use client";
+import { Container } from "@/components/container";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { catalogSearchSchema } from "@/lib/form-schemas";
 import Link from "next/link";
 import { FlowSelect } from "@/components/ui/flow-select";
 import {
@@ -18,10 +22,16 @@ import {
 import type { BusinessCard } from "@/lib/catalog";
 import { Header } from "./header";
 export function Home({ businesses }: { businesses: BusinessCard[] }) {
-  const [query, setQuery] = useState("");
+  const searchForm = useForm({
+    resolver: zodResolver(catalogSearchSchema),
+    defaultValues: {
+      query: "",
+      city: "",
+      modality: "all" as "all" | "in_person" | "online",
+    },
+  });
+  const { query, city, modality } = searchForm.watch();
   const [category, setCategory] = useState("Todos");
-  const [city, setCity] = useState("");
-  const [modality, setModality] = useState("all");
   const categories = ["Todos", ...new Set(businesses.map((b) => b.category))];
   const found = businesses.filter(
     (b) =>
@@ -36,7 +46,7 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
     <>
       <Header />
       <main>
-        <section className="hero wrap">
+        <Container as="section" className="hero">
           <div className="hero-copy">
             <div className="eyebrow">
               <span className="dot" /> MAIS TEMPO PARA O QUE IMPORTA
@@ -131,9 +141,9 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
             </div>
             <img className="art-brand" src="/brand/icon.svg" alt="" />
           </div>
-        </section>
+        </Container>
         <div className="trust-strip">
-          <div className="wrap">
+          <Container className="flex flex-wrap items-center justify-between gap-4 py-5 text-xs text-zinc-500">
             Do cuidado de todo dia à sua próxima descoberta.
             <span>
               <Scissors size={17} /> Beleza & estilo
@@ -144,9 +154,9 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
             <span>
               <Heart size={17} /> Bem-estar
             </span>
-          </div>
+          </Container>
         </div>
-        <section className="explore wrap" id="explorar">
+        <Container as="section" className="explore" id="explorar">
           <div className="section-heading">
             <div className="eyebrow">DESCUBRA SEU PRÓXIMO MOMENTO</div>
             <h2>
@@ -158,44 +168,55 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
               Explore espaços e pessoas que fazem a diferença na sua rotina.
             </p>
           </div>
-          <div className="search-box">
+          <form
+            className="search-box"
+            noValidate
+            onSubmit={searchForm.handleSubmit(() =>
+              document
+                .getElementById("results")
+                ?.scrollIntoView({ behavior: "smooth", block: "center" }),
+            )}
+          >
             <Search size={20} />
             <input
               aria-label="Busque um serviço ou estabelecimento"
               placeholder="O que você está procurando?"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              {...searchForm.register("query")}
             />
             <div className="search-city">
               <MapPin size={18} />
               <input
                 aria-label="Cidade ou online"
                 placeholder="Cidade ou online"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
+                {...searchForm.register("city")}
               />
             </div>
             <FlowSelect
               className="modality-filter"
               aria-label="Modalidade"
               value={modality}
-              onValueChange={setModality}
+              onValueChange={(v) =>
+                searchForm.setValue(
+                  "modality",
+                  catalogSearchSchema.shape.modality.parse(v),
+                )
+              }
             >
               <option value="all">Todas as modalidades</option>
               <option value="in_person">Presencial</option>
               <option value="online">Online</option>
             </FlowSelect>
-            <button
-              className="button small"
-              onClick={() =>
-                document
-                  .getElementById("results")
-                  ?.scrollIntoView({ behavior: "smooth", block: "center" })
-              }
-            >
+            <button type="submit" className="button small">
               Buscar <ArrowRight size={17} />
             </button>
-          </div>
+          </form>
+          {(searchForm.formState.errors.query ||
+            searchForm.formState.errors.city) && (
+            <p className="mt-2 text-xs text-rose-600" role="alert">
+              {searchForm.formState.errors.query?.message ??
+                searchForm.formState.errors.city?.message}
+            </p>
+          )}
           <div className="filters">
             {categories.map((c) => (
               <button
@@ -246,8 +267,8 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
               Nenhum espaço encontrado. Experimente outra busca.
             </div>
           )}
-        </section>
-        <section id="como-funciona" className="how wrap">
+        </Container>
+        <Container as="section" id="como-funciona" className="how">
           <div>
             <div className="eyebrow">SIMPLES, DO COMEÇO AO FIM</div>
             <h2>
@@ -288,8 +309,8 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
               </div>
             ))}
           </div>
-        </section>
-        <section className="business-cta wrap">
+        </Container>
+        <Container as="section" className="business-cta">
           <div>
             <div className="eyebrow">FLOW PARA SEU NEGÓCIO</div>
             <h2>
@@ -302,9 +323,9 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
             </Link>
           </div>
           <div className="cta-symbol">✳</div>
-        </section>
+        </Container>
       </main>
-      <footer className="footer wrap">
+      <Container as="footer" className="footer">
         <div>
           <img className="logo" src="/brand/logo_black.svg" alt="Flow" />
           <span>Seu tempo merece fluir.</span>
@@ -313,7 +334,7 @@ export function Home({ businesses }: { businesses: BusinessCard[] }) {
           Um produto <strong>MAGUI.studio</strong>
         </span>
         <span>© {new Date().getFullYear()} Flow</span>
-      </footer>
+      </Container>
     </>
   );
 }

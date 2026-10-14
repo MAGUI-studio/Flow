@@ -10,6 +10,10 @@ import {
 import * as Select from "@radix-ui/react-select";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 type Props = {
+  inputRef?: (node: HTMLButtonElement | null) => void;
+  onBlur?: () => void;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
   children: ReactNode;
   value?: string;
   defaultValue?: string;
@@ -30,6 +34,10 @@ export function FlowSelect({
   disabled,
   className,
   "aria-label": label,
+  inputRef,
+  onBlur,
+  "aria-invalid": invalid,
+  "aria-describedby": describedBy,
 }: Props) {
   const options = Children.toArray(children).flatMap((child) =>
     isValidElement<{
@@ -69,9 +77,15 @@ export function FlowSelect({
       }}
     >
       <Select.Trigger
-        ref={ref}
+        ref={(node) => {
+          ref.current = node;
+          inputRef?.(node);
+        }}
         className={`flow-select-trigger ${className ?? ""}`}
         aria-label={label}
+        onBlur={onBlur}
+        aria-invalid={invalid}
+        aria-describedby={describedBy}
       >
         <Select.Value placeholder={placeholder} />
         <Select.Icon className="flow-select-chevron">

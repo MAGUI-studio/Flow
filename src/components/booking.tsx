@@ -1,5 +1,11 @@
 "use client";
+import { Container } from "@/components/container";
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { bookingSchema } from "@/lib/form-schemas";
+import { phoneMask } from "@/lib/masks";
+import { useQueryState, parseAsString } from "nuqs";
 import Link from "next/link";
 import { DateRail } from "@/components/ui/date-rail";
 import { useUser, useClerk } from "@clerk/nextjs";
@@ -34,7 +40,6 @@ export function Booking({
     [professionalId, setProfessionalId] = useState(""),
     [date, setDate] = useState(""),
     [slot, setSlot] = useState<Slot | null>(null),
-    [phone, setPhone] = useState(""),
     [dates, setDates] = useState<string[]>([]),
     [slots, setSlots] = useState<Slot[]>([]),
     [loading, setLoading] = useState(false),
@@ -51,9 +56,9 @@ export function Booking({
   const previousContext = useRef("");
   const [slotsHeight, setSlotsHeight] = useState(0);
   useLayoutEffect(() => {
-    if (date && slotArea.current){
-      const measuredHeight=slotArea.current.getBoundingClientRect().height;
-      setSlotsHeight(height=>Math.max(height,measuredHeight));
+    if (date && slotArea.current) {
+      const measuredHeight = slotArea.current.getBoundingClientRect().height;
+      setSlotsHeight((height) => Math.max(height, measuredHeight));
     }
   }, [slots.length, date, resolvedKey]);
   const ownBookings =
@@ -63,11 +68,29 @@ export function Booking({
   );
   const service = b.services.find((s) => s.id === serviceId),
     professional = b.professionals.find((p) => p.id === professionalId);
+  const bookingForm = useForm({
+    resolver: zodResolver(bookingSchema(service?.modality === "online")),
+    mode: "onTouched",
+    defaultValues: {
+      serviceId: "",
+      professionalId: "",
+      date: "",
+      startsAt: "",
+      phone: "",
+    },
+  });
+  const phone = bookingForm.watch("phone");
+  const setPhone = (value: string) =>
+    bookingForm.setValue("phone", phoneMask(value), {
+      shouldValidate: bookingForm.formState.isSubmitted,
+      shouldDirty: true,
+    });
+  const [resume] = useQueryState("retomar", parseAsString);
   const professionals = b.professionals.filter((p) =>
     service?.professionalIds.includes(p.id),
   );
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("retomar") === "1") {
+    if (resume === "1") {
       const raw = sessionStorage.getItem(`flow-booking-${b.id}`);
       if (raw)
         try {
@@ -82,7 +105,7 @@ export function Booking({
           sessionStorage.removeItem(`flow-booking-${b.id}`);
         }
     }
-  }, [b.id]);
+  }, [b.id, resume]);
   useEffect(() => {
     if (!serviceId || !professionalId) return;
     const abort = new AbortController();
@@ -141,6 +164,13 @@ export function Booking({
     setStep(step - 1);
   }
   async function confirm() {
+    bookingForm.setValue("serviceId", serviceId);
+    bookingForm.setValue("professionalId", professionalId);
+    bookingForm.setValue("date", date);
+    bookingForm.setValue("startsAt", slot?.startsAt ?? "");
+    await bookingForm.handleSubmit(sendReservation)();
+  }
+  async function sendReservation() {
     if (!service || !professional || !slot) return;
     if (!isSignedIn) {
       sessionStorage.setItem(
@@ -181,7 +211,7 @@ export function Booking({
   return (
     <>
       <Header />
-      <main className="wrap page-intro">
+      <Container as="main" className="page-intro">
         <Link className="back-link" href="/#explorar">
           <ArrowLeft size={14} />
           Explorar espaços
@@ -270,7 +300,14 @@ export function Booking({
           </section>
         ) : (
           <div className="booking-grid">
-            <section className="panel">
+            <form
+              className="panel"
+              noValidate
+              onSubmit={(event) => {
+                event.preventDefault();
+                void confirm();
+              }}
+            >
               <div className="progress">
                 {[0, 1, 2, 3].map((n) => (
                   <span className={n <= step ? "active" : ""} key={n} />
@@ -298,6 +335,7 @@ export function Booking({
                   )}
                   {b.services.map((s) => (
                     <button
+                      type="button"
                       className={`choice ${s.id === serviceId ? "active" : ""}`}
                       key={s.id}
                       onClick={() => selectService(s.id)}
@@ -318,6 +356,7 @@ export function Booking({
               {step === 1 &&
                 professionals.map((p) => (
                   <button
+                    type="button"
                     className={`choice ${p.id === professionalId ? "active" : ""}`}
                     key={p.id}
                     onClick={() => {
@@ -395,6 +434,7 @@ export function Booking({
                           >
                             {slots.map((s) => (
                               <button
+                                type="button"
                                 key={s.startsAt}
                                 disabled={!timesReady}
                                 className={
@@ -442,16 +482,28 @@ export function Booking({
                     <label className="form-field">
                       Seu WhatsApp
                       <input
+                        {...bookingForm.register("phone")}
                         type="tel"
                         autoComplete="tel"
                         placeholder="(11) 99999-9999"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
+                        aria-invalid={!!bookingForm.formState.errors.phone}
+                        aria-describedby="booking-phone-help booking-phone-error"
                       />
-                      <small className="muted-text">
+                      <small className="muted-text" id="booking-phone-help">
                         Compartilhado com o estabelecimento para organizar seu
                         atendimento online.
                       </small>
+                      {bookingForm.formState.errors.phone && (
+                        <small
+                          id="booking-phone-error"
+                          className="mt-2 block text-xs text-rose-600"
+                          role="alert"
+                        >
+                          {bookingForm.formState.errors.phone.message}
+                        </small>
+                      )}
                     </label>
                   )}
                   <p className="muted-text" style={{ marginTop: 20 }}>
@@ -473,6 +525,7 @@ export function Booking({
               <div className="form-actions">
                 {step > 0 ? (
                   <button
+                    type="button"
                     className="button secondary"
                     onClick={back}
                     disabled={saving}
@@ -485,6 +538,7 @@ export function Booking({
                 )}
                 {step < 3 ? (
                   <button
+                    type="button"
                     className="button"
                     disabled={
                       step === 0 ? !service : step === 1 ? !professional : !slot
@@ -495,15 +549,7 @@ export function Booking({
                     <ArrowRight size={16} />
                   </button>
                 ) : (
-                  <button
-                    className="button"
-                    disabled={
-                      saving ||
-                      (service?.modality === "online" &&
-                        phone.replace(/\D/g, "").length < 10)
-                    }
-                    onClick={confirm}
-                  >
+                  <button className="button" type="submit" disabled={saving}>
                     {saving
                       ? "Reservando…"
                       : !isSignedIn
@@ -515,7 +561,7 @@ export function Booking({
                   </button>
                 )}
               </div>
-            </section>
+            </form>
             <aside>
               <div className="panel">
                 <h2>Seu agendamento</h2>
@@ -573,7 +619,7 @@ export function Booking({
             </aside>
           </div>
         )}
-      </main>
+      </Container>
     </>
   );
 }

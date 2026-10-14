@@ -4,9 +4,11 @@ import { FlowSelect } from "./flow-select";
 export function FlowTime({
   name,
   required = false,
+  onValueChange,
 }: {
   name: string;
   required?: boolean;
+  onValueChange?: (value: string) => void;
 }) {
   const [hour, setHour] = useState(""),
     [minute, setMinute] = useState("");
@@ -25,7 +27,10 @@ export function FlowTime({
       <FlowSelect
         aria-label="Hora"
         value={hour}
-        onValueChange={setHour}
+        onValueChange={(v) => {
+          setHour(v);
+          onValueChange?.(v && minute ? `${v}:${minute}` : "");
+        }}
         required={required}
         name={`${name}_hour`}
       >
@@ -43,7 +48,10 @@ export function FlowTime({
       <FlowSelect
         aria-label="Minutos"
         value={minute}
-        onValueChange={setMinute}
+        onValueChange={(v) => {
+          setMinute(v);
+          onValueChange?.(hour && v ? `${hour}:${v}` : "");
+        }}
         required={required}
         name={`${name}_minute`}
       >

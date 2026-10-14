@@ -7,9 +7,13 @@ const iso = (d: Date) =>
 export function FlowDate({
   name,
   required = false,
+  onValueChange,
+  inputRef,
 }: {
   name: string;
   required?: boolean;
+  onValueChange?: (value: string) => void;
+  inputRef?: (node: HTMLInputElement | null) => void;
 }) {
   const [value, setValue] = useState(""),
     [display, setDisplay] = useState(""),
@@ -38,6 +42,7 @@ export function FlowDate({
   }, [month]);
   function choose(d: Date) {
     setValue(iso(d));
+    onValueChange?.(iso(d));
     setDisplay(d.toLocaleDateString("pt-BR"));
     input.current?.setCustomValidity("");
     setOpen(false);
@@ -49,6 +54,7 @@ export function FlowDate({
         .replace(/^(\d{2})\/(\d{2})(\d)/, "$1/$2/$3");
     setDisplay(formatted);
     setValue("");
+    onValueChange?.("");
     if (digits.length === 8) {
       const d = new Date(
         Number(digits.slice(4)),
@@ -61,6 +67,7 @@ export function FlowDate({
         d.getDate() === Number(digits.slice(0, 2))
       ) {
         setValue(iso(d));
+        onValueChange?.(iso(d));
         setMonth(new Date(d.getFullYear(), d.getMonth(), 1));
         input.current?.setCustomValidity("");
       } else input.current?.setCustomValidity("Informe uma data válida.");
@@ -101,7 +108,10 @@ export function FlowDate({
     <Popover.Root open={open} onOpenChange={setOpen}>
       <div className="flow-date-field">
         <input
-          ref={input}
+          ref={(node) => {
+            input.current = node;
+            inputRef?.(node);
+          }}
           type="text"
           inputMode="numeric"
           placeholder="dd/mm/aaaa"
