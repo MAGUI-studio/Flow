@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client"
+  output = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Account {
+  id String @id
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  subscription Subscription?
+  establishments Establishment[]
+  bookings Booking[]
+  auditEvents AuditEvent[]
+  @@map("accounts")
+}
+
+model Subscription {
+  ownerId String @id @map("owner_id")
+  stripeCustomerId String? @unique @map("stripe_customer_id")
+  stripeSubscriptionId String? @unique @map("stripe_subscription_id")
+  plan String
+  status String
+  paidUntil DateTime @map("paid_until") @db.Timestamptz
+  provider String @default("stripe")
+  currentPeriodStart DateTime @default(now()) @map("current_period_start") @db.Timestamptz
+  cancelAtPeriodEnd Boolean @default(false) @map("cancel_at_period_end")
+  owner Account @relation(fields:[ownerId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  @@map("subscriptions")
+}
+
+model Establishment {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerId String @map("owner_id")
+  slug String @unique
+  name String
+  timezone String @default("America/Sao_Paulo")
+  active Boolean @default(true)
+  approvalMode String @default("automatic") @map("approval_mode")
+  cancelNoticeHours Int @default(2) @map("cancel_notice_hours")
+  city String?
+  address String?
+  description String?
+  logoUrl String? @map("logo_url")
+  coverUrl String? @map("cover_url")
+  category String @default("Outros")
+  contactPhone String? @map("contact_phone")
+  color String @default("#e5dff0")
+  owner Account @relation(fields:[ownerId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  professionals Professional[]
+  services Service[]
+  professionalServices ProfessionalService[]
+  sessions Session[]
+  auditEvents AuditEvent[]
+  @@unique([id,ownerId])
+  @@index([ownerId],map:"establishment_owner")
+  @@map("establishments")
+}
+
+model Professional {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  establishmentId String @map("establishment_id") @db.Uuid
+  name String
+  active Boolean @default(true)
+  establishment Establishment @relation(fields:[establishmentId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  services ProfessionalService[]
+  windows AvailabilityWindow[]
+  blocks ProfessionalBlock[]
+  sessions Session[]
+  @@unique([id,establishmentId])
+  @@map("professionals")
+}
+
+model Service {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  establishmentId String @map("establishment_id") @db.Uuid
+  name String
+  durationMinutes Int @map("duration_minutes")
+  stepMinutes Int @default(30) @map("step_minutes")
+  bufferBefore Int @default(0) @map("buffer_before")
+  bufferAfter Int @default(0) @map("buffer_after")
+  priceCents Int @map("price_cents")
+  modality String
+  kind String
+  active Boolean @default(true)
+  establishment Establishment @relation(fields:[establishmentId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  professionals ProfessionalService[]
+  sessions Session[]
+  @@unique([id,establishmentId])
+  @@map("services")
+}
+
+model ProfessionalService {
+  establishmentId String @map("establishment_id") @db.Uuid
+  professionalId String @map("professional_id") @db.Uuid
+  serviceId String @map("service_id") @db.Uuid
+  establishment Establishment @relation(fields:[establishmentId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  professional Professional @relation(fields:[professionalId,establishmentId],references:[id,establishmentId],onDelete:NoAction,onUpdate:NoAction)
+  service Service @relation(fields:[serviceId,establishmentId],references:[id,establishmentId],onDelete:NoAction,onUpdate:NoAction)
+  sessions Session[]
+  @@id([professionalId,serviceId])
+  @@map("professional_services")
+}
+
+model AvailabilityWindow {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  professionalId String @map("professional_id") @db.Uuid
+  startsAt DateTime @map("starts_at") @db.Timestamptz
+  endsAt DateTime @map("ends_at") @db.Timestamptz
+  professional Professional @relation(fields:[professionalId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  @@map("availability_windows")
+}
+
+model ProfessionalBlock {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  professionalId String @map("professional_id") @db.Uuid
+  startsAt DateTime @map("starts_at") @db.Timestamptz
+  endsAt DateTime @map("ends_at") @db.Timestamptz
+  reason String?
+  professional Professional @relation(fields:[professionalId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  @@map("professional_blocks")
+}
+
+model Session {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  establishmentId String @map("establishment_id") @db.Uuid
+  professionalId String @map("professional_id") @db.Uuid
+  serviceId String @map("service_id") @db.Uuid
+  startsAt DateTime @map("starts_at") @db.Timestamptz
+  endsAt DateTime @map("ends_at") @db.Timestamptz
+  occupiedStart DateTime @map("occupied_start") @db.Timestamptz
+  occupiedEnd DateTime @map("occupied_end") @db.Timestamptz
+  capacity Int
+  active Boolean @default(true)
+  establishment Establishment @relation(fields:[establishmentId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  professional Professional @relation(fields:[professionalId,establishmentId],references:[id,establishmentId],onDelete:NoAction,onUpdate:NoAction)
+  service Service @relation(fields:[serviceId,establishmentId],references:[id,establishmentId],onDelete:NoAction,onUpdate:NoAction)
+  professionalService ProfessionalService @relation(fields:[professionalId,serviceId],references:[professionalId,serviceId],onDelete:NoAction,onUpdate:NoAction)
+  bookings Booking[]
+  @@map("sessions")
+}
+
+model Booking {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId String @map("session_id") @db.Uuid
+  consumerId String @map("consumer_id")
+  status String
+  priceCents Int @map("price_cents")
+  durationMinutes Int @map("duration_minutes")
+  whatsapp String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz
+  attendanceHash String? @map("attendance_hash")
+  attendanceAt DateTime? @map("attendance_at") @db.Timestamptz
+  idempotencyKey String @map("idempotency_key") @db.Uuid
+  session Session @relation(fields:[sessionId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  consumer Account @relation(fields:[consumerId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  auditEvents AuditEvent[]
+  @@unique([consumerId,idempotencyKey])
+  // Partial unique index and expiry index live in SQL migration.
+  @@map("bookings")
+}
+
+model AuditEvent {
+  id BigInt @id @default(autoincrement())
+  actorId String? @map("actor_id")
+  establishmentId String? @map("establishment_id") @db.Uuid
+  bookingId String? @map("booking_id") @db.Uuid
+  action String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  actor Account? @relation(fields:[actorId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  establishment Establishment? @relation(fields:[establishmentId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  booking Booking? @relation(fields:[bookingId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  @@map("audit_events")
+}
+
+model StripeEvent {
+  id String @id
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz
+  @@map("stripe_events")
+}
