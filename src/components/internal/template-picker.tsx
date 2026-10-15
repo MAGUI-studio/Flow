@@ -1,9 +1,10 @@
 "use client";
+import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { Check, Lock, ArrowUpRight } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 import { templates, effectiveTemplate } from "@/lib/plan-features";
 import { templateSchema } from "@/lib/template-schema";
 export function TemplatePicker({
@@ -101,7 +102,7 @@ export function TemplatePicker({
                     {template.description}
                   </p>
                   <span className="mt-4 inline-block rounded-full bg-[#F5F4FF] px-2 py-1 text-[10px] text-[#635BFF]">
-                    {template.pro ? "Exclusivo Pro" : "Todos os planos"}
+                    {template.pro ? "Exclusivo do Flow PRO" : "Todos os planos"}
                   </span>
                 </div>
               </label>
@@ -133,7 +134,7 @@ export function TemplatePicker({
           rel="noreferrer"
           className="inline-flex items-center gap-2 text-xs text-[#635BFF]"
         >
-          Ver página <ArrowUpRight size={14} />
+          Ver página <AnimatedArrow size={14} />
         </a>
       </div>
     </form>

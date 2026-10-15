@@ -1,5 +1,6 @@
 import { currentUser, apiError } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { businessSlug } from "@/lib/business-slug";
 import {
   createEstablishment,
   createProfessional,
@@ -14,8 +15,18 @@ export async function POST(request: Request) {
     const input = await request.json();
     if (!input || typeof input !== "object") throw new Error("INVALID_INPUT");
     const result = await prisma().$transaction(async (tx) => {
-      if (input.type === "establishment")
+      if (input.type === "establishment") {
+        const automatic = businessSlug(text(input.name));
+        if (
+          input.slug !== automatic &&
+          !(await tx.establishment.findUnique({
+            where: { slug: automatic },
+            select: { id: true },
+          }))
+        )
+          throw new Error("INVALID_SLUG");
         return createEstablishment(tx, owner, input);
+      }
       if (input.type === "professional")
         return createProfessional(tx, owner, input);
       if (input.type === "service") return createService(tx, owner, input);

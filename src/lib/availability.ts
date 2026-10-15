@@ -1,9 +1,55 @@
 import { prisma } from "./prisma";
-import { availableSlots } from "./rules";
+import { availableSlots, overlaps } from "./rules";
 import { dayKey } from "./format";
 import type { Prisma } from "@/generated/prisma/client";
 export type Slot = { startsAt: string; sessionId?: string; remaining: number };
 export async function getAvailability(
+  serviceId: string,
+  professionalId: string,
+  date?: string,
+  tx: Prisma.TransactionClient = prisma(),
+  consumerId?: string,
+): Promise<{ dates: string[]; slots: Slot[] }> {
+  const availability = await professionalAvailability(
+    serviceId,
+    professionalId,
+    date,
+    tx,
+  );
+  if (!consumerId || !availability.slots.length) return availability;
+  const now = new Date();
+  const [service, bookings] = await Promise.all([
+    tx.service.findUniqueOrThrow({
+      where: { id: serviceId },
+      select: { durationMinutes: true },
+    }),
+    tx.booking.findMany({
+      where: {
+        consumerId,
+        session: { endsAt: { gt: now } },
+        OR: [
+          { status: "confirmed" },
+          { status: "pending", expiresAt: { gt: now } },
+        ],
+      },
+      select: { session: { select: { startsAt: true, endsAt: true } } },
+    }),
+  ]);
+  return {
+    ...availability,
+    slots: availability.slots.filter((slot) => {
+      const start = new Date(slot.startsAt);
+      const end = new Date(start.getTime() + service.durationMinutes * 60000);
+      return !bookings.some(({ session }) =>
+        overlaps(
+          { start, end },
+          { start: session.startsAt, end: session.endsAt },
+        ),
+      );
+    }),
+  };
+}
+async function professionalAvailability(
   serviceId: string,
   professionalId: string,
   date?: string,

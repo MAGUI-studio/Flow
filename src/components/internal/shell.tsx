@@ -1,4 +1,5 @@
 "use client";
+import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,7 +9,6 @@ import {
   CalendarDays,
   Users,
   Scissors,
-  ArrowUpRight,
   ChevronRight,
   Menu,
   X,
@@ -197,10 +197,10 @@ export function InternalShell({
                     Meus agendamentos
                     <i />
                   </Link>
-                  <Link href="/#explorar">
+                  <Link href="/explorar">
                     <Scissors size={18} />
                     Explorar profissionais
-                    <ArrowUpRight size={14} />
+                    <AnimatedArrow size={14} />
                   </Link>
                 </>
               )}
@@ -224,7 +224,7 @@ export function InternalShell({
               </Link>
             </nav>
             <div className="internal-sidebar-bottom">
-              {mode === "business" ? (
+              {plan ? (
                 <div className="plan-mini">
                   <span className="grid size-10 shrink-0 place-items-center">
                     <img
@@ -240,18 +240,20 @@ export function InternalShell({
                   </span>
                   <div>
                     <small>SEU PLANO</small>
-                    <strong>{plan === "multi" ? "Pro" : "Essencial"}</strong>
+                    <strong>{plan === "multi" ? "Flow PRO" : "Flow Essencial"}</strong>
                   </div>
-                  <Link href="/#planos" aria-label="Ver planos">
-                    <ArrowUpRight size={17} />
-                  </Link>
                 </div>
               ) : (
-                <div className="consumer-note">
-                  <span>✳</span>
-                  <strong>Seu tempo merece fluir.</strong>
-                  <p>Um cuidado, uma pausa, um próximo momento.</p>
-                </div>
+                <Link
+                  href="/#planos"
+                  className="group relative isolate block overflow-hidden rounded-2xl border border-[#e8e5f6] bg-[#F5F4FF] p-4 transition-colors hover:border-[#635BFF]/40"
+                >
+                  <img src="/brand/icon.svg" alt="" aria-hidden="true" className="pointer-events-none absolute -right-5 -bottom-4 -z-10 w-28 opacity-[0.07]" />
+                  <span className="text-[9px] font-semibold tracking-widest text-[#635BFF] uppercase">Flow para negócios</span>
+                  <strong className="mt-2 block text-sm text-zinc-900">Sua agenda merece Flow.</strong>
+                  <p className="mt-2 text-xs leading-relaxed text-zinc-500">Crie sua página e organize seus serviços, equipe e agendamentos.</p>
+                  <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#635BFF]">Conhecer os planos <AnimatedArrow size={14} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></span>
+                </Link>
               )}
               <div className="internal-profile">
                 <UserButton />
@@ -297,12 +299,12 @@ export function InternalShell({
                 target="_blank"
               >
                 Ver minha página
-                <ArrowUpRight size={15} />
+                <AnimatedArrow size={15} />
               </Link>
             ) : (
-              <Link className="public-page-link" href="/#explorar">
+              <Link className="public-page-link" href="/explorar">
                 Explorar
-                <ArrowUpRight size={15} />
+                <AnimatedArrow size={15} />
               </Link>
             )}
           </div>

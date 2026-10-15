@@ -1,7 +1,7 @@
+import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import {
-  ArrowUpRight,
   CalendarDays,
   Clock,
   MapPin,
@@ -25,6 +25,9 @@ import { ListFilters } from "@/components/internal/filters";
 import { BookingActions } from "@/components/internal/booking-actions";
 import { BookingReview } from "@/components/internal/booking-review";
 import { reviewEligible } from "@/lib/review-rules";
+import { BusinessMonogram } from "@/components/ui/business-monogram";
+import { LocationMap } from "@/components/ui/location-map";
+import { locationSchema } from "@/lib/address";
 export default async function Page({
   searchParams,
 }: {
@@ -78,33 +81,36 @@ export default async function Page({
         title="Seus próximos momentos."
         description="Acompanhe suas reservas, encontre os detalhes e cuide da sua agenda."
         action={
-          <Link href="/#explorar" className="button">
+          <Link href="/explorar" className="button">
             Agendar um serviço
-            <ArrowUpRight size={16} />
+            <AnimatedArrow size={16} />
           </Link>
         }
       />
       <div className="consumer-summary">
-        <div>
-          <span className="summary-icon">
-            <CalendarDays size={20} />
-          </span>
+        <div className="relative isolate overflow-hidden min-h-28">
+          <CalendarDays
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-3 -bottom-4 -z-10 size-28 rotate-[-12deg] text-[#635BFF] opacity-[0.07]"
+          />
           <strong>{upcoming.length}</strong>
           <span>agendamentos por vir</span>
         </div>
-        <div>
-          <span className="summary-icon">
-            <CheckCircle2 size={20} />
-          </span>
+        <div className="relative isolate overflow-hidden min-h-28">
+          <CheckCircle2
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-3 -bottom-4 -z-10 size-28 rotate-[-12deg] text-[#635BFF] opacity-[0.07]"
+          />
           <strong>
             {upcoming.filter((b) => b.effectiveStatus === "confirmed").length}
           </strong>
           <span>confirmados</span>
         </div>
-        <div>
-          <span className="summary-icon">
-            <Clock size={20} />
-          </span>
+        <div className="relative isolate overflow-hidden min-h-28">
+          <Clock
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-3 -bottom-4 -z-10 size-28 rotate-[-12deg] text-[#635BFF] opacity-[0.07]"
+          />
           <strong>
             {upcoming.filter((b) => b.effectiveStatus === "pending").length}
           </strong>
@@ -126,7 +132,7 @@ export default async function Page({
             className="inline-flex items-center gap-2 text-xs font-medium text-[#635BFF]"
           >
             Avaliar atendimentos
-            <ArrowUpRight size={14} />
+            <AnimatedArrow size={14} />
           </Link>
         </div>
       )}
@@ -153,50 +159,99 @@ export default async function Page({
               ? "Tente outro período ou ajuste os filtros para encontrar sua reserva."
               : "Encontre um profissional, escolha seu serviço e reserve um tempo para você."
           }
-          href="/#explorar"
+          href="/explorar"
           label="Explorar serviços"
           icon={<CalendarDays size={26} />}
         />
       ) : (
-        <div className="consumer-booking-list">
+        <div className="consumer-booking-list grid-cols-1 lg:grid-cols-2">
           {rows.map((b) => {
             const e = b.session.establishment;
+            const details = e.addressDetails;
+            const location = locationSchema.safeParse(
+              details && typeof details === "object" && !Array.isArray(details)
+                ? details.location
+                : undefined,
+            );
             const canCancel =
               ["pending", "confirmed"].includes(b.effectiveStatus) &&
               b.session.startsAt.getTime() - now.getTime() >=
                 e.cancelNoticeHours * 3600000;
             return (
-              <article key={b.id} className="consumer-booking">
-                <div className="consumer-booking-header">
+              <article
+                key={b.id}
+                className="consumer-booking flex h-full min-w-0 flex-col"
+              >
+                <div className="consumer-booking-header px-4 py-3">
                   <Link href={`/${e.slug}`}>
-                    <i style={{ background: e.color }}>{e.name[0]}</i>
+                    <span
+                      className="relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl pr-1"
+                      style={{ background: e.color }}
+                    >
+                      {e.logoUrl ? (
+                        <img
+                          src={e.logoUrl}
+                          alt=""
+                          className="size-9 object-contain"
+                        />
+                      ) : (
+                        <BusinessMonogram name={e.name} compact />
+                      )}
+                    </span>
                     <span>{e.name}</span>
-                    <ArrowUpRight size={14} />
+                    <AnimatedArrow size={14} />
                   </Link>
                   <StatusPill
                     status={b.effectiveStatus}
                     label={statusLabel[b.effectiveStatus]}
                   />
                 </div>
-                <div className="consumer-booking-body">
-                  <div className="appointment-date-block">
-                    <strong>
-                      {b.session.startsAt.toLocaleDateString("pt-BR", {
-                        timeZone: e.timezone,
-                        day: "2-digit",
-                      })}
-                    </strong>
-                    <span>
-                      {b.session.startsAt.toLocaleDateString("pt-BR", {
-                        timeZone: e.timezone,
-                        month: "short",
-                      })}
-                    </span>
+                <div className="consumer-booking-body grid grid-cols-1 items-start gap-3 p-4 sm:grid-cols-[160px_minmax(0,1fr)] xl:grid-cols-[180px_minmax(0,1fr)]">
+                  <div className="w-full min-w-0">
+                    {b.session.service.modality !== "online" &&
+                    location.success ? (
+                      <LocationMap point={location.data} compact />
+                    ) : (
+                      <div className="flex h-24 items-center justify-center gap-2 rounded-xl bg-[#F5F4FF] px-4 text-xs text-zinc-500">
+                        {b.session.service.modality === "online" ? (
+                          <>
+                            <Globe size={18} />
+                            Atendimento online
+                          </>
+                        ) : (
+                          <>
+                            <MapPin size={18} />
+                            {e.city || "Atendimento presencial"}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="consumer-booking-main">
-                    <h2>{b.session.service.name}</h2>
-                    <p>Com {b.session.professional.name}</p>
-                    <div className="booking-detail-line">
+                  <div className="consumer-booking-main min-w-0">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-[#18181B]">
+                        <CalendarDays aria-hidden="true" size={16} />
+                        <strong>
+                          {b.session.startsAt.toLocaleDateString("pt-BR", {
+                            timeZone: e.timezone,
+                            day: "2-digit",
+                          })}
+                        </strong>
+                        <span className="text-xs font-semibold uppercase">
+                          {b.session.startsAt.toLocaleDateString("pt-BR", {
+                            timeZone: e.timezone,
+                            month: "short",
+                          })}
+                        </span>
+                      </div>
+                      <strong className="consumer-booking-price ml-0 shrink-0">
+                        {money(b.priceCents)}
+                      </strong>
+                    </div>
+
+                    <h2 className="m-0 leading-tight">{b.session.service.name}</h2>
+                    <p className="mt-1">Com {b.session.professional.name}</p>
+                    <div className="booking-detail-line mt-2 gap-x-3 gap-y-2">
                       <span>
                         <CalendarDays size={14} />
                         {b.session.startsAt.toLocaleDateString("pt-BR", {
@@ -212,23 +267,22 @@ export default async function Page({
                         {hourLabel(b.session.startsAt, e.timezone)} ·{" "}
                         {b.durationMinutes} min
                       </span>
-                      <span>
+                      <span className="basis-full items-start leading-relaxed">
                         {b.session.service.modality === "online" ? (
-                          <Globe size={14} />
+                          <Globe size={14} className="mt-0.5 shrink-0" />
                         ) : (
-                          <MapPin size={14} />
-                        )}{" "}
-                        {b.session.service.modality === "online"
-                          ? "Online"
-                          : e.city || "Presencial"}
+                          <MapPin size={14} className="mt-0.5 shrink-0" />
+                        )}
+                        <span className="block min-w-0 break-words">
+                          {b.session.service.modality === "online"
+                            ? "Atendimento online"
+                            : [e.address, e.city].filter(Boolean).join(" · ") || "Endereço não informado"}
+                        </span>
                       </span>
                     </div>
                   </div>
-                  <strong className="consumer-booking-price">
-                    {money(b.priceCents)}
-                  </strong>
                 </div>
-                <div className="consumer-booking-footer">
+                <div className="consumer-booking-footer mt-auto flex-wrap gap-2 px-4 py-3">
                   <p>
                     {b.effectiveStatus === "pending" && b.expiresAt
                       ? `Aguardando resposta até ${b.expiresAt.toLocaleString("pt-BR", { timeZone: e.timezone, dateStyle: "short", timeStyle: "short" })}.`

@@ -5,6 +5,7 @@ import {
   parseAsStringEnum,
 } from "nuqs/server";
 export const directorySearch = {
+  area: parseAsString.withDefault(""),
   pagina: parseAsInteger.withDefault(1),
   busca: parseAsString.withDefault(""),
   cidade: parseAsString.withDefault(""),
@@ -13,6 +14,40 @@ export const directorySearch = {
     "all",
   ),
 };
+export type MapBounds = {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+};
+export function parseMapBounds(value: string): MapBounds | null {
+  const parts = value.split(",");
+  if (parts.length !== 4 || parts.some((p) => !p.trim())) return null;
+  const [south, west, north, east] = parts.map(Number);
+  if (
+    ![south, west, north, east].every(Number.isFinite) ||
+    south < -90 ||
+    north > 90 ||
+    west < -180 ||
+    east > 180 ||
+    south >= north ||
+    west >= east
+  )
+    return null;
+  return { south, west, north, east };
+}
+export function inMapBounds(
+  point: { latitude: number; longitude: number } | undefined,
+  bounds: MapBounds,
+) {
+  return (
+    !!point &&
+    point.latitude >= bounds.south &&
+    point.latitude <= bounds.north &&
+    point.longitude >= bounds.west &&
+    point.longitude <= bounds.east
+  );
+}
 export const directoryHref = createSerializer(directorySearch);
 export function paginateDirectory<T>(rows: T[], requestedPage: number) {
   const totalPages = Math.max(1, Math.ceil(rows.length / 8));

@@ -1,6 +1,6 @@
+import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import Link from "next/link";
 import {
-  ArrowUpRight,
   MapPin,
   Globe,
   Scissors,
@@ -9,10 +9,16 @@ import {
   GraduationCap,
   BriefcaseBusiness,
   Palette,
+  PenTool,
+  Flower2,
+  Dumbbell,
+  PawPrint,
+  Camera,
 } from "lucide-react";
 import type { BusinessCard } from "@/lib/catalog";
 import { RatingSummary } from "./ui/rating-stars";
 import { TopRatedBadge } from "./ui/top-rated-badge";
+import { BusinessMonogram } from "./ui/business-monogram";
 const categoryIcons = {
   Beleza: Scissors,
   Barbearia: Scissors,
@@ -20,7 +26,12 @@ const categoryIcons = {
   "Bem-estar": Heart,
   Educação: GraduationCap,
   Consultoria: BriefcaseBusiness,
-  Outros: Palette,
+  Tatuagem: PenTool,
+  Estética: Flower2,
+  Esportes: Dumbbell,
+  Pet: PawPrint,
+  Fotografia: Camera,
+  Outro: Palette,
 };
 export function BusinessListingCard({
   business: b,
@@ -62,17 +73,7 @@ export function BusinessListingCard({
             <img src={b.logoUrl} alt="" className="size-full object-contain" />
           </span>
         ) : (
-          !b.coverUrl && (
-            <span
-              aria-hidden="true"
-              className="relative font-[Georgia,serif] text-[65px] tracking-[-7px] text-[#413b3e]"
-            >
-              {b.initials}
-              <span className="absolute -right-[22px] top-0 text-[30px] tracking-normal">
-                ✳
-              </span>
-            </span>
-          )
+          !b.coverUrl && <BusinessMonogram name={b.name} />
         )}
       </div>
       <div className="flex flex-1 flex-col px-5 pt-5 pb-4">
@@ -127,7 +128,7 @@ export function BusinessListingCard({
             Conhecer e agendar
           </span>
           <span className="grid size-8 shrink-0 place-items-center rounded-full border border-[#e8e5f6] bg-[#F5F4FF] text-[#635BFF] transition-colors duration-300 group-hover:border-[#635BFF] group-hover:bg-[#635BFF] group-hover:text-white group-focus-visible:bg-[#635BFF] group-focus-visible:text-white">
-            <ArrowUpRight
+            <AnimatedArrow
               aria-hidden="true"
               size={16}
               className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-focus-visible:translate-x-0.5 group-focus-visible:-translate-y-0.5 motion-reduce:transition-none"

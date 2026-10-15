@@ -1,14 +1,11 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { planFeatures } from "./plan-features";
-export const categories = [
-  "Beleza",
-  "Barbearia",
-  "Saúde",
-  "Bem-estar",
-  "Educação",
-  "Consultoria",
-  "Outros",
-];
+import { optionalAddressSchema, formatAddress } from "./address";
+import {
+  businessCategories,
+  businessBioMaxLength,
+} from "./business-categories";
+export const categories: readonly string[] = businessCategories;
 export function text(value: unknown, min = 1, max = 150) {
   if (
     typeof value !== "string" ||
@@ -74,15 +71,29 @@ export async function createEstablishment(
     throw new Error("INVALID_SLUG");
   const category = text(input.category);
   if (!categories.includes(category)) throw new Error("INVALID_INPUT");
+  const parsedAddress = optionalAddressSchema.safeParse(input.addressDetails);
+  if (!parsedAddress.success) throw new Error("INVALID_INPUT");
+  const addressDetails = parsedAddress.data;
   return tx.establishment.create({
     data: {
       ownerId: owner,
       name: text(input.name),
       slug,
       category,
-      city: input.city ? text(input.city) : null,
-      address: input.address ? text(input.address, 1, 300) : null,
-      description: input.description ? text(input.description, 1, 1000) : null,
+      city: addressDetails
+        ? `${addressDetails.city}, ${addressDetails.state}`
+        : input.city
+          ? text(input.city)
+          : null,
+      address: addressDetails
+        ? formatAddress(addressDetails)
+        : input.address
+          ? text(input.address, 1, 300)
+          : null,
+      ...(addressDetails ? { addressDetails } : {}),
+      description: input.description
+        ? text(input.description, 1, businessBioMaxLength)
+        : null,
       contactPhone: input.contactPhone ? text(input.contactPhone, 8, 30) : null,
       approvalMode: input.approvalMode === "manual" ? "manual" : "automatic",
       cancelNoticeHours: integer(input.cancelNoticeHours ?? 2, 0, 720),

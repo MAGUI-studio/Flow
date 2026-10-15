@@ -1,4 +1,5 @@
 "use client";
+import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import { Container } from "@/components/container";
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -10,13 +11,7 @@ import Link from "next/link";
 import { BusinessProfileHero } from "./business-profile-hero";
 import { DateRail } from "@/components/ui/date-rail";
 import { useUser, useClerk } from "@clerk/nextjs";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  CalendarDays,
-  LoaderCircle,
-} from "lucide-react";
+import { ArrowLeft, Check, CalendarDays, LoaderCircle } from "lucide-react";
 import type { BusinessProfile } from "@/lib/catalog";
 import type { Slot } from "@/lib/availability";
 import { money, hourLabel } from "@/lib/format";
@@ -119,10 +114,11 @@ export function Booking({
     }
     fetch(
       `/api/availability?${new URLSearchParams({ serviceId, professionalId, ...(date ? { date } : {}) })}`,
-      { signal: abort.signal },
+      { signal: abort.signal, cache: "no-store" },
     )
       .then(async (r) => {
         const data = await r.json();
+        if (abort.signal.aborted) return;
         if (!r.ok) throw new Error(data.error);
         setDates(data.dates);
         setSlots(data.slots);
@@ -135,7 +131,7 @@ export function Booking({
         if (!abort.signal.aborted) setLoading(false);
       });
     return () => abort.abort();
-  }, [serviceId, professionalId, date]);
+  }, [serviceId, professionalId, date, user?.id]);
   function selectService(id: string) {
     setServiceId(id);
     setProfessionalId("");
@@ -232,7 +228,7 @@ export function Booking({
                 <p>Confira seus próximos horários em {b.name}.</p>
               </div>
               <Link href="/agendamentos">
-                Ver todos <ArrowRight size={14} />
+                Ver todos <AnimatedArrow direction="right" size={14} />
               </Link>
             </div>
             {ownBookings.map((booking) => (
@@ -397,7 +393,8 @@ export function Booking({
                             >
                               <CalendarDays size={14} /> Você já tem{" "}
                               {booking.serviceName.toLowerCase()} às{" "}
-                              {hourLabel(booking.startsAt, b.timezone)} ·{" "}
+                              {hourLabel(booking.startsAt, b.timezone)} · com{" "}
+                              {booking.professionalName} ·{" "}
                               {statusLabel[booking.status]}
                             </p>
                           ))}
@@ -524,7 +521,7 @@ export function Booking({
                     onClick={() => setStep(step + 1)}
                   >
                     Continuar
-                    <ArrowRight size={16} />
+                    <AnimatedArrow direction="right" size={16} />
                   </button>
                 ) : (
                   <button className="button" type="submit" disabled={saving}>
@@ -535,7 +532,7 @@ export function Booking({
                         : b.approvalMode === "manual"
                           ? "Solicitar agendamento"
                           : "Confirmar agendamento"}
-                    <ArrowRight size={16} />
+                    <AnimatedArrow direction="right" size={16} />
                   </button>
                 )}
               </div>

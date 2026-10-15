@@ -1,0 +1,60 @@
+import { addressSchema } from "../src/lib/address";
+// Fictional businesses at sample locations; never overwrite user-owned records.
+export const seedLocations = Object.fromEntries(
+  Object.entries({
+    "studio-aurora": {
+      postalCode: "01426-001",
+      street: "Rua Oscar Freire",
+      number: "1000",
+      neighborhood: "Jardim Paulista",
+      city: "São Paulo",
+      state: "SP",
+      location: { latitude: -23.5625, longitude: -46.6712 },
+    },
+    "barbearia-essencia": {
+      postalCode: "13010-110",
+      street: "Avenida Francisco Glicério",
+      number: "1000",
+      neighborhood: "Centro",
+      city: "Campinas",
+      state: "SP",
+      location: { latitude: -22.9047, longitude: -47.0604 },
+    },
+    "clinica-viva": {
+      postalCode: "01310-100",
+      street: "Avenida Paulista",
+      number: "1000",
+      neighborhood: "Bela Vista",
+      city: "São Paulo",
+      state: "SP",
+      location: { latitude: -23.5645, longitude: -46.6517 },
+    },
+    "atelier-linha-fina": {
+      postalCode: "80020-310",
+      street: "Rua XV de Novembro",
+      number: "500",
+      neighborhood: "Centro",
+      city: "Curitiba",
+      state: "PR",
+      location: { latitude: -25.4295, longitude: -49.2697 },
+    },
+    "casa-do-movimento": {
+      postalCode: "30140-071",
+      street: "Rua da Bahia",
+      number: "1500",
+      neighborhood: "Lourdes",
+      city: "Belo Horizonte",
+      state: "MG",
+      location: { latitude: -19.9319, longitude: -43.9385 },
+    },
+    "norte-consultoria": {
+      postalCode: "90010-150",
+      street: "Rua dos Andradas",
+      number: "1000",
+      neighborhood: "Centro Histórico",
+      city: "Porto Alegre",
+      state: "RS",
+      location: { latitude: -30.0318, longitude: -51.2312 },
+    },
+  }).map(([slug, address]) => [slug, addressSchema.parse(address)]),
+);

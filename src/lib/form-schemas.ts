@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { optionalAddressSchema } from "./address";
+import { businessCategories, businessBioMaxLength } from "./business-categories";
 const name = z
   .string()
   .trim()
@@ -53,21 +55,11 @@ export const establishmentSchema = z.object({
         ].includes(v),
       "Este endereço está reservado.",
     ),
-  category: z.enum(
-    [
-      "Beleza",
-      "Barbearia",
-      "Saúde",
-      "Bem-estar",
-      "Educação",
-      "Consultoria",
-      "Outros",
-    ],
-    { error: "Escolha uma categoria." },
-  ),
-  description: z.string().max(1000, "Use até 1.000 caracteres."),
+  category: z.enum(businessCategories, { error: "Escolha uma categoria." }),
+  description: z.string().max(businessBioMaxLength, "Use até 300 caracteres."),
   city: z.string().max(150),
   address: z.string().max(300),
+  addressDetails: optionalAddressSchema,
   contactPhone: optionalPhone,
   approvalMode: z.enum(["automatic", "manual"]),
   cancelNoticeHours: number(0, 720),

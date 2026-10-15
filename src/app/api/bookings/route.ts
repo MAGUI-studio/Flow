@@ -15,6 +15,7 @@ export async function POST(request: Request) {
         create: { id: consumer },
         update: {},
       });
+      await tx.$queryRaw`SELECT id FROM accounts WHERE id=${consumer} FOR UPDATE`;
       const service = await tx.service.findUnique({
         where: { id: text(body.serviceId) },
         include: { establishment: true },
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
         professionalId,
         dayKey(start, service.establishment.timezone),
         tx,
+        consumer,
       );
       const slot = availability.slots.find(
         (s) => s.startsAt === start.toISOString(),

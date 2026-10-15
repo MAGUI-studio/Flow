@@ -9,6 +9,8 @@ import {
 } from "../src/lib/business-write";
 import { businesses } from "./seed-data";
 import { seedReviews } from "./seed-reviews";
+import { seedLocations } from "./seed-locations";
+import { formatAddress } from "../src/lib/address";
 config({ path: ".env.local", quiet: true });
 if (
   process.env.NODE_ENV === "production" ||
@@ -44,6 +46,7 @@ try {
       e = await db.$transaction((tx) =>
         createEstablishment(tx, owner, {
           ...input,
+          addressDetails: seedLocations[input.slug],
           address: input.online
             ? ""
             : `Rua das Flores, ${120 + index * 20} — Centro`,
@@ -58,6 +61,13 @@ try {
       data: {
         color: input.color,
         approvalMode: input.approvalMode ?? "automatic",
+        ...(seedLocations[input.slug]
+          ? {
+              addressDetails: seedLocations[input.slug],
+              address: formatAddress(seedLocations[input.slug]),
+              city: `${seedLocations[input.slug].city}, ${seedLocations[input.slug].state}`,
+            }
+          : {}),
       },
     });
     for (const name of input.professionals) {

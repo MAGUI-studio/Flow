@@ -172,7 +172,7 @@ export const businesses: SeedBusiness[] = [
   {
     slug: "atelier-linha-fina",
     name: "Ateliê Linha Fina",
-    category: "Outros",
+    category: "Outro",
     city: "Curitiba, PR",
     initials: "lf",
     color: "#ecdfe5",

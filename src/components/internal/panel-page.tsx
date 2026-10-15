@@ -1,8 +1,8 @@
+import { BusinessOnboarding } from "./business-onboarding";
+import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import Link from "next/link";
 import {
   Plus,
-  ArrowUpRight,
-  ArrowRight,
   CalendarDays,
   Users,
   Scissors,
@@ -277,6 +277,12 @@ export async function PanelPage({
       {meta.cta}
     </Link>
   ) : undefined;
+  if (!b && section !== "subscription")
+    return (
+      <BusinessOnboarding
+        title={section === "overview" ? "Seu negócio começa aqui." : meta.title}
+      />
+    );
   if (section === "establishments") {
     const rows = await prisma().establishment.findMany({
       where: { ownerId: context.userId, active: true },
@@ -295,7 +301,7 @@ export async function PanelPage({
             ) : (
               <Link href="/#planos" className="button secondary">
                 Ver planos
-                <ArrowUpRight size={15} />
+                <AnimatedArrow size={15} />
               </Link>
             )
           }
@@ -305,7 +311,7 @@ export async function PanelPage({
             {rows.length} de {limit} estabelecimentos no seu plano
           </span>
           <span>
-            Plano {subscription.plan === "multi" ? "Pro" : "Essencial"}
+            Plano {subscription.plan === "multi" ? "Flow PRO" : "Essencial"}
           </span>
         </div>
         {!rows.length ? (
@@ -358,14 +364,14 @@ export async function PanelPage({
                   <div className="establishment-card-footer">
                     <Link href={panelHref("/painel", e.id)}>
                       Gerenciar
-                      <ArrowRight size={15} />
+                      <AnimatedArrow direction="right" size={15} />
                     </Link>
                     <Link
                       href={`/${e.slug}`}
                       target="_blank"
                       aria-label={`Ver página de ${e.name}`}
                     >
-                      <ArrowUpRight size={18} />
+                      <AnimatedArrow size={18} />
                     </Link>
                   </div>
                 </div>
@@ -389,7 +395,7 @@ export async function PanelPage({
             <span className="subscription-flower">✳</span>
             <StatusPill status="confirmed" label="Assinatura ativa" />
             <small>SEU PLANO ATUAL</small>
-            <h2>{subscription.plan === "multi" ? "Pro" : "Essencial"}</h2>
+            <h2>{subscription.plan === "multi" ? "Flow PRO" : "Essencial"}</h2>
             <p>Mais organização para cada próximo momento.</p>
             <div className="subscription-period">
               <span>Período atual</span>
@@ -400,7 +406,7 @@ export async function PanelPage({
             </div>
             <Link href="/#planos" className="button">
               Conhecer os planos
-              <ArrowUpRight size={15} />
+              <AnimatedArrow size={15} />
             </Link>
           </section>
           <SectionCard
@@ -440,58 +446,7 @@ export async function PanelPage({
         </div>
       </>
     );
-  if (!b)
-    return (
-      <>
-        <PageHeading
-          eyebrow="BEM-VINDO AO FLOW"
-          title={
-            section === "overview" ? "Seu negócio começa aqui." : meta.title
-          }
-          description="Transforme seu talento em uma agenda organizada. Vamos começar pelo seu espaço."
-        />
-        <div className="onboarding-hero">
-          <div>
-            <span className="internal-eyebrow">O PRIMEIRO PASSO É SIMPLES</span>
-            <h2>
-              Um espaço seu.
-              <br />
-              Mais tempo para crescer.
-            </h2>
-            <p>
-              Crie sua página, apresente sua equipe e deixe os agendamentos
-              fluírem.
-            </p>
-            <Link href="/painel/estabelecimentos/novo" className="button">
-              <Plus size={16} />
-              Criar meu estabelecimento
-            </Link>
-          </div>
-          <span className="onboarding-flower">✳</span>
-        </div>
-        <div className="setup-explainer">
-          {[
-            [
-              "01",
-              "Seu estabelecimento",
-              "Nome, contato e o seu jeito de atender.",
-            ],
-            ["02", "Equipe e serviços", "Quem atende e o que você oferece."],
-            [
-              "03",
-              "Sua agenda aberta",
-              "Datas e horários para receber clientes.",
-            ],
-          ].map(([n, title, description]) => (
-            <div key={n}>
-              <span>{n}</span>
-              <h3>{title}</h3>
-              <p>{description}</p>
-            </div>
-          ))}
-        </div>
-      </>
-    );
+  if (!b) return <BusinessOnboarding title={meta.title} />;
   if (section === "overview") {
     const now = new Date();
     const localDay = dayKey(now, b.timezone);
@@ -614,7 +569,7 @@ export async function PanelPage({
             aside={
               <Link className="subtle-link" href={link("/painel/agenda")}>
                 Ver agenda
-                <ArrowRight size={14} />
+                <AnimatedArrow direction="right" size={14} />
               </Link>
             }
           >
@@ -660,7 +615,7 @@ export async function PanelPage({
               <div>flow.magui.studio/{b.slug}</div>
               <Link href={`/${b.slug}`} target="_blank">
                 Abrir minha página
-                <ArrowUpRight size={17} />
+                <AnimatedArrow size={17} />
               </Link>
             </section>
             <SectionCard title="Tudo pronto para fluir?">
@@ -774,7 +729,7 @@ export async function PanelPage({
                   className="professional-card-footer"
                 >
                   Organizar horários
-                  <ArrowRight size={15} />
+                  <AnimatedArrow direction="right" size={15} />
                 </Link>
               </article>
             ))}

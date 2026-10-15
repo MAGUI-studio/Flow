@@ -1,5 +1,6 @@
+import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import Link from "next/link";
-import { ArrowUpRight, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 export const arrowMotion =
@@ -12,7 +13,7 @@ export function ArrowLink({
   return (
     <Link {...props} className={cn("button group", className)}>
       {children}
-      <ArrowUpRight size={19} className={arrowMotion} />
+      <AnimatedArrow size={19} className={arrowMotion} />
     </Link>
   );
 }
@@ -24,7 +25,7 @@ export function ArrowButton({
   return (
     <button {...props} className={cn("button group", className)}>
       {children}
-      <ArrowRight
+      <AnimatedArrow direction="right"
         size={19}
         className="transition-transform duration-200 ease-out group-hover:translate-x-1 group-focus-visible:translate-x-1 motion-reduce:transition-none"
       />

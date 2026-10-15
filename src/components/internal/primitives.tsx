@@ -99,10 +99,10 @@ export function FormSection({
 }) {
   return (
     <section className="internal-form-section">
-      <header className="relative isolate block overflow-hidden pr-20">
+      <header className="relative isolate block overflow-hidden pt-6 pr-24">
         <span
           aria-hidden="true"
-          className="section-watermark pointer-events-none absolute -top-5 right-0 -z-10 rounded-none border-0 bg-transparent p-0 text-7xl font-extrabold tracking-tighter text-[#635BFF]/8"
+          className="section-watermark pointer-events-none absolute top-0 right-0 -z-10 rounded-none border-0 bg-transparent p-0 text-7xl leading-none font-extrabold tracking-tighter text-[#635BFF] opacity-[0.08]"
         >
           {number}
         </span>

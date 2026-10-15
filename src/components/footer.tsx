@@ -1,5 +1,6 @@
+import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import Link from "next/link";
-import { ArrowUpRight, ArrowUp } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { Container } from "./container";
 import { StudioCredit } from "./studio-credit";
 
@@ -169,7 +170,7 @@ export function Footer() {
                       >
                         {link.label}
                         {link.href.startsWith("https:") && (
-                          <ArrowUpRight
+                          <AnimatedArrow
                             size={12}
                             className="text-zinc-600 transition-colors group-hover:text-[#a49fff]"
                           />

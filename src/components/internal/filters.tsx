@@ -37,9 +37,10 @@ export function ListFilters({
     query.busca || query.status !== "all" || query.profissional !== "all";
   return (
     <div className="internal-filters">
-      <div className="internal-search">
+      <div className="internal-search rounded-lg border border-transparent transition-colors focus-within:border-[#635BFF]/40 focus-within:bg-[#F5F4FF]/60 focus-within:ring-2 focus-within:ring-[#635BFF]/10">
         <Search size={17} />
         <input
+          className="focus-visible:outline-none"
           aria-label="Buscar na lista"
           placeholder={placeholder}
           value={query.busca}

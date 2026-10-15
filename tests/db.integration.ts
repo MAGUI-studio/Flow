@@ -263,6 +263,96 @@ test("PostgreSQL prevents overlapping sessions and overselling concurrent bookin
     const available = await getAvailability(individual.id, p, day, orm);
     assert.ok(available.dates.includes(day));
     assert.ok(available.slots.length > 0);
+    const secondProfessional = await orm.professional.findFirstOrThrow({
+      where: { establishmentId: e, id: { not: p } },
+    });
+    await orm.professionalService.create({
+      data: {
+        establishmentId: e,
+        professionalId: secondProfessional.id,
+        serviceId: individual.id,
+      },
+    });
+    const target = new Date(available.slots[0].startsAt);
+    const targetEnd = new Date(target.getTime() + 45 * 60000);
+    await orm.availabilityWindow.create({
+      data: {
+        professionalId: secondProfessional.id,
+        startsAt: new Date(target.getTime() - 3600000),
+        endsAt: new Date(targetEnd.getTime() + 3600000),
+      },
+    });
+    const otherSession = await orm.session.create({
+      data: {
+        establishmentId: e,
+        professionalId: secondProfessional.id,
+        serviceId: individual.id,
+        startsAt: target,
+        endsAt: targetEnd,
+        occupiedStart: target,
+        occupiedEnd: targetEnd,
+        capacity: 1,
+      },
+    });
+    const otherBooking = await orm.booking.create({
+      data: {
+        sessionId: otherSession.id,
+        consumerId: "a",
+        status: "pending",
+        expiresAt: new Date(Date.now() + 3600000),
+        priceCents: 0,
+        durationMinutes: 45,
+        idempotencyKey: randomUUID(),
+      },
+    });
+    for (const status of ["pending", "confirmed"]) {
+      await orm.booking.update({
+        where: { id: otherBooking.id },
+        data: { status },
+      });
+      const personal = await getAvailability(individual.id, p, day, orm, "a");
+      assert.ok(
+        !personal.slots.some((slot) => slot.startsAt === target.toISOString()),
+        "consumer overlap must be hidden across professionals",
+      );
+      const publicSlots = await getAvailability(individual.id, p, day, orm);
+      assert.ok(
+        publicSlots.slots.some(
+          (slot) => slot.startsAt === target.toISOString(),
+        ),
+        "another professional remains available to other consumers",
+      );
+      const occupiedProfessional = await getAvailability(
+        individual.id,
+        secondProfessional.id,
+        day,
+        orm,
+      );
+      assert.ok(
+        !occupiedProfessional.slots.some(
+          (slot) => slot.startsAt === target.toISOString(),
+        ),
+        "pending and confirmed reservations block their professional for everyone",
+      );
+    }
+    await orm.booking.update({
+      where: { id: otherBooking.id },
+      data: { status: "pending", expiresAt: new Date(Date.now() - 1000) },
+    });
+    assert.ok(
+      (await getAvailability(individual.id, p, day, orm, "a")).slots.some(
+        (slot) => slot.startsAt === target.toISOString(),
+      ),
+      "expired pending reservations release consumer availability",
+    );
+    await orm.booking.update({
+      where: { id: otherBooking.id },
+      data: { status: "canceled" },
+    });
+    await orm.session.update({
+      where: { id: otherSession.id },
+      data: { active: false },
+    });
     const occupied = (
       await pool.query(
         "SELECT occupied_start,occupied_end FROM sessions WHERE id=$1",

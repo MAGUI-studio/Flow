@@ -12,12 +12,14 @@ import { summarizeReport, reportDays } from "@/lib/report-utils";
 import { money, statusLabel } from "@/lib/format";
 import { PageHeading, EmptyState } from "@/components/internal/primitives";
 import { ReportPeriod } from "@/components/internal/report-period";
+import { BusinessOnboarding } from "@/components/internal/business-onboarding";
 export default async function Page({
   searchParams,
 }: {
   searchParams: SearchInput;
 }) {
   const context = await panelContext(searchParams);
+  if (!context.business) return <BusinessOnboarding title="Relatórios" />;
   if (context.subscription.plan !== "multi")
     return (
       <>
@@ -26,10 +28,10 @@ export default async function Page({
           description="Compare serviços, acompanhe a equipe e exporte o histórico da sua agenda."
         />
         <EmptyState
-          title="Relatórios avançados no Pro"
+          title="Relatórios avançados no Flow PRO"
           description="Tenha relatórios por serviço e profissional, distribuição de status e exportação de agendamentos em CSV."
           href="/#planos"
-          label="Conhecer o Pro"
+          label="Conhecer o Flow PRO"
           icon={<ChartNoAxesCombined size={26} />}
         />
       </>
@@ -94,7 +96,7 @@ export default async function Page({
           >
             <metric.icon
               aria-hidden="true"
-              className="absolute -right-3 -bottom-4 -z-10 size-28 rotate-[-12deg] stroke-1 text-[#635BFF]/8"
+              className="absolute -right-3 -bottom-4 -z-10 size-28 rotate-[-12deg] stroke-1 text-[#635BFF] opacity-[0.08]"
             />
             <span className="text-xs text-zinc-500">{metric.label}</span>
             <strong className="mt-4 block text-3xl font-semibold tracking-tight">

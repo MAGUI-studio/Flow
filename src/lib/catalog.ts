@@ -2,7 +2,9 @@ import { prisma } from "./prisma";
 import { effectiveTemplate, type TemplateId } from "./plan-features";
 import { publicRatings } from "./public-ratings";
 import { topRatedBusinessIds } from "./business-ranking";
+import { locationSchema, type LocationPoint } from "./address";
 export type BusinessCard = {
+  location?: LocationPoint;
   id: string;
   slug: string;
   name: string;
@@ -22,6 +24,7 @@ export type BusinessCard = {
   isTopRated?: boolean;
 };
 export type BusinessProfile = BusinessCard & {
+  location?: LocationPoint;
   templateId: TemplateId;
   timezone: string;
   address: string | null;
@@ -56,6 +59,16 @@ export async function catalog() {
   });
   const ratings = await publicRatings(rows.map((e) => e.id));
   const cards = rows.map((e) => ({
+    ...(() => {
+      const point = locationSchema.safeParse(
+        e.addressDetails &&
+          typeof e.addressDetails === "object" &&
+          !Array.isArray(e.addressDetails)
+          ? e.addressDetails.location
+          : undefined,
+      );
+      return point.success ? { location: point.data } : {};
+    })(),
     rating: ratings.get(e.id)?.rating ?? null,
     ratingCount: ratings.get(e.id)?.ratingCount ?? 0,
     logoUrl: e.logoUrl,
@@ -103,7 +116,14 @@ export async function profile(slug: string): Promise<BusinessProfile | null> {
   )
     return null;
   const card = (await catalog()).find((business) => business.id === e.id);
+  const details = e.addressDetails;
+  const location = locationSchema.safeParse(
+    details && typeof details === "object" && !Array.isArray(details)
+      ? details.location
+      : undefined,
+  );
   return {
+    ...(location.success ? { location: location.data } : {}),
     rating: card?.rating ?? null,
     ratingCount: card?.ratingCount ?? 0,
     isTopRated: card?.isTopRated ?? false,

@@ -1,7 +1,8 @@
+import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import Link from "next/link";
 import { SignIn, SignUp } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
-import { ArrowLeft, ArrowUpRight, Check } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { AuthCalendar } from "./auth-calendar";
 import { StudioCredit } from "./studio-credit";
 import { Container } from "./container";
@@ -142,7 +143,7 @@ export async function AuthPage({
                 </p>
                 <Link href="/agendamentos" className="button group mt-6 w-full">
                   Meus agendamentos
-                  <ArrowUpRight
+                  <AnimatedArrow
                     size={17}
                     className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none"
                   />

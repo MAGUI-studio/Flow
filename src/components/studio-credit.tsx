@@ -1,4 +1,5 @@
-import { ArrowUpRight } from "lucide-react";
+import { AnimatedArrow } from "@/components/ui/animated-arrow";
+
 
 export function StudioCredit({ light = false }: { light?: boolean }) {
   return (
@@ -14,7 +15,7 @@ export function StudioCredit({ light = false }: { light?: boolean }) {
       >
         MAGUI.studio
       </strong>
-      <ArrowUpRight size={12} />
+      <AnimatedArrow size={12} />
     </a>
   );
 }

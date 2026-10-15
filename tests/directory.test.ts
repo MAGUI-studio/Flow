@@ -4,7 +4,38 @@ import {
   filterDirectory,
   directoryHref,
   paginateDirectory,
+  parseMapBounds,
+  inMapBounds,
 } from "../src/lib/directory-state";
+test("map area rejects malformed bounds and includes edge coordinates", () => {
+  for (const invalid of [
+    "",
+    "1,2,3",
+    "NaN,0,1,2",
+    "-91,0,1,2",
+    "0,-181,1,2",
+    "1,0,0,2",
+    "0,2,1,0",
+    ",0,1,2",
+  ])
+    assert.equal(parseMapBounds(invalid), null);
+  const bounds = parseMapBounds("-24,-47,-23,-46")!;
+  assert.equal(inMapBounds({ latitude: -24, longitude: -47 }, bounds), true);
+  assert.equal(
+    inMapBounds({ latitude: -23.55, longitude: -46.63 }, bounds),
+    true,
+  );
+  assert.equal(
+    inMapBounds({ latitude: -25, longitude: -46.63 }, bounds),
+    false,
+  );
+  assert.equal(inMapBounds(undefined, bounds), false);
+  assert.ok(
+    directoryHref("/explorar", { area: "-24,-47,-23,-46", pagina: 2 }).includes(
+      "area=",
+    ),
+  );
+});
 const rows = [
   {
     name: "Studio Aurora",

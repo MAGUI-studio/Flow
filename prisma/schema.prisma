@@ -42,6 +42,7 @@ model Establishment {
   cancelNoticeHours Int @default(2) @map("cancel_notice_hours")
   city String?
   address String?
+  addressDetails Json? @map("address_details")
   description String?
   logoUrl String? @map("logo_url")
   coverUrl String? @map("cover_url")

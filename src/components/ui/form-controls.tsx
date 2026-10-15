@@ -6,7 +6,19 @@ import { FlowDate } from "./flow-date";
 import { FlowTime } from "./flow-time";
 export function FieldError({ name }: { name: string }) {
   const { errors } = useFormState();
-  const message = errors[name]?.message;
+  const error = name
+    .split(".")
+    .reduce<unknown>(
+      (value, key) =>
+        value && typeof value === "object"
+          ? (value as Record<string, unknown>)[key]
+          : undefined,
+      errors,
+    );
+  const message =
+    error && typeof error === "object"
+      ? (error as { message?: unknown }).message
+      : undefined;
   return typeof message === "string" ? (
     <small
       id={`error-${name}`}

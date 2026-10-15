@@ -1,5 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { DirectoryMap } from "./directory-map";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { debounce, useQueryStates } from "nuqs";
@@ -14,6 +16,8 @@ import {
   directoryHref,
   filterDirectory,
   paginateDirectory,
+  parseMapBounds,
+  inMapBounds,
 } from "@/lib/directory-state";
 import type { BusinessCard } from "@/lib/catalog";
 export function BusinessDirectory({
@@ -24,6 +28,7 @@ export function BusinessDirectory({
   featured?: boolean;
 }) {
   const router = useRouter();
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [query, setQuery] = useQueryStates(directorySearch, {
     history: "replace",
     scroll: false,
@@ -37,7 +42,11 @@ export function BusinessDirectory({
     },
   });
   const categories = ["Todos", ...new Set(businesses.map((b) => b.category))];
-  const found = filterDirectory(businesses, query);
+  const matching = filterDirectory(businesses, query);
+  const bounds = featured ? null : parseMapBounds(query.area);
+  const found = bounds
+    ? matching.filter((b) => !b.online && inMapBounds(b.location, bounds))
+    : matching;
   const pagination = paginateDirectory(found, query.pagina);
   const visible = featured ? found.slice(0, 8) : pagination.rows;
   return (
@@ -73,7 +82,7 @@ export function BusinessDirectory({
             {...searchForm.register("city", {
               onChange: (e) =>
                 void setQuery(
-                  { cidade: e.target.value, pagina: null },
+                  { cidade: e.target.value, pagina: null, area: null },
                   { limitUrlUpdates: debounce(300) },
                 ),
             })}
@@ -87,6 +96,7 @@ export function BusinessDirectory({
             void setQuery({
               modalidade: catalogSearchSchema.shape.modality.parse(v),
               pagina: null,
+              ...(v === "online" ? { area: null } : {}),
             })
           }
         >
@@ -125,51 +135,98 @@ export function BusinessDirectory({
             : "espaços para descobrir"}
         </span>
       </div>
-      <div id="results" className="business-grid">
-        {visible.map((b) => (
-          <BusinessListingCard key={b.slug} business={b} />
-        ))}
-      </div>
-      {found.length === 0 && (
-        <div className="empty flex flex-col items-center gap-5">
-          Nenhum espaço encontrado. Experimente outra busca.
+      {!featured && bounds && (
+        <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-[#e8e5f6] bg-[#F5F4FF] px-4 py-3 text-xs text-[#635BFF]">
+          <span>Mostrando espaços na área selecionada do mapa.</span>
           <button
             type="button"
-            className="button secondary"
-            onClick={() =>
-              void setQuery({
-                busca: null,
-                cidade: null,
-                categoria: null,
-                modalidade: null,
-                pagina: null,
-              })
-            }
+            onClick={() => void setQuery({ area: null, pagina: null })}
+            className="font-semibold underline underline-offset-4"
           >
-            Limpar filtros
+            Ver todas as regiões
           </button>
         </div>
       )}
+      <div className={featured ? "" : "grid gap-8"}>
+        <div className="min-w-0">
+          <div
+            id="results"
+            className={
+              featured
+                ? "business-grid"
+                : "grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
+            }
+          >
+            {visible.map((b) => (
+              <div
+                key={b.slug}
+                onPointerEnter={() => setActiveId(b.id)}
+                onPointerLeave={() => setActiveId(null)}
+                onFocusCapture={() => setActiveId(b.id)}
+                onBlurCapture={() => setActiveId(null)}
+                className={`h-full rounded-[22px] transition-shadow ${!featured && activeId === b.id ? "ring-2 ring-[#635BFF] ring-offset-2" : ""}`}
+              >
+                <BusinessListingCard business={b} />
+              </div>
+            ))}
+          </div>
+          {found.length === 0 && (
+            <div className="empty flex flex-col items-center gap-5">
+              Nenhum espaço encontrado. Experimente outra busca.
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() =>
+                  void setQuery({
+                    busca: null,
+                    cidade: null,
+                    categoria: null,
+                    modalidade: null,
+                    pagina: null,
+                    area: null,
+                  })
+                }
+              >
+                Limpar filtros
+              </button>
+            </div>
+          )}
 
-      {!featured && found.length > 0 && (
-        <div>
-          <p role="status" className="mt-8 text-center text-xs text-zinc-500">
-            Mostrando {(pagination.page - 1) * 8 + 1}–
-            {Math.min(pagination.page * 8, found.length)} de {found.length}{" "}
-            espaços
-          </p>
-          <Pagination
-            page={pagination.page}
-            totalPages={pagination.totalPages}
-            onPageChange={(pagina) => {
-              void setQuery({ pagina }, { history: "push" });
-              document
-                .getElementById("results")
-                ?.scrollIntoView({ block: "start" });
-            }}
-          />
+          {!featured && found.length > 0 && (
+            <div>
+              <p
+                role="status"
+                className="mt-8 text-center text-xs text-zinc-500"
+              >
+                Mostrando {(pagination.page - 1) * 8 + 1}–
+                {Math.min(pagination.page * 8, found.length)} de {found.length}{" "}
+                espaços
+              </p>
+              <Pagination
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                onPageChange={(pagina) => {
+                  void setQuery({ pagina }, { history: "push" });
+                  document
+                    .getElementById("results")
+                    ?.scrollIntoView({ block: "start" });
+                }}
+              />
+            </div>
+          )}
         </div>
-      )}
+        {!featured && (
+          <DirectoryMap
+            businesses={matching}
+            activeId={activeId}
+            onActiveChange={setActiveId}
+            area={query.area}
+            onSearchArea={(area) =>
+              void setQuery({ area, pagina: null }, { history: "push" })
+            }
+          />
+        )}
+      </div>
       {featured && (
         <div className="mt-10 flex flex-col items-center gap-3">
           <p className="text-xs text-zinc-500">

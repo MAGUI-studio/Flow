@@ -303,7 +303,7 @@ export function AgendaPreview({
                       >
                         <metric.icon
                           aria-hidden
-                          className="absolute -right-3 -bottom-4 -z-10 size-24 stroke-1 text-[#635BFF]/8"
+                          className="absolute -right-3 -bottom-4 -z-10 size-24 stroke-1 text-[#635BFF] opacity-[0.08]"
                         />
                         <span className="text-xs text-zinc-500">
                           {metric.label}

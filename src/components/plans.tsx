@@ -1,9 +1,10 @@
 "use client";
+import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import { Fragment, useState } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Check, ArrowUpRight } from "lucide-react";
+import { Check } from "lucide-react";
 import { arrowMotion } from "./ui/arrow-link";
 type ComparisonRow = {
   label: string;
@@ -159,7 +160,7 @@ export function Plans({
                 },
                 {
                   id: "multi",
-                  name: "Pro",
+                  name: "Flow PRO",
                   description: "Mais equipe, mais liberdade para crescer.",
                   capacity: "Até 3 estabelecimentos",
                   label: "Para ir além",
@@ -206,7 +207,7 @@ export function Plans({
                         : currentPlan
                           ? "Mudar plano"
                           : "Escolher " + plan.name}
-                      <ArrowUpRight size={15} className={arrowMotion} />
+                      <AnimatedArrow size={15} className={arrowMotion} />
                     </button>
                   )}
                 </th>
@@ -264,7 +265,7 @@ export function Plans({
                         ) : feature.proOnly ? (
                           <span className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#635BFF]/20 bg-[#F5F4FF] px-2.5 py-1 text-[10px] font-medium text-[#635BFF]">
                             <Check size={12} />
-                            Exclusivo Pro
+                            Exclusivo do Flow PRO
                           </span>
                         ) : (
                           <span className="mx-auto inline-grid size-6 place-items-center rounded-full bg-[#F5F4FF] text-[#635BFF]">

@@ -1,5 +1,8 @@
 "use client";
-import { useState, type ReactNode } from "react";
+import { AnimatedArrow } from "@/components/ui/animated-arrow";
+import { useEffect, useState, type ReactNode } from "react";
+import { businessSlug } from "@/lib/business-slug";
+import { businessBioMaxLength } from "@/lib/business-categories";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -8,7 +11,6 @@ import {
   GraduationCap,
   BriefcaseBusiness,
   Sparkles,
-  ArrowRight,
   Check,
   Info,
   LoaderCircle,
@@ -19,8 +21,16 @@ import {
   Zap,
   ClipboardCheck,
   Clock,
+  LockKeyhole,
+  PenTool,
+  Flower2,
+  Dumbbell,
+  PawPrint,
+  Camera,
 } from "lucide-react";
 import { FormSection } from "./primitives";
+import { AddressFields } from "./address-fields";
+import { BusinessMonogram } from "@/components/ui/business-monogram";
 import {
   FormSelect as FlowSelect,
   FormDate as FlowDate,
@@ -127,6 +137,15 @@ export function BusinessForm({
       description: "",
       city: "",
       address: "",
+      addressDetails: {
+        postalCode: "",
+        street: "",
+        number: "",
+        complement: "",
+        neighborhood: "",
+        city: "",
+        state: "",
+      },
       contactPhone: "",
       approvalMode: "automatic",
       cancelNoticeHours: 2,
@@ -163,7 +182,9 @@ export function BusinessForm({
       : undefined,
   });
   const [error, setError] = useState(""),
-    [slugEdited, setSlugEdited] = useState(false);
+    [canEditSlug, setCanEditSlug] = useState(false);
+  const [slugStatus, setSlugStatus] = useState("");
+  const [slugCheckVersion, setSlugCheckVersion] = useState(0);
   const name = watch("name") as string,
     slug = watch("slug") as string,
     format = watch("kind") as string,
@@ -173,6 +194,49 @@ export function BusinessForm({
     setValue("name", v, { shouldValidate: methods.formState.isSubmitted });
   const setSlug = (v: string) =>
     setValue("slug", v, { shouldValidate: methods.formState.isSubmitted });
+  useEffect(() => {
+    if (kind !== "establishment" || !name.trim() || !slug) {
+      setSlugStatus("");
+      return;
+    }
+    const controller = new AbortController();
+    setSlugStatus("Verificando endereço…");
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/establishment-slug?${new URLSearchParams({ name, slug })}`,
+          { signal: controller.signal, cache: "no-store" },
+        );
+        const data = await response.json();
+        if (controller.signal.aborted) return;
+        if (!response.ok) throw new Error(data.error);
+        setCanEditSlug(data.canEdit);
+        setSlugStatus(
+          data.available
+            ? "Endereço disponível."
+            : "Este endereço já está em uso. Escolha outro endereço para sua página.",
+        );
+        if (!data.available)
+          methods.setError("slug", {
+            type: "availability",
+            message: "Este endereço já está em uso.",
+          });
+        else if (methods.getFieldState("slug").error?.type === "availability")
+          methods.clearErrors("slug");
+      } catch (error) {
+        if (!controller.signal.aborted)
+          setSlugStatus(
+            error instanceof Error
+              ? error.message
+              : "Não foi possível verificar o endereço.",
+          );
+      }
+    }, 400);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [kind, name, slug, methods, slugCheckVersion]);
   const setFormat = (v: string) => setValue("kind", v);
   const setFree = (v: boolean) => setValue("free", v);
   const setServiceId = (v: string) => {
@@ -200,6 +264,26 @@ export function BusinessForm({
     if (kind === "availability") input.block = values.mode === "block";
     setError("");
     try {
+      if (kind === "establishment") {
+        const check = await fetch(
+          `/api/establishment-slug?${new URLSearchParams({ name: String(values.name), slug: String(values.slug) })}`,
+          { cache: "no-store" },
+        );
+        const checked = await check.json();
+        if (!check.ok) throw new Error(checked.error);
+        setCanEditSlug(checked.canEdit);
+        if (!checked.available) {
+          methods.setError(
+            "slug",
+            {
+              type: "availability",
+              message: "Este endereço já está em uso. Escolha outro.",
+            },
+            { shouldFocus: true },
+          );
+          return;
+        }
+      }
       const response = await fetch("/api/manage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -215,6 +299,7 @@ export function BusinessForm({
       );
       router.refresh();
     } catch (e) {
+      if (kind === "establishment") setSlugCheckVersion((v) => v + 1);
       setError(e instanceof Error ? e.message : "Não foi possível salvar.");
     }
   }
@@ -268,15 +353,8 @@ export function BusinessForm({
                     value={name}
                     onChange={(e) => {
                       setName(e.target.value);
-                      if (!slugEdited)
-                        setSlug(
-                          e.target.value
-                            .normalize("NFD")
-                            .replace(/[\u0300-\u036f]/g, "")
-                            .toLowerCase()
-                            .replace(/[^a-z0-9]+/g, "-")
-                            .replace(/^-|-$/g, ""),
-                        );
+                      setCanEditSlug(false);
+                      setSlug(businessSlug(e.target.value));
                     }}
                     autoComplete="organization"
                   />
@@ -285,12 +363,14 @@ export function BusinessForm({
                 <label className="form-field">
                   Endereço da sua página{" "}
                   <span className="required-mark">*</span>
-                  <div className="slug-field flex min-h-12 items-center gap-2 overflow-hidden rounded-xl border border-zinc-200 px-3 py-0 focus-within:border-[#635BFF]">
+                  <div
+                    className={`slug-field flex min-h-12 items-center gap-2 overflow-hidden rounded-xl border border-zinc-200 px-3 py-0 transition-opacity focus-within:border-[#635BFF] ${canEditSlug ? "opacity-100" : "bg-zinc-50 opacity-60"}`}
+                  >
                     <span className="shrink-0 bg-transparent p-0 text-xs text-zinc-400">
                       flow.magui.studio/
                     </span>
                     <input
-                      {...register("slug")}
+                      {...(canEditSlug ? register("slug") : {})}
                       className="m-0 min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 py-3 shadow-none outline-none focus:shadow-none"
                       required
                       minLength={3}
@@ -298,34 +378,111 @@ export function BusinessForm({
                       pattern="[a-z0-9]+(-[a-z0-9]+)*"
                       placeholder="seu-negocio"
                       value={slug}
+                      readOnly={!canEditSlug}
+                      disabled={!canEditSlug}
                       onChange={(e) => {
-                        setSlug(e.target.value);
-                        setSlugEdited(true);
+                        if (canEditSlug) setSlug(e.target.value);
                       }}
                     />
+                    {!canEditSlug && (
+                      <input type="hidden" {...register("slug")} value={slug} />
+                    )}
+                    {!canEditSlug && (
+                      <LockKeyhole
+                        aria-hidden="true"
+                        size={16}
+                        className="shrink-0 text-zinc-400"
+                      />
+                    )}
                   </div>
                   <small className="field-help">
-                    Use letras minúsculas, números e hífens.
+                    {canEditSlug
+                      ? "Use letras minúsculas, números e hífens para diferenciar sua página."
+                      : "Definido automaticamente pelo nome do estabelecimento."}
                   </small>
+                  {slugStatus && !methods.formState.errors.slug && (
+                    <small
+                      role="status"
+                      className="mt-1 block text-xs text-zinc-500"
+                    >
+                      {slugStatus}
+                    </small>
+                  )}
                   <FieldError name="slug" />
                 </label>
                 <fieldset className="category-field m-0 min-w-0 border-0 p-0 text-xs text-zinc-600 [&_legend]:mb-3">
                   <legend>
                     Categoria <span className="required-mark">*</span>
                   </legend>
+                  <p className="mb-4 text-xs leading-relaxed text-zinc-500">
+                    Escolha a área que melhor representa o seu negócio.
+                  </p>
                   <div className="category-cards grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                     {[
-                      { name: "Beleza", icon: Sparkles },
-                      { name: "Barbearia", icon: Scissors },
-                      { name: "Saúde", icon: Stethoscope },
-                      { name: "Bem-estar", icon: Heart },
-                      { name: "Educação", icon: GraduationCap },
-                      { name: "Consultoria", icon: BriefcaseBusiness },
-                      { name: "Outros", icon: Globe },
+                      {
+                        name: "Beleza",
+                        icon: Sparkles,
+                        description: "Salões e cuidados pessoais",
+                      },
+                      {
+                        name: "Barbearia",
+                        icon: Scissors,
+                        description: "Cabelo, barba e estilo",
+                      },
+                      {
+                        name: "Saúde",
+                        icon: Stethoscope,
+                        description: "Clínicas e consultórios",
+                      },
+                      {
+                        name: "Bem-estar",
+                        icon: Heart,
+                        description: "Movimento e equilíbrio",
+                      },
+                      {
+                        name: "Educação",
+                        icon: GraduationCap,
+                        description: "Aulas e aprendizado",
+                      },
+                      {
+                        name: "Consultoria",
+                        icon: BriefcaseBusiness,
+                        description: "Orientação e estratégia",
+                      },
+                      {
+                        name: "Tatuagem",
+                        icon: PenTool,
+                        description: "Arte e expressão na pele",
+                      },
+                      {
+                        name: "Estética",
+                        icon: Flower2,
+                        description: "Tratamentos faciais e corporais",
+                      },
+                      {
+                        name: "Esportes",
+                        icon: Dumbbell,
+                        description: "Treinos e práticas esportivas",
+                      },
+                      {
+                        name: "Pet",
+                        icon: PawPrint,
+                        description: "Cuidado com os animais",
+                      },
+                      {
+                        name: "Fotografia",
+                        icon: Camera,
+                        description: "Ensaios e sessões de fotos",
+                      },
+                      {
+                        name: "Outro",
+                        icon: Globe,
+                        description: "Outras formas de atender",
+                      },
                     ].map((c) => (
                       <label
                         key={c.name}
-                        className="category-card relative isolate flex min-h-24 cursor-pointer items-end overflow-hidden rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-[#635BFF]/50 has-checked:border-[#635BFF] has-checked:bg-[#F5F4FF] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-[#635BFF]"
+                        className={`category-card group relative isolate flex min-h-36 cursor-pointer flex-col justify-end overflow-hidden rounded-2xl border border-zinc-200/80 bg-zinc-50 p-4 pt-14 transition-[border-color,box-shadow,background-color] duration-200 hover:border-zinc-400 hover:shadow-sm has-checked:border-[#635BFF] has-checked:bg-[#F5F4FF] has-checked:ring-1 has-checked:ring-[#635BFF] has-focus-visible:outline-2 has-focus-visible:outline-offset-4 has-focus-visible:outline-[#635BFF]`}
                       >
                         <input
                           className="peer sr-only"
@@ -335,12 +492,18 @@ export function BusinessForm({
                         />
                         <c.icon
                           aria-hidden="true"
-                          className="pointer-events-none absolute -top-2 -right-3 -z-10 size-20 rotate-[-12deg] stroke-[1.2] text-[#635BFF]/10"
+                          className="pointer-events-none absolute -top-2 -right-3 -z-10 size-28 rotate-[-12deg] stroke-[1.1] text-zinc-900 opacity-[0.055] transition-opacity group-hover:opacity-[0.08] peer-checked:text-[#635BFF] peer-checked:opacity-[0.09]"
                         />
-                        <strong className="text-xs font-medium text-zinc-700">
+                        <strong className="text-sm font-semibold tracking-tight text-zinc-800 peer-checked:text-[#5046E5]">
                           {c.name}
                         </strong>
-                        <i className="absolute top-3 right-3 grid size-4 place-items-center rounded-full border border-zinc-200 text-transparent peer-checked:border-[#635BFF] peer-checked:bg-[#635BFF] peer-checked:text-white">
+                        <span className="mt-1.5 max-w-36 text-[10px] leading-relaxed text-zinc-500">
+                          {c.description}
+                        </span>
+                        <i
+                          aria-hidden="true"
+                          className="absolute top-4 left-4 grid size-5 place-items-center rounded-full border border-zinc-300 bg-white text-transparent transition-colors peer-checked:border-[#635BFF] peer-checked:bg-[#635BFF] peer-checked:text-white"
+                        >
                           <Check size={12} />
                         </i>
                       </label>
@@ -352,14 +515,24 @@ export function BusinessForm({
                   Sobre o seu espaço
                   <textarea
                     {...register("description")}
-                    maxLength={1000}
+                    maxLength={businessBioMaxLength}
+                    aria-describedby="business-bio-help business-bio-count error-description"
                     rows={4}
                     placeholder="Conte o que torna o seu atendimento especial."
                   />
-                  <small className="field-help">
-                    Uma apresentação breve ajuda os clientes a conhecerem seu
-                    negócio.
-                  </small>
+                  <div className="flex items-start justify-between gap-4">
+                    <small id="business-bio-help" className="field-help">
+                      Uma apresentação breve ajuda os clientes a conhecerem seu
+                      negócio.
+                    </small>
+                    <small
+                      id="business-bio-count"
+                      className={`mt-2 shrink-0 text-[10px] tabular-nums ${String(watch("description") ?? "").length >= businessBioMaxLength ? "text-[#635BFF]" : "text-zinc-400"}`}
+                    >
+                      {String(watch("description") ?? "").length}/
+                      {businessBioMaxLength}
+                    </small>
+                  </div>
                   <FieldError name="description" />
                 </label>
               </FormSection>
@@ -369,15 +542,6 @@ export function BusinessForm({
                 description="Informe os contatos e a localização do seu atendimento."
               >
                 <div className="fields-grid">
-                  <label className="form-field">
-                    Cidade / UF
-                    <input
-                      {...register("city")}
-                      placeholder="São Paulo, SP"
-                      autoComplete="address-level2"
-                    />
-                    <FieldError name="city" />
-                  </label>
                   <label className="form-field">
                     WhatsApp de contato
                     <input
@@ -393,19 +557,7 @@ export function BusinessForm({
                     <FieldError name="contactPhone" />
                   </label>
                 </div>
-                <label className="form-field">
-                  Endereço completo
-                  <input
-                    {...register("address")}
-                    maxLength={300}
-                    placeholder="Rua, número, bairro e complemento"
-                    autoComplete="street-address"
-                  />
-                  <small className="field-help">
-                    Se você atende apenas online, pode deixar em branco.
-                  </small>
-                  <FieldError name="address" />
-                </label>
+                <AddressFields />
               </FormSection>
               <FormSection
                 number="03"
@@ -814,7 +966,7 @@ export function BusinessForm({
                         : kind === "availability"
                           ? "Salvar período"
                           : "Criar sessão"}
-                  <ArrowRight size={16} />
+                  <AnimatedArrow direction="right" size={16} />
                 </>
               )}
             </button>
@@ -840,7 +992,9 @@ export function BusinessForm({
             </p>
             {kind === "establishment" && (
               <div className="page-preview">
-                <i>{name[0] ?? "F"}</i>
+                <div className="mb-4 grid h-28 place-items-center overflow-hidden rounded-xl bg-[#e5dff0] pr-5">
+                  <BusinessMonogram name={name || "Flow"} />
+                </div>
                 <strong>{name || "Nome do seu negócio"}</strong>
                 <span>flow.magui.studio/{slug || "seu-negocio"}</span>
               </div>
@@ -863,7 +1017,7 @@ export function BusinessForm({
               href={panelHref("/painel/disponibilidade/novo", business?.id)}
             >
               Abrir horários antes de criar a sessão
-              <ArrowRight size={13} />
+              <AnimatedArrow direction="right" size={13} />
             </Link>
           )}
         </aside>

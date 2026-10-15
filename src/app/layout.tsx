@@ -3,6 +3,7 @@ import { ptBR } from "@clerk/localizations";
 import type { Metadata } from "next";
 import "./globals.css";
 import "./internal.css";
+import "leaflet/dist/leaflet.css";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 export const metadata: Metadata = {
   title: "Flow · Seu tempo, em boa companhia",

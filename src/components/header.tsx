@@ -1,3 +1,4 @@
+import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import { Container } from "@/components/container";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
@@ -17,7 +18,7 @@ export function Header() {
           className="group inline-flex items-center gap-1.5"
         >
           Para seu negócio{" "}
-          <ArrowUpRight size={13} className={`text-[#635BFF] ${arrowMotion}`} />
+          <AnimatedArrow size={13} className={`text-[#635BFF] ${arrowMotion}`} />
         </Link>
       </nav>
       <AccountControls />
