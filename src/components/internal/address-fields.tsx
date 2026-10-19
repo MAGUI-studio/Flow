@@ -12,8 +12,12 @@ export function AddressFields() {
     watch,
     setValue,
     getValues,
-    formState: { errors },
+    formState: { errors, isSubmitted },
   } = useFormContext();
+  const submitted = useRef(isSubmitted);
+  useEffect(() => {
+    submitted.current = isSubmitted;
+  }, [isSubmitted]);
   const cep = String(watch("addressDetails.postalCode") ?? "").replace(
     /\D/g,
     "",
@@ -25,6 +29,10 @@ export function AddressFields() {
   const [locating, setLocating] = useState(false);
   const manuallyAdjusted = useRef(false);
   const values = watch("addressDetails");
+  const addressIsComplete = addressSchema.safeParse(values).success;
+  const addressStarted = Object.values(values ?? {}).some(
+    (value) => typeof value === "string" && value.trim().length > 0,
+  );
   const addressKey = JSON.stringify([
     values?.postalCode,
     values?.street,
@@ -39,6 +47,12 @@ export function AddressFields() {
     setPoint(undefined);
     setMapStatus("");
     setLocating(false);
+    const input = getValues("addressDetails");
+    if (
+      String(input?.postalCode ?? "").replace(/\D/g, "").length !== 8 ||
+      !String(input?.number ?? "").trim()
+    )
+      return;
     const parsed = addressSchema.safeParse(getValues("addressDetails"));
     if (!parsed.success) return;
     const controller = new AbortController();
@@ -59,7 +73,7 @@ export function AddressFields() {
         setPoint(suggestion);
         setValue("addressDetails.location", suggestion, {
           shouldDirty: true,
-          shouldValidate: true,
+          shouldValidate: submitted.current,
         });
         setMapStatus(
           data.candidates.length
@@ -85,8 +99,13 @@ export function AddressFields() {
   const changePoint = (next: LocationPoint) => {
     setPoint(next);
     manuallyAdjusted.current = true;
-    setValue("addressDetails.location", next, { shouldDirty: true, shouldValidate: true });
-    setMapStatus("Localização ajustada. A posição será salva ao criar o estabelecimento.");
+    setValue("addressDetails.location", next, {
+      shouldDirty: true,
+      shouldValidate: isSubmitted,
+    });
+    setMapStatus(
+      "Localização ajustada. A posição será salva ao criar o estabelecimento.",
+    );
   };
   useEffect(() => {
     setStatus("");
@@ -119,7 +138,7 @@ export function AddressFields() {
             typeof data[key] === "string" ? data[key] : "",
             {
               shouldDirty: true,
-              shouldValidate: !!getValues(`addressDetails.${field}`),
+              shouldValidate: submitted.current,
             },
           );
         }
@@ -162,8 +181,10 @@ export function AddressFields() {
             O endereço do seu espaço
           </h3>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            Comece pelo CEP para preencher o endereço. Se atende apenas online,
-            deixe estes campos em branco.
+            O CEP preenche o endereço. O mapa só busca a localização depois que
+            você informar também o número. Os campos de endereço marcados com *
+            são obrigatórios ao cadastrar um local presencial; para atendimento
+            exclusivamente online, deixe o endereço em branco.
           </p>
         </div>
       </div>
@@ -177,7 +198,14 @@ export function AddressFields() {
               key={field}
               className={`form-field ${field === "street" ? "sm:col-span-2" : ""}`}
             >
-              {label}
+              <span>
+                {label}
+                {field !== "complement" && (
+                  <span className="ml-1 text-red-600" aria-hidden="true">
+                    *
+                  </span>
+                )}
+              </span>
               <input
                 {...register(name, {
                   onChange: (event) => {
@@ -198,6 +226,8 @@ export function AddressFields() {
                   },
                 })}
                 placeholder={placeholder}
+                required={addressStarted && field !== "complement"}
+                aria-required={addressStarted && field !== "complement"}
                 autoComplete={autoComplete}
                 inputMode={field === "postalCode" ? "numeric" : "text"}
                 maxLength={
@@ -236,35 +266,38 @@ export function AddressFields() {
           status
         )}
       </p>
-      {values?.street && values?.city && (
-        <div className="mt-6 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold text-zinc-900">
-                Confira a localização
-              </h3>
-              <p className="mt-1 text-xs text-zinc-500">
-                Arraste o ponto ou clique no mapa para ajustar a localização. A
-                posição será salva ao criar o estabelecimento.
-              </p>
-            </div>
+      <div className="mt-6 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold text-zinc-900">
+              Confira a localização
+            </h3>
+            <p className="mt-1 text-xs text-zinc-500">
+              {addressIsComplete
+                ? "Arraste o ponto ou clique no mapa para ajustar a localização. A posição será salva ao criar o estabelecimento."
+                : "Informe o CEP e o número para localizar seu espaço. Se o local não tiver número, use S/N."}
+            </p>
           </div>
-          <LocationMap point={point} onChange={changePoint} />
-          <p
-            role="status"
-            className="flex items-center gap-2 text-xs text-zinc-500"
-          >
-            {locating && (
-              <LoaderCircle
-                size={14}
-                aria-hidden="true"
-                className="animate-spin"
-              />
-            )}
-            {locating ? "Localizando endereço…" : mapStatus}
-          </p>
         </div>
-      )}
+        <LocationMap
+          point={point}
+          onChange={changePoint}
+          disabled={!addressIsComplete}
+        />
+        <p
+          role="status"
+          className="flex items-center gap-2 text-xs text-zinc-500"
+        >
+          {locating && (
+            <LoaderCircle
+              size={14}
+              aria-hidden="true"
+              className="animate-spin"
+            />
+          )}
+          {locating ? "Localizando endereço…" : mapStatus}
+        </p>
+      </div>
     </div>
   );
 }

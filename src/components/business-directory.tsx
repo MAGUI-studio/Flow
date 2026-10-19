@@ -1,4 +1,5 @@
 "use client";
+import { formValidation } from "@/lib/form-validation";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { DirectoryMap } from "./directory-map";
@@ -34,6 +35,7 @@ export function BusinessDirectory({
     scroll: false,
   });
   const searchForm = useForm({
+    ...formValidation,
     resolver: zodResolver(catalogSearchSchema),
     values: {
       query: query.busca,

@@ -58,11 +58,19 @@ export function FormDate({ name, ...props }: ComponentProps<typeof FlowDate>) {
       {...props}
       name={name}
       inputRef={field.ref}
+      value={field.value ?? ""}
       onValueChange={field.onChange}
     />
   );
 }
 export function FormTime({ name, ...props }: ComponentProps<typeof FlowTime>) {
   const { field } = useController({ name });
-  return <FlowTime {...props} name={name} onValueChange={field.onChange} />;
+  return (
+    <FlowTime
+      {...props}
+      name={name}
+      value={field.value ?? ""}
+      onValueChange={field.onChange}
+    />
+  );
 }

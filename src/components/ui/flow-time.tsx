@@ -3,15 +3,23 @@ import { useEffect, useRef, useState } from "react";
 import { FlowSelect } from "./flow-select";
 export function FlowTime({
   name,
+  value,
   required = false,
   onValueChange,
 }: {
   name: string;
+  value?: string;
   required?: boolean;
   onValueChange?: (value: string) => void;
 }) {
   const [hour, setHour] = useState(""),
     [minute, setMinute] = useState("");
+  useEffect(() => {
+    if (value === undefined) return;
+    const [nextHour = "", nextMinute = ""] = value.split(":");
+    setHour(nextHour);
+    setMinute(nextMinute);
+  }, [value]);
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const form = ref.current?.closest("form");

@@ -2,6 +2,8 @@
 
 - O cadastro oferece CEP, logradouro, número, complemento, bairro, cidade e UF com React Hook Form e Zod. CEP recebe máscara `00000-000` e UF fica em maiúsculas.
 - A consulta ViaCEP ocorre após oito dígitos, com debounce e cancelamento de requisições anteriores. Não consulta a cada tecla incompleta. Dados são editáveis; número e complemento pertencem ao responsável.
+- O mapa sempre é exibido. Sem CEP, número e os demais campos obrigatórios do endereço, fica acinzentado, sem interação por mouse, toque ou teclado, e explica como habilitá-lo. A geocodificação só é consultada após completar esses campos. Limpar o número desabilita o mapa, cancela a consulta anterior e remove coordenadas antigas. Locais sem número podem usar S/N.
+- A legenda do formulário explica o asterisco vermelho. Complemento é opcional; os demais campos de endereço são obrigatórios quando um endereço presencial é informado. Contato e bio continuam opcionais.
 - CEP inexistente ou indisponibilidade do serviço apresentam uma mensagem e permitem preenchimento manual. CEPs genéricos podem exigir rua e bairro manuais.
 - Endereço é opcional para atendimento online. Quando informado, exige CEP válido no formato, logradouro, número (ou S/N), bairro, cidade e UF brasileira. A consulta não garante a existência do número informado.
 - `establishments.address_details` preserva os campos estruturados em JSONB. `address` e `city` continuam preenchidos pelo servidor para compatibilidade com catálogo e busca. Registros antigos continuam válidos.

@@ -9,11 +9,13 @@ export function FlowDate({
   required = false,
   onValueChange,
   inputRef,
+  value: controlledValue,
 }: {
   name: string;
   required?: boolean;
   onValueChange?: (value: string) => void;
   inputRef?: (node: HTMLInputElement | null) => void;
+  value?: string;
 }) {
   const [value, setValue] = useState(""),
     [display, setDisplay] = useState(""),
@@ -24,6 +26,17 @@ export function FlowDate({
   const input = useRef<HTMLInputElement>(null);
   const cells = useRef<Record<string, HTMLButtonElement | null>>({});
   const pendingFocus = useRef("");
+  useEffect(() => {
+    if (controlledValue === undefined) return;
+    setValue(controlledValue);
+    setDisplay(
+      controlledValue ? controlledValue.split("-").reverse().join("/") : "",
+    );
+    if (/^\d{4}-\d{2}-\d{2}$/.test(controlledValue)) {
+      const [year, month] = controlledValue.split("-").map(Number);
+      setMonth(new Date(year, month - 1, 1));
+    }
+  }, [controlledValue]);
   useEffect(() => {
     const form = input.current?.closest("form");
     const reset = () => {

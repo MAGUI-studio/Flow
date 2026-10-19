@@ -2,20 +2,23 @@
 import { useEffect, useRef, useState } from "react";
 import type { Map as LeafletMap, Marker } from "leaflet";
 import type { LocationPoint } from "@/lib/address";
+import { LockKeyhole } from "lucide-react";
 export function LocationMap({
   point,
   onChange,
   compact = false,
+  disabled = false,
 }: {
   point?: LocationPoint;
   onChange?: (point: LocationPoint) => void;
   compact?: boolean;
+  disabled?: boolean;
 }) {
   const element = useRef<HTMLDivElement>(null);
   const instance = useRef<LeafletMap | null>(null);
   const marker = useRef<Marker | null>(null);
   const callback = useRef(onChange);
-  callback.current = onChange;
+  callback.current = disabled ? undefined : onChange;
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
   useEffect(() => {
@@ -91,14 +94,53 @@ export function LocationMap({
       Math.max(instance.current.getZoom(), 16),
     );
   }, [point?.latitude, point?.longitude, ready]);
+  useEffect(() => {
+    if (!ready || !instance.current) return;
+    const map = instance.current;
+    for (const handler of [
+      map.dragging,
+      map.touchZoom,
+      map.doubleClickZoom,
+      map.boxZoom,
+      map.keyboard,
+    ]) {
+      if (disabled) handler.disable();
+      else handler.enable();
+    }
+    if (!disabled && onChange) marker.current?.dragging?.enable();
+    else marker.current?.dragging?.disable();
+    const frame = requestAnimationFrame(() => map.invalidateSize());
+    return () => cancelAnimationFrame(frame);
+  }, [disabled, ready, !!onChange]);
   return (
     <div className="relative isolate overflow-hidden rounded-2xl border border-zinc-200">
       <div
-        ref={element}
-        role="region"
-        aria-label="Mapa do endereço do estabelecimento"
-        className={`relative z-0 w-full bg-zinc-100 ${compact ? "aspect-square" : "h-80"}`}
-      />
+        className={`transition-[opacity,filter] ${disabled ? "pointer-events-none opacity-60 grayscale" : ""}`}
+      >
+        <div
+          ref={element}
+          role="region"
+          aria-label="Mapa do endereço do estabelecimento"
+          aria-disabled={disabled}
+          inert={disabled ? true : undefined}
+          className={`relative z-0 w-full bg-zinc-100 ${compact ? "aspect-square" : "h-80"}`}
+        />
+      </div>
+      {disabled && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-6">
+          <div
+            role="status"
+            className="flex max-w-sm items-start gap-3 rounded-2xl border border-zinc-200 bg-white/95 p-4 text-xs leading-relaxed text-zinc-600 shadow-sm"
+          >
+            <LockKeyhole
+              aria-hidden="true"
+              size={18}
+              className="mt-0.5 shrink-0 text-[#635BFF]"
+            />
+            Complete o endereço, incluindo CEP e número, para habilitar o mapa.
+          </div>
+        </div>
+      )}
       {error && (
         <p role="status" className="bg-white px-4 py-2 text-xs text-zinc-500">
           Não foi possível carregar parte do mapa. Tente novamente em instantes.
