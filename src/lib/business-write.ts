@@ -1,3 +1,4 @@
+import { weeklyScheduleSchema } from "./weekly-schedule";
 import type { Prisma } from "@/generated/prisma/client";
 import { planFeatures } from "./plan-features";
 import { optionalAddressSchema, formatAddress } from "./address";
@@ -111,12 +112,20 @@ export async function createProfessional(
   });
   if (
     (await tx.professional.count({
-      where: { establishmentId: e.id, active: true },
+      where: { establishmentId: e.id, deletedAt: null },
     })) >= planFeatures(subscription.plan).professionals
   )
     throw new Error("PROFESSIONAL_LIMIT");
+  const photoId = await professionalPhotoId(tx, owner, e.id, input.photoId);
   return tx.professional.create({
-    data: { establishmentId: e.id, name: text(input.name) },
+    data: {
+      establishmentId: e.id,
+      name: text(input.name),
+      photoId,
+      ...(input.days
+        ? { weeklySchedule: weeklyScheduleSchema.parse({ days: input.days }) }
+        : {}),
+    },
   });
 }
 export async function createService(
@@ -156,4 +165,23 @@ export async function createService(
     })),
   });
   return service;
+}
+
+export async function professionalPhotoId(
+  tx: Prisma.TransactionClient,
+  owner: string,
+  establishmentId: string,
+  input: unknown,
+) {
+  if (input === undefined || input === "" || input === null) return null;
+  const photo = await tx.professionalPhoto.findFirst({
+    where: {
+      id: text(input),
+      ownerId: owner,
+      establishmentId,
+      professional: null,
+    },
+  });
+  if (!photo) throw new Error("INVALID_INPUT");
+  return photo.id;
 }

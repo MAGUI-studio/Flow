@@ -27,6 +27,14 @@ export function apiError(error: unknown) {
   const message = error instanceof Error ? error.message : "";
   const errors: Record<string, [number, string]> = {
     INVALID_INPUT: [400, "Confira os campos informados e tente novamente."],
+    VACATION_BOOKINGS_CONFLICT: [
+      409,
+      "Há agendamentos confirmados ou aguardando aprovação nesse período. Resolva essas reservas na agenda antes de marcar as férias.",
+    ],
+    PROFESSIONAL_HAS_BOOKINGS: [
+      409,
+      "Este profissional tem agendamentos futuros confirmados ou aguardando aprovação. Resolva essas reservas na agenda antes de excluir. Você pode deixá-lo inativo para impedir novas reservas.",
+    ],
     REVIEW_NOT_ELIGIBLE: [
       409,
       "A avaliação fica disponível 24 horas após o horário de um agendamento confirmado ou concluído.",
@@ -48,6 +56,10 @@ export function apiError(error: unknown) {
     PROFESSIONAL_DOWNGRADE_REQUIRED: [
       409,
       "O Essencial permite até 10 profissionais por estabelecimento. Ajuste sua equipe antes de mudar de plano.",
+    ],
+    ARRIVAL_TOO_EARLY: [
+      409,
+      "A chegada só pode ser registrada a partir de 1 hora antes do agendamento.",
     ],
     BOOKING_CLOSED: [409, "Este agendamento já foi encerrado ou expirou."],
     CANCELLATION_DEADLINE: [

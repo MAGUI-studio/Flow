@@ -1,7 +1,12 @@
+import {
+  availabilityWindows,
+  isWithinAvailability,
+} from "./weekly-availability";
 import { prisma } from "./prisma";
 import { availableSlots, overlaps } from "./rules";
 import { dayKey } from "./format";
 import type { Prisma } from "@/generated/prisma/client";
+import { professionalVacationOverlaps } from "./professional-status";
 export type Slot = { startsAt: string; sessionId?: string; remaining: number };
 export async function getAvailability(
   serviceId: string,
@@ -70,6 +75,9 @@ async function professionalAvailability(
     },
   });
   if (!service) throw new Error("SERVICE_UNAVAILABLE");
+  const professional = await tx.professional.findUniqueOrThrow({
+    where: { id: professionalId },
+  });
   const e = service.establishment;
   if (
     !e.active ||
@@ -78,10 +86,13 @@ async function professionalAvailability(
   )
     throw new Error("ESTABLISHMENT_FROZEN");
   const now = new Date();
-  const windows = await tx.availabilityWindow.findMany({
-    where: { professionalId, endsAt: { gt: now } },
-    orderBy: { startsAt: "asc" },
-  });
+  const horizon = new Date(now.getTime() + 90 * 86400000);
+  const windows = await availabilityWindows(
+    tx,
+    professionalId,
+    dayKey(now, e.timezone),
+    dayKey(horizon, e.timezone),
+  );
   let dates: string[] = [];
   if (service.kind === "collective") {
     const sessions = await tx.session.findMany({
@@ -99,7 +110,38 @@ async function professionalAvailability(
       },
       orderBy: { startsAt: "asc" },
     });
-    const available = sessions.filter((s) => s.bookings.length < s.capacity);
+    const permitted = await Promise.all(
+      sessions.map(async (session) => {
+        const [within, blocked] = await Promise.all([
+          isWithinAvailability(
+            tx,
+            professionalId,
+            session.occupiedStart,
+            session.occupiedEnd,
+          ),
+          tx.professionalBlock.findFirst({
+            where: {
+              professionalId,
+              startsAt: { lt: session.occupiedEnd },
+              endsAt: { gt: session.occupiedStart },
+            },
+            select: { id: true },
+          }),
+        ]);
+        return within && !blocked;
+      }),
+    );
+    const available = sessions.filter(
+      (s, index) =>
+        permitted[index] &&
+        s.bookings.length < s.capacity &&
+        !professionalVacationOverlaps(
+          s.occupiedStart,
+          s.occupiedEnd,
+          professional.vacationStartsAt,
+          professional.vacationEndsAt,
+        ),
+    );
     dates = [...new Set(available.map((s) => dayKey(s.startsAt, e.timezone)))];
     return {
       dates,
@@ -124,6 +166,14 @@ async function professionalAvailability(
     daySet.add(dayKey(new Date(w.endsAt.getTime() - 1), e.timezone));
   }
   dates = [...daySet].sort();
+  if (professional.vacationStartsAt && professional.vacationEndsAt) {
+    const firstDay = dayKey(professional.vacationStartsAt, e.timezone);
+    const lastDay = dayKey(
+      new Date(professional.vacationEndsAt.getTime() - 1),
+      e.timezone,
+    );
+    dates = dates.filter((day) => day < firstDay || day > lastDay);
+  }
   if (!date) return { dates, slots: [] };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("INVALID_INPUT");
   const boundary = (
@@ -161,6 +211,14 @@ async function professionalAvailability(
     },
   });
   const busy = [
+    ...(professional.vacationStartsAt && professional.vacationEndsAt
+      ? [
+          {
+            start: professional.vacationStartsAt,
+            end: professional.vacationEndsAt,
+          },
+        ]
+      : []),
     ...sessions.map((s) => ({ start: s.occupiedStart, end: s.occupiedEnd })),
     ...blocks.map((b) => ({ start: b.startsAt, end: b.endsAt })),
   ];

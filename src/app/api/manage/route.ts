@@ -1,6 +1,9 @@
+import { professionalCreationSchema } from "@/lib/form-schemas";
+import { isWithinAvailability } from "@/lib/weekly-availability";
 import { currentUser, apiError } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { businessSlug } from "@/lib/business-slug";
+import { professionalVacationOverlaps } from "@/lib/professional-status";
 import {
   createEstablishment,
   createProfessional,
@@ -28,7 +31,10 @@ export async function POST(request: Request) {
         return createEstablishment(tx, owner, input);
       }
       if (input.type === "professional")
-        return createProfessional(tx, owner, input);
+        return createProfessional(tx, owner, {
+          ...input,
+          ...professionalCreationSchema.parse(input),
+        });
       if (input.type === "service") return createService(tx, owner, input);
       const e = await owned(tx, owner, text(input.establishmentId));
       if (input.type === "availability") {
@@ -93,15 +99,32 @@ export async function POST(request: Request) {
             starts.getTime() - service.bufferBefore * 60000,
           ),
           occupiedEnd = new Date(ends.getTime() + service.bufferAfter * 60000);
+        const professional = await tx.professional.findFirst({
+          where: {
+            id: text(input.professionalId),
+            establishmentId: e.id,
+            active: true,
+            deletedAt: null,
+          },
+        });
+        if (
+          !professional ||
+          professionalVacationOverlaps(
+            occupiedStart,
+            occupiedEnd,
+            professional.vacationStartsAt,
+            professional.vacationEndsAt,
+          )
+        )
+          throw new Error("PROFESSIONAL_UNAVAILABLE");
         if (
           starts <= new Date() ||
-          !(await tx.availabilityWindow.findFirst({
-            where: {
-              professionalId: text(input.professionalId),
-              startsAt: { lte: occupiedStart },
-              endsAt: { gte: occupiedEnd },
-            },
-          })) ||
+          !(await isWithinAvailability(
+            tx,
+            text(input.professionalId),
+            occupiedStart,
+            occupiedEnd,
+          )) ||
           (await tx.professionalBlock.findFirst({
             where: {
               professionalId: text(input.professionalId),

@@ -1,3 +1,4 @@
+import { markBookingArrival } from "@/lib/booking-arrival";
 import { currentUser, apiError } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 export async function PATCH(
@@ -37,6 +38,10 @@ export async function PATCH(
         throw new Error("FORBIDDEN");
       if (!owner && (booking.consumerId !== actor || action !== "cancel"))
         throw new Error("FORBIDDEN");
+      if (action === "arrive") {
+        await markBookingArrival(tx, actor, id);
+        return;
+      }
       if (
         !["pending", "confirmed"].includes(booking.status) ||
         (booking.status === "pending" && booking.expiresAt! <= now)

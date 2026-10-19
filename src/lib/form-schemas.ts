@@ -1,6 +1,10 @@
+import { weeklyScheduleSchema } from "./weekly-schedule";
 import { z } from "zod";
 import { optionalAddressSchema } from "./address";
-import { businessCategories, businessBioMaxLength } from "./business-categories";
+import {
+  businessCategories,
+  businessBioMaxLength,
+} from "./business-categories";
 const name = z
   .string()
   .trim()
@@ -64,7 +68,29 @@ export const establishmentSchema = z.object({
   approvalMode: z.enum(["automatic", "manual"]),
   cancelNoticeHours: number(0, 720),
 });
-export const professionalSchema = z.object({ name });
+export const professionalSchema = z.object({
+  name,
+  photoId: z.union([z.string().uuid(), z.literal("")]).optional(),
+});
+export const professionalCreationSchema = professionalSchema
+  .extend({ days: weeklyScheduleSchema.shape.days })
+  .superRefine((value, ctx) => {
+    const result = weeklyScheduleSchema.safeParse({ days: value.days });
+    if (!result.success)
+      for (const issue of result.error.issues)
+        ctx.addIssue({
+          code: "custom",
+          path: issue.path,
+          message: issue.message,
+        });
+    if (!value.days.some((day) => day.enabled))
+      ctx.addIssue({
+        code: "custom",
+        path: ["days"],
+        message:
+          "Selecione pelo menos um dia de atendimento e informe os horários.",
+      });
+  });
 export const serviceSchema = z
   .object({
     name,
@@ -114,7 +140,7 @@ export const sessionSchema = z.object({
 });
 export const businessSchemas = {
   establishment: establishmentSchema,
-  professional: professionalSchema,
+  professional: professionalCreationSchema,
   service: serviceSchema,
   availability: availabilitySchema,
   session: sessionSchema,
