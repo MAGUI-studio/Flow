@@ -1,3 +1,15 @@
+import { markBookingArrival } from "../src/lib/booking-arrival";
+import { editService } from "../src/lib/service-management";
+import { emptyWeeklySchedule } from "../src/lib/weekly-schedule";
+import {
+  availabilityWindows,
+  isWithinAvailability,
+} from "../src/lib/weekly-availability";
+import {
+  updateProfessionalStatus,
+  editProfessional,
+  deleteProfessional,
+} from "../src/lib/professional-management";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -8,6 +20,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import {
   createEstablishment,
   createProfessional,
+  professionalPhotoId,
   createService,
 } from "../src/lib/business-write";
 import { getAvailability } from "../src/lib/availability";
@@ -63,6 +76,38 @@ test("PostgreSQL prevents overlapping sessions and overselling concurrent bookin
         "INSERT INTO establishments(owner_id,slug,name) VALUES('owner','test-flow','Test Flow') RETURNING id",
       )
     ).rows[0].id;
+    const photo = await orm.professionalPhoto.create({
+      data: {
+        ownerId: "owner",
+        establishmentId: e,
+        url: "https://example.test/professional.webp",
+        key: randomUUID(),
+      },
+    });
+    await assert.rejects(
+      orm.$transaction((tx) => professionalPhotoId(tx, "a", e, photo.id)),
+      /INVALID_INPUT/,
+    );
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        professionalPhotoId(tx, "owner", randomUUID(), photo.id),
+      ),
+      /INVALID_INPUT/,
+    );
+    const withPhoto = await orm.$transaction((tx) =>
+      createProfessional(tx, "owner", {
+        establishmentId: e,
+        name: "Photo Professional",
+        photoId: photo.id,
+      }),
+    );
+    assert.equal(withPhoto.photoId, photo.id);
+    await assert.rejects(
+      orm.$transaction((tx) => professionalPhotoId(tx, "owner", e, photo.id)),
+      /INVALID_INPUT/,
+    );
+    await orm.professional.delete({ where: { id: withPhoto.id } });
+    await orm.professionalPhoto.delete({ where: { id: photo.id } });
     const p = (
       await pool.query(
         "INSERT INTO professionals(establishment_id,name) VALUES($1,'Test Professional') RETURNING id",
@@ -78,6 +123,189 @@ test("PostgreSQL prevents overlapping sessions and overselling concurrent bookin
     await pool.query(
       "INSERT INTO professional_services(establishment_id,professional_id,service_id) VALUES($1,$2,$3)",
       [e, p, v],
+    );
+    // Status changes are authorized, retain history and protect direct SQL reservations.
+    const managed = await orm.$transaction((tx) =>
+      createProfessional(tx, "owner", {
+        establishmentId: e,
+        name: "Managed Professional",
+      }),
+    );
+    await pool.query(
+      "INSERT INTO professional_services(establishment_id,professional_id,service_id) VALUES($1,$2,$3)",
+      [e, managed.id, v],
+    );
+    const managedStart = new Date(Date.now() + 4 * 86400000),
+      managedEnd = new Date(managedStart.getTime() + 3600000);
+    await orm.availabilityWindow.create({
+      data: {
+        professionalId: managed.id,
+        startsAt: new Date(Date.now() + 3600000),
+        endsAt: new Date(Date.now() + 7 * 86400000),
+      },
+    });
+    const managedSession = await orm.session.create({
+      data: {
+        establishmentId: e,
+        professionalId: managed.id,
+        serviceId: v,
+        startsAt: managedStart,
+        endsAt: managedEnd,
+        occupiedStart: managedStart,
+        occupiedEnd: managedEnd,
+        capacity: 2,
+      },
+    });
+    const managedIndividual = await orm.$transaction((tx) =>
+      createService(tx, "owner", {
+        establishmentId: e,
+        name: "Vacation Individual",
+        durationMinutes: 30,
+        stepMinutes: 30,
+        priceCents: 0,
+        professionalIds: [managed.id],
+        kind: "individual",
+        modality: "in_person",
+      }),
+    );
+    const managedDay = dayKey(managedStart, "America/Sao_Paulo");
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        updateProfessionalStatus(tx, "a", e, managed.id, {
+          status: "inactive",
+        }),
+      ),
+      /FORBIDDEN/,
+    );
+    await orm.$transaction((tx) =>
+      updateProfessionalStatus(tx, "owner", e, managed.id, {
+        status: "vacation",
+        start: managedDay,
+        end: dayKey(managedEnd, "America/Sao_Paulo"),
+      }),
+    );
+    assert.equal(
+      (await getAvailability(v, managed.id, managedDay, orm)).slots.length,
+      0,
+    );
+    assert.equal(
+      (await getAvailability(managedIndividual.id, managed.id, managedDay, orm))
+        .slots.length,
+      0,
+    );
+    await assert.rejects(
+      pool.query("SELECT reserve_session($1,$2,NULL,$3)", [
+        managedSession.id,
+        "e",
+        randomUUID(),
+      ]),
+      /PROFESSIONAL_UNAVAILABLE/,
+    );
+    await orm.$transaction((tx) =>
+      updateProfessionalStatus(tx, "owner", e, managed.id, {
+        status: "active",
+      }),
+    );
+    assert.equal(
+      (await getAvailability(v, managed.id, managedDay, orm)).slots.length,
+      1,
+    );
+    await orm.$transaction((tx) =>
+      updateProfessionalStatus(tx, "owner", e, managed.id, {
+        status: "inactive",
+      }),
+    );
+    await assert.rejects(
+      getAvailability(v, managed.id, managedDay, orm),
+      /SERVICE_UNAVAILABLE/,
+    );
+    await orm.$transaction((tx) =>
+      updateProfessionalStatus(tx, "owner", e, managed.id, {
+        status: "active",
+      }),
+    );
+    const managedBooking = (
+      await pool.query("SELECT reserve_session($1,$2,NULL,$3) AS id", [
+        managedSession.id,
+        "e",
+        randomUUID(),
+      ])
+    ).rows[0].id;
+    await assert.rejects(
+      orm.$transaction((tx) => deleteProfessional(tx, "owner", e, managed.id)),
+      /PROFESSIONAL_HAS_BOOKINGS/,
+    );
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        updateProfessionalStatus(tx, "owner", e, managed.id, {
+          status: "vacation",
+          start: managedDay,
+          end: dayKey(managedEnd, "America/Sao_Paulo"),
+        }),
+      ),
+      /VACATION_BOOKINGS_CONFLICT/,
+    );
+    await orm.booking.update({
+      where: { id: managedBooking },
+      data: { status: "canceled" },
+    });
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        editProfessional(tx, "owner", e, managed.id, {
+          name: "Should roll back",
+          status: "inactive",
+          photoId: randomUUID(),
+        }),
+      ),
+      /INVALID_INPUT/,
+    );
+    const unchanged = await orm.professional.findUniqueOrThrow({
+      where: { id: managed.id },
+    });
+    assert.equal(unchanged.active, true);
+    assert.equal(unchanged.name, "Managed Professional");
+    const managedPhoto = await orm.professionalPhoto.create({
+      data: {
+        ownerId: "owner",
+        establishmentId: e,
+        url: "https://example.test/edited.webp",
+        key: randomUUID(),
+      },
+    });
+    await orm.$transaction((tx) =>
+      editProfessional(tx, "owner", e, managed.id, {
+        name: "Edited Professional",
+        status: "inactive",
+        photoId: managedPhoto.id,
+      }),
+    );
+    const editedProfessional = await orm.professional.findUniqueOrThrow({
+      where: { id: managed.id },
+    });
+    assert.equal(editedProfessional.name, "Edited Professional");
+    assert.equal(editedProfessional.active, false);
+    assert.equal(editedProfessional.photoId, managedPhoto.id);
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        editProfessional(tx, "a", e, managed.id, { name: "Unauthorized" }),
+      ),
+      /FORBIDDEN/,
+    );
+    await orm.$transaction((tx) =>
+      deleteProfessional(tx, "owner", e, managed.id),
+    );
+    assert.ok(
+      (await orm.professional.findUniqueOrThrow({ where: { id: managed.id } }))
+        .deletedAt,
+    );
+    assert.ok(await orm.booking.findUnique({ where: { id: managedBooking } }));
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        updateProfessionalStatus(tx, "owner", e, managed.id, {
+          status: "active",
+        }),
+      ),
+      /FORBIDDEN/,
     );
     const typedService = await orm.service.findUnique({
       where: { id: v },
@@ -264,7 +492,12 @@ test("PostgreSQL prevents overlapping sessions and overselling concurrent bookin
     assert.ok(available.dates.includes(day));
     assert.ok(available.slots.length > 0);
     const secondProfessional = await orm.professional.findFirstOrThrow({
-      where: { establishmentId: e, id: { not: p } },
+      where: {
+        establishmentId: e,
+        id: { not: p },
+        active: true,
+        deletedAt: null,
+      },
     });
     await orm.professionalService.create({
       data: {
@@ -458,6 +691,276 @@ test("PostgreSQL prevents overlapping sessions and overselling concurrent bookin
         [bReservation.id],
       ),
       /check constraint/,
+    );
+    // Weekly rules keep generating local-time windows months later and protect reservations.
+    const weekly = emptyWeeklySchedule();
+    weekly.days[0].enabled = true;
+    weekly.days[0].intervals = [
+      { start: "09:00", end: "12:00" },
+      { start: "13:00", end: "18:00" },
+    ];
+    const weeklyProfessional = await orm.professional.create({
+      data: { establishmentId: e, name: "Weekly", weeklySchedule: weekly },
+    });
+    const farMonday = new Date(Date.now() + 56 * 86400000);
+    while (farMonday.getUTCDay() !== 1)
+      farMonday.setUTCDate(farMonday.getUTCDate() + 1);
+    const monday = farMonday.toISOString().slice(0, 10);
+    const weekEnd = new Date(farMonday.getTime() + 6 * 86400000)
+      .toISOString()
+      .slice(0, 10);
+    const weeklyWindows = await availabilityWindows(
+      orm,
+      weeklyProfessional.id,
+      monday,
+      weekEnd,
+    );
+    assert.equal(weeklyWindows.length, 2);
+    const timezone = (
+      await orm.establishment.findUniqueOrThrow({ where: { id: e } })
+    ).timezone;
+    assert.equal(dayKey(weeklyWindows[0].startsAt, timezone), monday);
+    assert.equal(
+      new Intl.DateTimeFormat("pt-BR", {
+        timeZone: timezone,
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(weeklyWindows[0].startsAt),
+      "09:00",
+    );
+    await orm.professionalService.create({
+      data: {
+        establishmentId: e,
+        professionalId: weeklyProfessional.id,
+        serviceId: individual.id,
+      },
+    });
+    const weeklyPublic = await getAvailability(
+      individual.id,
+      weeklyProfessional.id,
+      monday,
+      orm,
+    );
+    assert.ok(weeklyPublic.dates.includes(monday));
+    assert.ok(weeklyPublic.slots.length > 0);
+    assert.ok(
+      weeklyPublic.dates.every(
+        (date) => new Date(date + "T12:00:00Z").getUTCDay() === 1,
+      ),
+    );
+    const weeklyStart = weeklyWindows[0].startsAt;
+    const weeklyEnd = new Date(weeklyStart.getTime() + 3600000);
+    assert.equal(
+      await isWithinAvailability(
+        orm,
+        weeklyProfessional.id,
+        weeklyStart,
+        weeklyEnd,
+      ),
+      true,
+    );
+    assert.equal(
+      await isWithinAvailability(
+        orm,
+        weeklyProfessional.id,
+        new Date(weeklyWindows[0].endsAt.getTime() - 1800000),
+        new Date(weeklyWindows[1].startsAt.getTime() + 1800000),
+      ),
+      false,
+    );
+    await orm.professionalService.create({
+      data: {
+        establishmentId: e,
+        professionalId: weeklyProfessional.id,
+        serviceId: v,
+      },
+    });
+    const weeklySession = await orm.session.create({
+      data: {
+        establishmentId: e,
+        professionalId: weeklyProfessional.id,
+        serviceId: v,
+        startsAt: weeklyStart,
+        endsAt: weeklyEnd,
+        occupiedStart: weeklyStart,
+        occupiedEnd: weeklyEnd,
+        capacity: 2,
+      },
+    });
+    await pool.query("SELECT reserve_session($1,$2,NULL,$3)", [
+      weeklySession.id,
+      "a",
+      randomUUID(),
+    ]);
+    // A saved closed week overrides legacy windows, without canceling an existing booking.
+    await orm.availabilityWindow.create({
+      data: {
+        professionalId: weeklyProfessional.id,
+        startsAt: weeklyStart,
+        endsAt: weeklyEnd,
+      },
+    });
+    await orm.professional.update({
+      where: { id: weeklyProfessional.id },
+      data: { weeklySchedule: emptyWeeklySchedule() },
+    });
+    assert.equal(
+      await isWithinAvailability(
+        orm,
+        weeklyProfessional.id,
+        weeklyStart,
+        weeklyEnd,
+      ),
+      false,
+    );
+    await assert.rejects(
+      pool.query("SELECT reserve_session($1,$2,NULL,$3)", [
+        weeklySession.id,
+        "b",
+        randomUUID(),
+      ]),
+      /OUTSIDE_AVAILABILITY/,
+    );
+    assert.equal(
+      await orm.booking.count({
+        where: {
+          sessionId: weeklySession.id,
+          status: { in: ["confirmed", "pending"] },
+        },
+      }),
+      1,
+    );
+    const editable = await orm.$transaction((tx) =>
+      createService(tx, "owner", {
+        establishmentId: e,
+        name: "Edit test",
+        durationMinutes: 30,
+        stepMinutes: 30,
+        bufferBefore: 0,
+        bufferAfter: 0,
+        priceCents: 1000,
+        kind: "individual",
+        modality: "in_person",
+        professionalIds: [p],
+      }),
+    );
+    const editInput = {
+      establishmentId: e,
+      name: "Updated service",
+      durationMinutes: 45,
+      stepMinutes: 15,
+      bufferBefore: 5,
+      bufferAfter: 10,
+      price: "55,00",
+      free: false,
+      kind: "collective",
+      modality: "online",
+      professionalIds: [p],
+    };
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        editService(tx, "nonexistent-user", editable.id, editInput),
+      ),
+      /FORBIDDEN/,
+    );
+    const edited = await orm.$transaction((tx) =>
+      editService(tx, "owner", editable.id, editInput),
+    );
+    assert.equal(edited.name, "Updated service");
+    assert.equal(edited.priceCents, 5500);
+    assert.equal(edited.durationMinutes, 45);
+    assert.equal(edited.kind, "collective");
+    assert.equal(edited.modality, "online");
+    assert.equal(edited.stepMinutes, 15);
+    assert.equal(edited.bufferBefore, 5);
+    assert.equal(edited.bufferAfter, 10);
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        editService(tx, "owner", editable.id, {
+          ...editInput,
+          professionalIds: [],
+        }),
+      ),
+    );
+    await orm.$transaction((tx) =>
+      editService(tx, "owner", editable.id, {
+        ...editInput,
+        free: true,
+        professionalIds: [weeklyProfessional.id],
+      }),
+    );
+    assert.equal(
+      await orm.professionalService.count({
+        where: { serviceId: editable.id, professionalId: p },
+      }),
+      0,
+    );
+    assert.equal(
+      await orm.professionalService.count({
+        where: {
+          serviceId: editable.id,
+          professionalId: weeklyProfessional.id,
+        },
+      }),
+      1,
+    );
+    assert.equal(
+      (await orm.service.findUniqueOrThrow({ where: { id: editable.id } }))
+        .priceCents,
+      0,
+    );
+    const arrivalBooking = await orm.booking.findFirstOrThrow({
+      include: { session: true },
+      where: {
+        status: "confirmed",
+        session: { active: true, endsAt: { gt: new Date() } },
+      },
+    });
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        markBookingArrival(tx, "nonexistent-user", arrivalBooking.id),
+      ),
+      /FORBIDDEN/,
+    );
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        markBookingArrival(tx, arrivalBooking.consumerId, arrivalBooking.id),
+      ),
+      /FORBIDDEN/,
+    );
+    await orm.$transaction((tx) =>
+      markBookingArrival(
+        tx,
+        "owner",
+        arrivalBooking.id,
+        new Date(arrivalBooking.session.startsAt.getTime() - 3600000),
+      ),
+    );
+    const arrival = await orm.booking.findUniqueOrThrow({
+      where: { id: arrivalBooking.id },
+    });
+    assert.ok(arrival.arrivedAt);
+    assert.equal(arrival.status, "confirmed");
+    await orm.$transaction((tx) =>
+      markBookingArrival(tx, "owner", arrivalBooking.id),
+    );
+    assert.equal(
+      (
+        await orm.booking.findUniqueOrThrow({ where: { id: arrival.id } })
+      ).arrivedAt?.getTime(),
+      arrival.arrivedAt.getTime(),
+    );
+    assert.equal(
+      await orm.auditEvent.count({
+        where: { bookingId: arrival.id, action: "booking.arrived" },
+      }),
+      1,
+    );
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        markBookingArrival(tx, "owner", bReservation.id),
+      ),
+      /BOOKING_CLOSED/,
     );
     await pool.query(
       "UPDATE subscriptions SET paid_until=now()-interval '1 minute' WHERE owner_id='owner'",
