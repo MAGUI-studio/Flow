@@ -19,6 +19,7 @@ export const hourLabel = (value: Date | string, timezone: string) =>
     minute: "2-digit",
   }).format(new Date(value));
 export const statusLabel: Record<string, string> = {
+  ended: "Encerrado",
   pending: "Aguardando aprovação",
   confirmed: "Confirmado",
   declined: "Recusado",

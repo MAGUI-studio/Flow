@@ -26,6 +26,28 @@ const professionalFilter = createParser({
   serialize: (value: string) => value,
 }).withDefault("all");
 export const panelSearch = {
+  modalidade: parseAsStringEnum(["all", "online", "in_person"]).withDefault(
+    "all",
+  ),
+  tipo: parseAsStringEnum(["all", "individual", "collective"]).withDefault(
+    "all",
+  ),
+  preco: parseAsStringEnum(["all", "free", "paid"]).withDefault("all"),
+  ordemServico: parseAsStringEnum([
+    "name_asc",
+    "name_desc",
+    "duration_asc",
+    "duration_desc",
+    "price_asc",
+    "price_desc",
+  ]).withDefault("name_asc"),
+  ordem: parseAsStringEnum([
+    "name_asc",
+    "name_desc",
+    "services_desc",
+    "services_asc",
+  ]).withDefault("name_asc"),
+  vinculos: parseAsStringEnum(["all", "linked", "unlinked"]).withDefault("all"),
   estabelecimento: parseAsString,
   busca: parseAsString.withDefault(""),
   status: bookingStatus,
