@@ -1,4 +1,11 @@
+import { redirect } from "next/navigation";
+import { ServicesTable } from "./services-table";
+import { ProfessionalsTable } from "./professionals-table";
+import { professionalList } from "@/lib/professional-list";
 import { BusinessOnboarding } from "./business-onboarding";
+import { appAddress, businessPageUrl } from "@/lib/app-url";
+import { locationSchema } from "@/lib/address";
+import { LocationMap } from "@/components/ui/location-map";
 import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import Link from "next/link";
 import {
@@ -24,7 +31,8 @@ import { money, statusLabel, hourLabel, dayKey } from "@/lib/format";
 import { PageHeading, EmptyState, SectionCard, StatusPill } from "./primitives";
 import { ListFilters } from "./filters";
 import { BusinessForm, type FormKind } from "./business-form";
-import { OwnerAppointment } from "./owner-appointment";
+import { SessionsTable } from "./schedule-tables";
+import { AgendaViews } from "./agenda-views";
 import { BookingActions } from "./booking-actions";
 type Section =
   | "overview"
@@ -32,7 +40,6 @@ type Section =
   | "establishments"
   | "professionals"
   | "services"
-  | "availability"
   | "sessions"
   | "subscription";
 const metadata: Record<
@@ -81,14 +88,6 @@ const metadata: Record<
     newPath: "/painel/servicos/novo",
     cta: "Novo serviço",
   },
-  availability: {
-    title: "Tempo para cada cuidado.",
-    description:
-      "Abra sua agenda, organize pausas e respeite o ritmo da sua equipe.",
-    path: "/painel/disponibilidade",
-    newPath: "/painel/disponibilidade/novo",
-    cta: "Adicionar período",
-  },
   sessions: {
     title: "Encontros que conectam.",
     description:
@@ -127,7 +126,7 @@ const formMetadata: Record<
   availability: {
     title: "Dê espaço aos próximos momentos.",
     description: "Escolha quando sua equipe estará disponível para atender.",
-    section: "availability",
+    section: "professionals",
   },
   session: {
     title: "Prepare o próximo encontro.",
@@ -152,8 +151,13 @@ export async function PanelPage({
   const link = (path: string) => panelHref(path, b?.id);
   const professionals = b
     ? await prisma().professional.findMany({
-        where: { establishmentId: b.id, active: true },
+        where: {
+          establishmentId: b.id,
+          deletedAt: null,
+          ...(section === "professionals" ? {} : { active: true }),
+        },
         include: {
+          photo: { select: { url: true } },
           services: {
             where: { service: { active: true } },
             include: { service: true },
@@ -176,20 +180,7 @@ export async function PanelPage({
       form === "professional" &&
       professionals.length >= features.professionals
     )
-      return (
-        <>
-          <PageHeading
-            title="Sua equipe chegou ao limite do plano."
-            description={`Seu plano permite até ${features.professionals} profissionais por estabelecimento.`}
-          />
-          <EmptyState
-            title="Mais espaço para sua equipe"
-            description="Confira os planos para ampliar a capacidade do seu negócio."
-            href="/#planos"
-            label="Ver planos"
-          />
-        </>
-      );
+      redirect(link("/painel/profissionais"));
     if (form === "establishment" && businesses.length >= limit)
       return (
         <>
@@ -254,7 +245,13 @@ export async function PanelPage({
         </>
       );
     return (
-      <>
+      <div
+        className={
+          form === "professional"
+            ? "[&_.internal-page-heading]:mb-4 [&_.internal-page-heading_h1]:m-0 [&_.internal-page-heading_h1]:text-3xl [&_.internal-page-heading_h1]:leading-tight [&_.internal-page-heading_p]:mt-1.5 [&_.internal-eyebrow]:mb-1.5 [&_.internal-back]:mb-3"
+            : undefined
+        }
+      >
         <PageHeading
           eyebrow={b?.name ?? "SEU NOVO NEGÓCIO"}
           title={fm.title}
@@ -268,7 +265,7 @@ export async function PanelPage({
           professionals={professionals}
           services={services.filter((s) => s.kind === "collective")}
         />
-      </>
+      </div>
     );
   }
   const createAction = meta.newPath ? (
@@ -286,7 +283,14 @@ export async function PanelPage({
   if (section === "establishments") {
     const rows = await prisma().establishment.findMany({
       where: { ownerId: context.userId, active: true },
-      include: { _count: { select: { professionals: true, services: true } } },
+      include: {
+        _count: {
+          select: {
+            professionals: { where: { deletedAt: null } },
+            services: true,
+          },
+        },
+      },
       orderBy: { name: "asc" },
     });
     return (
@@ -324,59 +328,74 @@ export async function PanelPage({
           />
         ) : (
           <div className="establishment-grid">
-            {rows.map((e) => (
-              <article className="establishment-card" key={e.id}>
-                <div
-                  className="establishment-card-cover"
-                  style={{ background: e.color }}
-                >
-                  <span>
-                    {e.name
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((w) => w[0])
-                      .join("")
-                      .toLowerCase()}
-                    <i>✳</i>
-                  </span>
-                  <span className="live-pill">
-                    <i />
-                    Página ativa
-                  </span>
-                </div>
-                <div className="establishment-card-body">
-                  <small>{e.category}</small>
-                  <h2>{e.name}</h2>
-                  <p>
-                    <MapPin size={13} />
-                    {e.city ?? "Atendimento online"}
-                  </p>
-                  <div className="establishment-card-stats">
+            {rows.map((e) => {
+              const details = e.addressDetails;
+              const location = locationSchema.safeParse(
+                details &&
+                  typeof details === "object" &&
+                  !Array.isArray(details)
+                  ? details.location
+                  : undefined,
+              );
+              return (
+                <article className="establishment-card" key={e.id}>
+                  <div
+                    className="establishment-card-cover"
+                    style={{ background: e.color }}
+                  >
                     <span>
-                      <Users size={14} />
-                      {e._count.professionals} profissionais
+                      {e.name
+                        .split(" ")
+                        .slice(0, 2)
+                        .map((w) => w[0])
+                        .join("")
+                        .toLowerCase()}
+                      <i>✳</i>
                     </span>
-                    <span>
-                      <Scissors size={14} />
-                      {e._count.services} serviços
+                    <span className="live-pill">
+                      <i />
+                      Página ativa
                     </span>
                   </div>
-                  <div className="establishment-card-footer">
-                    <Link href={panelHref("/painel", e.id)}>
-                      Gerenciar
-                      <AnimatedArrow direction="right" size={15} />
-                    </Link>
-                    <Link
-                      href={`/${e.slug}`}
-                      target="_blank"
-                      aria-label={`Ver página de ${e.name}`}
-                    >
-                      <AnimatedArrow size={18} />
-                    </Link>
+                  <div className="establishment-card-body">
+                    <small>{e.category}</small>
+                    <h2>{e.name}</h2>
+                    <p>
+                      <MapPin size={13} />
+                      {e.city ?? "Atendimento online"}
+                    </p>
+                    {location.success && (
+                      <div className="mt-4 [&_[role=region]]:h-44">
+                        <LocationMap point={location.data} />
+                      </div>
+                    )}
+                    <div className="establishment-card-stats">
+                      <span>
+                        <Users size={14} />
+                        {e._count.professionals} profissionais
+                      </span>
+                      <span>
+                        <Scissors size={14} />
+                        {e._count.services} serviços
+                      </span>
+                    </div>
+                    <div className="establishment-card-footer">
+                      <Link href={panelHref("/painel", e.id)}>
+                        Gerenciar
+                        <AnimatedArrow direction="right" size={15} />
+                      </Link>
+                      <Link
+                        href={`/${e.slug}`}
+                        target="_blank"
+                        aria-label={`Ver página de ${e.name}`}
+                      >
+                        <AnimatedArrow size={18} />
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         )}
       </>
@@ -506,10 +525,7 @@ export async function PanelPage({
           title={meta.title}
           description={`Um novo dia para cuidar de ${b.name}. Veja o que está acontecendo.`}
           action={
-            <Link
-              className="button"
-              href={link("/painel/disponibilidade/novo")}
-            >
+            <Link className="button" href={link("/painel/profissionais")}>
               <Plus size={16} />
               Abrir horários
             </Link>
@@ -562,8 +578,9 @@ export async function PanelPage({
             </div>
           ))}
         </div>
-        <div className="overview-columns">
+        <div className="overview-columns items-stretch">
           <SectionCard
+            className="flex h-full flex-col"
             title="Próximos encontros"
             description="Os momentos que estão chegando."
             aside={
@@ -594,31 +611,22 @@ export async function PanelPage({
                 </div>
               ))
             ) : (
-              <EmptyState
-                title="O próximo encontro vem aí."
-                description="Abra seus horários e compartilhe sua página para começar a receber agendamentos."
-                href={link("/painel/disponibilidade/novo")}
-                label="Abrir minha agenda"
-                icon={<CalendarDays size={24} />}
-              />
+              <div className="flex flex-1 p-5 sm:p-6 [&>.internal-empty]:flex-1">
+                <EmptyState
+                  title="O próximo encontro vem aí."
+                  description="Abra seus horários e compartilhe sua página para começar a receber agendamentos."
+                  href={link("/painel/profissionais")}
+                  label="Abrir minha agenda"
+                  icon={<CalendarDays size={24} />}
+                />
+              </div>
             )}
           </SectionCard>
-          <div>
-            <section className="share-page-card">
-              <span>SEU NEGÓCIO, MAIS PERTO</span>
-              <h2>
-                Seu próximo cliente
-                <br />
-                começa por aqui.
-              </h2>
-              <p>Sua página está pronta para receber visitas.</p>
-              <div>flow.magui.studio/{b.slug}</div>
-              <Link href={`/${b.slug}`} target="_blank">
-                Abrir minha página
-                <AnimatedArrow size={17} />
-              </Link>
-            </section>
-            <SectionCard title="Tudo pronto para fluir?">
+          <div className="space-y-5">
+            <SectionCard
+              title="Tudo pronto para fluir?"
+              description="Complete estas etapas para começar a receber agendamentos."
+            >
               {[
                 {
                   done: professionals.length > 0,
@@ -631,9 +639,16 @@ export async function PanelPage({
                   href: "/painel/servicos/novo",
                 },
                 {
-                  done: windows > 0,
-                  title: "Abra os primeiros horários",
-                  href: "/painel/disponibilidade/novo",
+                  done:
+                    windows > 0 ||
+                    professionals.some((p) => {
+                      const schedule = p.weeklySchedule as {
+                        days?: { enabled?: boolean }[];
+                      } | null;
+                      return schedule?.days?.some((day) => day.enabled);
+                    }),
+                  title: "Configure os horários da equipe",
+                  href: "/painel/profissionais",
                 },
               ].map((step) => (
                 <Link
@@ -649,6 +664,22 @@ export async function PanelPage({
                 </Link>
               ))}
             </SectionCard>
+            <section className="share-page-card mb-0">
+              <span>SEU NEGÓCIO, MAIS PERTO</span>
+              <h2>
+                Seu próximo cliente
+                <br />
+                começa por aqui.
+              </h2>
+              <p>Sua página está pronta para receber visitas.</p>
+              <div>
+                {appAddress}/{b.slug}
+              </div>
+              <Link href={businessPageUrl(b.slug)} target="_blank">
+                Abrir minha página
+                <AnimatedArrow size={17} />
+              </Link>
+            </section>
           </div>
         </div>
       </>
@@ -659,7 +690,11 @@ export async function PanelPage({
       .toLocaleLowerCase("pt-BR")
       .includes(query.busca.toLocaleLowerCase("pt-BR"));
   if (section === "professionals") {
-    const rows = professionals.filter((p) => matches(p.name));
+    const rows = professionalList(
+      professionals.filter((p) => matches(p.name)),
+      query.ordem,
+      query.vinculos,
+    );
     return (
       <>
         <PageHeading
@@ -667,79 +702,93 @@ export async function PanelPage({
           title={meta.title}
           description={meta.description}
           action={
-            professionals.length < features.professionals
-              ? createAction
-              : undefined
+            professionals.length < features.professionals ? (
+              createAction
+            ) : (
+              <span
+                className="group relative inline-flex"
+                tabIndex={0}
+                aria-describedby="professional-limit-tooltip"
+              >
+                <button
+                  type="button"
+                  disabled
+                  className="button pointer-events-none opacity-50"
+                >
+                  <Plus size={16} aria-hidden="true" />
+                  Adicionar profissional
+                </button>
+                <span
+                  id="professional-limit-tooltip"
+                  role="tooltip"
+                  className="pointer-events-none absolute right-0 top-full z-50 mt-2 w-64 rounded-xl bg-zinc-900 px-3 py-2 text-xs leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100"
+                >
+                  Seu plano permite até {features.professionals} profissionais.
+                  Exclua um profissional ou altere seu plano para cadastrar
+                  outro.
+                </span>
+              </span>
+            )
           }
         />
-        <ListFilters placeholder="Buscar profissional pelo nome" />
-        <div className="section-subline">
-          <span>
-            {professionals.length} de {features.professionals} profissionais
-          </span>
-          <span>Estabelecimento: {b.name}</span>
-        </div>
+        <ListFilters
+          placeholder="Buscar profissional pelo nome"
+          professionalFilters
+        />
         {!rows.length ? (
           <EmptyState
             title={
-              query.busca
+              professionals.length > 0
                 ? "Nenhum profissional encontrado."
                 : "Quem vai cuidar dos seus clientes?"
             }
             description={
-              query.busca
-                ? "Experimente buscar por outro nome."
+              professionals.length > 0
+                ? "Experimente outro nome ou ajuste os filtros."
                 : "Adicione sua equipe para vincular serviços e abrir a agenda."
             }
-            href={query.busca ? undefined : link("/painel/profissionais/novo")}
+            href={
+              professionals.length
+                ? undefined
+                : link("/painel/profissionais/novo")
+            }
             label="Adicionar profissional"
             icon={<Users size={26} />}
           />
         ) : (
-          <div className="professional-grid">
-            {rows.map((p) => (
-              <article className="professional-card" key={p.id}>
-                <div className="professional-card-top">
-                  <span className="professional-avatar">
-                    {p.name
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((w) => w[0])
-                      .join("")}
-                  </span>
-                  <StatusPill status="confirmed" label="Ativo" />
-                </div>
-                <h2>{p.name}</h2>
-                <p>
-                  {p.services.length}{" "}
-                  {p.services.length === 1
-                    ? "serviço vinculado"
-                    : "serviços vinculados"}
-                </p>
-                <div className="service-chips">
-                  {p.services.slice(0, 3).map((link) => (
-                    <span key={link.serviceId}>{link.service.name}</span>
-                  ))}
-                  {!p.services.length && (
-                    <span>Pronto para receber serviços</span>
-                  )}
-                </div>
-                <Link
-                  href={panelHref("/painel/disponibilidade/novo", b.id)}
-                  className="professional-card-footer"
-                >
-                  Organizar horários
-                  <AnimatedArrow direction="right" size={15} />
-                </Link>
-              </article>
-            ))}
-          </div>
+          <ProfessionalsTable
+            rows={rows}
+            establishmentId={b.id}
+            timezone={b.timezone}
+            now={new Date().toISOString()}
+          />
         )}
       </>
     );
   }
   if (section === "services") {
-    const rows = services.filter((s) => matches(s.name));
+    const rows = services
+      .filter(
+        (s) =>
+          matches(s.name) &&
+          (query.modalidade === "all" || s.modality === query.modalidade) &&
+          (query.tipo === "all" || s.kind === query.tipo) &&
+          (query.preco === "all" ||
+            (query.preco === "free" ? s.priceCents === 0 : s.priceCents > 0)),
+      )
+      .sort((a, b) => {
+        const direction = query.ordemServico.endsWith("desc") ? -1 : 1;
+        const comparison = query.ordemServico.startsWith("price")
+          ? a.priceCents - b.priceCents
+          : query.ordemServico.startsWith("duration")
+            ? a.durationMinutes - b.durationMinutes
+            : a.name.localeCompare(b.name, "pt-BR");
+        return (
+          comparison * direction ||
+          a.name.localeCompare(b.name, "pt-BR") ||
+          a.id.localeCompare(b.id)
+        );
+      });
     return (
       <>
         <PageHeading
@@ -748,21 +797,23 @@ export async function PanelPage({
           description={meta.description}
           action={createAction}
         />
-        <ListFilters placeholder="Buscar serviço" />
-        <div className="section-subline">
-          <span>{rows.length} serviços</span>
-          <span>Valores combinados diretamente com o cliente</span>
-        </div>
+        <ListFilters placeholder="Buscar serviço" serviceFilters />
         {!rows.length ? (
           <EmptyState
             title={
-              query.busca
+              query.busca ||
+              query.modalidade !== "all" ||
+              query.tipo !== "all" ||
+              query.preco !== "all"
                 ? "Nenhum serviço encontrado."
                 : "O que seu negócio faz de melhor?"
             }
             description={
-              query.busca
-                ? "Tente outro nome para encontrar seu serviço."
+              query.busca ||
+              query.modalidade !== "all" ||
+              query.tipo !== "all" ||
+              query.preco !== "all"
+                ? "Ajuste a busca ou os filtros para encontrar seu serviço."
                 : "Cadastre seus atendimentos com duração, valor e profissionais."
             }
             href={query.busca ? undefined : link("/painel/servicos/novo")}
@@ -770,161 +821,7 @@ export async function PanelPage({
             icon={<Scissors size={25} />}
           />
         ) : (
-          <div className="service-list">
-            {rows.map((s) => (
-              <article className="service-list-card" key={s.id}>
-                <span className="service-list-icon">
-                  {s.kind === "collective" ? (
-                    <Layers size={21} />
-                  ) : (
-                    <Scissors size={21} />
-                  )}
-                </span>
-                <div className="service-list-main">
-                  <h2>{s.name}</h2>
-                  <div>
-                    <span>
-                      <Clock size={12} />
-                      {s.durationMinutes} min
-                    </span>
-                    <span>
-                      {s.kind === "collective" ? "Em grupo" : "Individual"}
-                    </span>
-                    <span>
-                      {s.modality === "online" ? (
-                        <Globe size={12} />
-                      ) : (
-                        <MapPin size={12} />
-                      )}{" "}
-                      {s.modality === "online" ? "Online" : "Presencial"}
-                    </span>
-                  </div>
-                  <p>
-                    {s.professionals
-                      .map((p) => p.professional.name)
-                      .join(" · ")}
-                  </p>
-                </div>
-                <div className="service-list-price">
-                  <strong>{money(s.priceCents)}</strong>
-                  <small>por atendimento</small>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </>
-    );
-  }
-  if (section === "availability") {
-    const windows = await prisma().availabilityWindow.findMany({
-      where: {
-        professional: {
-          establishmentId: b.id,
-          ...(query.profissional !== "all" ? { id: query.profissional } : {}),
-        },
-        endsAt: { gt: new Date() },
-      },
-      include: { professional: true },
-      orderBy: { startsAt: "asc" },
-    });
-    const blocks = await prisma().professionalBlock.findMany({
-      where: {
-        professional: {
-          establishmentId: b.id,
-          ...(query.profissional !== "all" ? { id: query.profissional } : {}),
-        },
-        endsAt: { gt: new Date() },
-      },
-      include: { professional: true },
-      orderBy: { startsAt: "asc" },
-    });
-    const rows = [
-      ...windows.map((w) => ({ ...w, type: "open" })),
-      ...blocks.map((w) => ({ ...w, type: "block" })),
-    ]
-      .filter((w) => matches(w.professional.name))
-      .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
-    return (
-      <>
-        <PageHeading
-          eyebrow={b.name}
-          title={meta.title}
-          description={meta.description}
-          action={createAction}
-        />
-        <div className="availability-note">
-          <Clock size={18} />
-          <p>
-            Os horários seguem <strong>{b.timezone}</strong>. Pausas e bloqueios
-            têm prioridade sobre períodos abertos.
-          </p>
-        </div>
-        <ListFilters
-          placeholder="Buscar profissional"
-          professionals={professionals}
-        />
-        {!rows.length ? (
-          <EmptyState
-            title="Uma agenda aberta para novos momentos."
-            description="Escolha um profissional e abra o primeiro período de atendimento."
-            href={link("/painel/disponibilidade/novo")}
-            label="Adicionar período"
-            icon={<Clock size={26} />}
-          />
-        ) : (
-          <SectionCard
-            title="Próximos períodos"
-            description={`${rows.length} períodos na sua agenda`}
-          >
-            <div className="internal-table-scroll">
-              <table className="internal-table">
-                <thead>
-                  <tr>
-                    <th>Profissional</th>
-                    <th>Data</th>
-                    <th>Horário</th>
-                    <th>Disponibilidade</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((w) => (
-                    <tr key={w.id}>
-                      <td>
-                        <span className="table-person">
-                          <i>{w.professional.name[0]}</i>
-                          {w.professional.name}
-                        </span>
-                      </td>
-                      <td>
-                        {w.startsAt.toLocaleDateString("pt-BR", {
-                          timeZone: b.timezone,
-                          weekday: "short",
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </td>
-                      <td>
-                        {hourLabel(w.startsAt, b.timezone)} —{" "}
-                        {hourLabel(w.endsAt, b.timezone)}
-                      </td>
-                      <td>
-                        <StatusPill
-                          status={w.type === "open" ? "confirmed" : "canceled"}
-                          label={
-                            w.type === "open"
-                              ? "Aberto para reservas"
-                              : "Bloqueado"
-                          }
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </SectionCard>
+          <ServicesTable rows={rows} establishmentId={b.id} />
         )}
       </>
     );
@@ -980,73 +877,33 @@ export async function PanelPage({
             icon={<Layers size={26} />}
           />
         ) : (
-          <div className="session-grid">
-            {filtered.map((s) => (
-              <article className="session-card" key={s.id}>
-                <div className="session-card-heading">
-                  <span>
-                    <Layers size={19} />
-                  </span>
-                  <StatusPill
-                    status={
-                      s.bookings.length >= s.capacity ? "canceled" : "confirmed"
-                    }
-                    label={
-                      s.bookings.length >= s.capacity
-                        ? "Turma completa"
-                        : `${s.capacity - s.bookings.length} vagas livres`
-                    }
-                  />
-                </div>
-                <h2>{s.service.name}</h2>
-                <p>Com {s.professional.name}</p>
-                <div className="session-card-date">
-                  <CalendarDays size={16} />
-                  {s.startsAt.toLocaleDateString("pt-BR", {
-                    timeZone: b.timezone,
-                    day: "2-digit",
-                    month: "long",
-                  })}
-                  <span>{hourLabel(s.startsAt, b.timezone)}</span>
-                </div>
-                <div className="session-capacity">
-                  <span>
-                    {s.bookings.length} de {s.capacity} vagas ocupadas
-                  </span>
-                  <strong>{money(s.service.priceCents)}</strong>
-                </div>
-                <div className="usage-track">
-                  <i
-                    style={{
-                      width: `${(s.bookings.length / s.capacity) * 100}%`,
-                    }}
-                  />
-                </div>
-              </article>
-            ))}
-          </div>
+          <SessionsTable rows={filtered} timezone={b.timezone} />
         )}
       </>
     );
   }
   const now = new Date();
+  const [boundary] = await prisma().$queryRaw<
+    { start: Date }[]
+  >`SELECT (${dayKey(now, b.timezone)}::date::timestamp AT TIME ZONE ${b.timezone}) AS start`;
   const rows = await prisma().booking.findMany({
     where: {
+      status: { notIn: ["canceled", "declined"] },
       session: {
         establishmentId: b.id,
+        ...(query.periodo === "upcoming"
+          ? { startsAt: { gte: boundary.start } }
+          : query.periodo === "past"
+            ? { startsAt: { lt: boundary.start } }
+            : {}),
         ...(query.profissional !== "all"
           ? { professionalId: query.profissional }
           : {}),
-        ...(query.periodo === "upcoming"
-          ? { startsAt: { gte: now } }
-          : query.periodo === "past"
-            ? { startsAt: { lt: now } }
-            : {}),
       },
     },
     include: { session: { include: { service: true, professional: true } } },
     orderBy: {
-      session: { startsAt: query.periodo === "past" ? "desc" : "asc" },
+      session: { startsAt: "asc" },
     },
   });
   const bookings = rows
@@ -1055,12 +912,12 @@ export async function PanelPage({
       effectiveStatus:
         a.status === "pending" && a.expiresAt && a.expiresAt <= now
           ? "expired"
-          : a.status,
+          : a.status === "confirmed" && a.session.endsAt <= now
+            ? "ended"
+            : a.status,
     }))
-    .filter(
-      (a) =>
-        (query.status === "all" || a.effectiveStatus === query.status) &&
-        matches(a.session.service.name + " " + a.session.professional.name),
+    .filter((a) =>
+      matches(a.session.service.name + " " + a.session.professional.name),
     );
   return (
     <>
@@ -1071,7 +928,7 @@ export async function PanelPage({
         action={
           <Link
             className="button secondary"
-            href={link("/painel/disponibilidade/novo")}
+            href={link("/painel/profissionais")}
           >
             <Plus size={16} />
             Abrir horários
@@ -1080,47 +937,24 @@ export async function PanelPage({
       />
       <ListFilters
         placeholder="Buscar serviço ou profissional"
-        statuses
         period
         professionals={professionals}
       />
-      <div className="section-subline">
-        <span>
-          {bookings.length}{" "}
-          {bookings.length === 1 ? "agendamento" : "agendamentos"}
-        </span>
-        <span>Fuso: {b.timezone}</span>
-      </div>
-      {!bookings.length ? (
-        <EmptyState
-          title="Um pouco de espaço na sua agenda."
-          description="Nenhum agendamento corresponde aos filtros. Seus próximos atendimentos aparecerão aqui."
-          icon={<CalendarDays size={26} />}
-        />
-      ) : (
-        <div className="owner-appointments">
-          {bookings.map((a) => (
-            <OwnerAppointment
-              key={a.id}
-              startsAt={a.session.startsAt}
-              timezone={b.timezone}
-              service={a.session.service.name}
-              professional={a.session.professional.name}
-              durationMinutes={a.durationMinutes}
-              priceCents={a.priceCents}
+      <AgendaViews
+        timezone={b.timezone}
+        rows={bookings.map((a) => ({
+          ...a,
+          actions: (
+            <BookingActions
+              id={a.id}
               status={a.effectiveStatus}
-              whatsapp={a.whatsapp}
-              actions={
-                <BookingActions
-                  id={a.id}
-                  status={a.effectiveStatus}
-                  canComplete={a.session.startsAt <= now}
-                />
-              }
+              canComplete={a.session.startsAt <= now}
+              arrivedAt={a.arrivedAt}
+              startsAt={a.session.startsAt}
             />
-          ))}
-        </div>
-      )}
+          ),
+        }))}
+      />
     </>
   );
 }

@@ -1,0 +1,483 @@
+"use client";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { formatContact } from "@/lib/format-contact";
+import { useQueryState, parseAsStringEnum, parseAsString } from "nuqs";
+import {
+  Table2,
+  CalendarDays,
+  CalendarRange,
+  ListOrdered,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+} from "lucide-react";
+import { AgendaTable, type BookingRow } from "./schedule-tables";
+import { dayKey, hourLabel, money, statusLabel } from "@/lib/format";
+const modes = [
+  { id: "table", label: "Tabela", icon: Table2 },
+  { id: "day", label: "Agenda diária", icon: CalendarDays },
+  { id: "month", label: "Calendário", icon: CalendarRange },
+  { id: "timeline", label: "Cronograma", icon: ListOrdered },
+] as const;
+function shiftDay(day: string, delta: number) {
+  const d = new Date(day + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
+function labelDay(day: string) {
+  return new Date(day + "T12:00:00Z").toLocaleDateString("pt-BR", {
+    timeZone: "UTC",
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+function Appointment({
+  booking: a,
+  timezone,
+}: {
+  booking: BookingRow;
+  timezone: string;
+}) {
+  return (
+    <article
+      className={`min-w-0 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs ${!["confirmed", "pending"].includes(a.effectiveStatus) ? "opacity-50" : ""}`}
+    >
+      <div className="space-y-3 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-zinc-100 px-2 py-1 text-xs font-semibold tabular-nums text-zinc-600">
+            <Clock size={13} aria-hidden="true" />
+            {hourLabel(a.session.startsAt, timezone)} · {a.durationMinutes} min
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-500">
+            <span
+              aria-hidden="true"
+              className="size-1.5 rounded-full bg-emerald-600"
+            />
+            {statusLabel[a.effectiveStatus] ?? a.effectiveStatus}
+          </span>
+        </div>
+        <h3 className="m-0 break-words text-sm font-semibold text-zinc-800">
+          {a.session.service.name}
+        </h3>
+        <p className="m-0 text-xs text-zinc-500">
+          {a.session.professional.name}
+        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
+          <span>{formatContact(a.whatsapp)}</span>
+          <strong className="font-semibold text-zinc-700">
+            {a.priceCents ? money(a.priceCents) : "Gratuito"}
+          </strong>
+        </div>
+      </div>
+      {["confirmed", "pending"].includes(a.effectiveStatus) && (
+        <div className="border-t border-zinc-100 px-4 py-3 [&_.appointment-actions]:flex-wrap [&_.appointment-actions]:justify-end">
+          {a.actions}
+        </div>
+      )}
+    </article>
+  );
+}
+export function AgendaViews({
+  rows: incomingRows,
+  timezone,
+}: {
+  rows: BookingRow[];
+  timezone: string;
+}) {
+  const router = useRouter();
+  useEffect(() => {
+    const refresh = () => {
+      if (
+        document.visibilityState !== "visible" ||
+        document.querySelector('[role="alertdialog"], [role="dialog"]')
+      )
+        return;
+      router.refresh();
+    };
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [router]);
+  const rows = incomingRows
+    .filter((a) => !["canceled", "declined"].includes(a.effectiveStatus))
+    .sort((a, b) => {
+      const aClosed = !["confirmed", "pending"].includes(a.effectiveStatus);
+      const bClosed = !["confirmed", "pending"].includes(b.effectiveStatus);
+      return (
+        Number(aClosed) - Number(bClosed) ||
+        new Date(a.session.startsAt).getTime() -
+          new Date(b.session.startsAt).getTime()
+      );
+    });
+  const [view, setView] = useQueryState(
+    "visualizacao",
+    parseAsStringEnum(["table", "day", "month", "timeline"])
+      .withDefault("table")
+      .withOptions({ shallow: true, scroll: false }),
+  );
+  const tabListRef = useRef<HTMLDivElement>(null);
+  const [indicator, setIndicator] = useState<{
+    left: number;
+    width: number;
+  } | null>(null);
+  useLayoutEffect(() => {
+    const list = tabListRef.current;
+    if (!list) return;
+    const update = () => {
+      const active = list.querySelector<HTMLElement>('[aria-selected="true"]');
+      if (active)
+        setIndicator({ left: active.offsetLeft, width: active.offsetWidth });
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(list);
+    list
+      .querySelectorAll("button")
+      .forEach((button) => observer.observe(button));
+    return () => observer.disconnect();
+  }, [view]);
+  const today = dayKey(new Date(), timezone);
+  const [dateParam, setDate] = useQueryState(
+    "data-agenda",
+    parseAsString.withOptions({ shallow: true, scroll: false }),
+  );
+  const date =
+    dateParam &&
+    /^\d{4}-\d{2}-\d{2}$/.test(dateParam) &&
+    !Number.isNaN(new Date(dateParam + "T12:00:00Z").getTime()) &&
+    new Date(dateParam + "T12:00:00Z").toISOString().slice(0, 10) === dateParam
+      ? dateParam
+      : today;
+  const grouped = new Map<string, BookingRow[]>();
+  [...rows]
+    .sort(
+      (a, b) =>
+        new Date(a.session.startsAt).getTime() -
+        new Date(b.session.startsAt).getTime(),
+    )
+    .forEach((a) => {
+      const day = dayKey(a.session.startsAt, timezone);
+      grouped.set(day, [...(grouped.get(day) ?? []), a]);
+    });
+  const selected = grouped.get(date) ?? [];
+  const empty = (
+    <div className="rounded-xl border border-dashed border-zinc-200 p-8 text-center text-sm text-zinc-500">
+      Nenhum agendamento neste período com os filtros selecionados.
+    </div>
+  );
+  const monthStart = date.slice(0, 7) + "-01";
+  const monthEnd = new Date(
+    Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)), 0),
+  ).getUTCDate();
+  const offset = (new Date(monthStart + "T12:00:00Z").getUTCDay() + 6) % 7;
+  function navigate(delta: number) {
+    if (view !== "month") {
+      void setDate(shiftDay(date, delta));
+      return;
+    }
+    const d = new Date(monthStart + "T12:00:00Z");
+    d.setUTCMonth(d.getUTCMonth() + delta);
+    void setDate(d.toISOString().slice(0, 10));
+  }
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div
+          ref={tabListRef}
+          role="tablist"
+          aria-label="Visualização da agenda"
+          className="relative flex w-full max-w-full gap-5 overflow-x-auto border-b border-[#e8e5f0] sm:gap-7"
+        >
+          {modes.map(({ id, label, icon: Icon }, index) => (
+            <button
+              type="button"
+              key={id}
+              role="tab"
+              id={`agenda-tab-${id}`}
+              aria-selected={view === id}
+              aria-controls="agenda-view-panel"
+              tabIndex={view === id ? 0 : -1}
+              onKeyDown={(event) => {
+                let next = index;
+                if (event.key === "ArrowRight")
+                  next = (index + 1) % modes.length;
+                else if (event.key === "ArrowLeft")
+                  next = (index + modes.length - 1) % modes.length;
+                else if (event.key === "Home") next = 0;
+                else if (event.key === "End") next = modes.length - 1;
+                else return;
+                event.preventDefault();
+                void setView(modes[next].id);
+                document
+                  .getElementById(`agenda-tab-${modes[next].id}`)
+                  ?.focus();
+              }}
+              onClick={() => void setView(id)}
+              className={`relative inline-flex min-h-12 shrink-0 items-center justify-center gap-2 border-b-2 border-transparent px-1 py-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#635BFF] ${view === id ? "text-[#635BFF]" : "text-zinc-500 hover:border-[#ded9ef] hover:text-zinc-800"}`}
+            >
+              <Icon size={15} aria-hidden="true" />
+              {label}
+            </button>
+          ))}
+          {indicator && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute bottom-0 left-0 h-0.5 rounded-full bg-[#635BFF] transition-[transform,width] duration-300 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none"
+              style={{
+                width: indicator.width,
+                transform: `translateX(${indicator.left}px)`,
+              }}
+            />
+          )}
+        </div>
+        <span className="text-xs text-zinc-400">
+          <span className="inline-flex items-center gap-2">
+            <span
+              aria-hidden="true"
+              className="size-1.5 rounded-full bg-emerald-600"
+            />
+            {rows.length} agendamentos · Atualiza a cada 30 s
+          </span>
+        </span>
+      </div>
+      <div
+        role="tabpanel"
+        id="agenda-view-panel"
+        aria-labelledby={`agenda-tab-${view}`}
+        className="space-y-5"
+      >
+        {(view === "day" || view === "month") && (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="m-0 text-lg font-semibold capitalize text-zinc-800">
+              {view === "month"
+                ? new Date(monthStart + "T12:00:00Z").toLocaleDateString(
+                    "pt-BR",
+                    { timeZone: "UTC", month: "long", year: "numeric" },
+                  )
+                : labelDay(date)}
+            </h2>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label={view === "month" ? "Mês anterior" : "Dia anterior"}
+                onClick={() => navigate(-1)}
+                className="grid size-10 place-items-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => void setDate(today)}
+                className="min-h-10 rounded-lg border border-zinc-200 bg-white px-4 text-xs text-zinc-600"
+              >
+                Hoje
+              </button>
+              <button
+                type="button"
+                aria-label={view === "month" ? "Próximo mês" : "Próximo dia"}
+                onClick={() => navigate(1)}
+                className="grid size-10 place-items-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+        {view === "table" &&
+          (rows.length ? (
+            <AgendaTable rows={rows} timezone={timezone} />
+          ) : (
+            empty
+          ))}
+        {view === "day" && (
+          <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+            {Array.from(
+              {
+                length:
+                  Math.max(
+                    19,
+                    ...selected.map(
+                      (a) =>
+                        Number(
+                          hourLabel(a.session.startsAt, timezone).split(":")[0],
+                        ) + 1,
+                    ),
+                  ) -
+                  Math.min(
+                    8,
+                    ...selected.map((a) =>
+                      Number(
+                        hourLabel(a.session.startsAt, timezone).split(":")[0],
+                      ),
+                    ),
+                  ) +
+                  1,
+              },
+              (_, index) => {
+                const hour =
+                  Math.min(
+                    8,
+                    ...selected.map((a) =>
+                      Number(
+                        hourLabel(a.session.startsAt, timezone).split(":")[0],
+                      ),
+                    ),
+                  ) + index;
+                const bookings = selected.filter(
+                  (a) =>
+                    Number(
+                      hourLabel(a.session.startsAt, timezone).split(":")[0],
+                    ) === hour,
+                );
+                return (
+                  <div
+                    key={hour}
+                    className="grid grid-cols-[52px_minmax(0,1fr)] border-b border-zinc-100 last:border-0 sm:grid-cols-[72px_minmax(0,1fr)]"
+                  >
+                    <span className="py-4 text-center text-xs tabular-nums text-zinc-400">
+                      {String(hour).padStart(2, "0")}:00
+                    </span>
+                    <div className="min-h-16 min-w-0 border-l border-zinc-100 bg-zinc-50/40 p-3">
+                      {bookings.length > 0 && (
+                        <div className="grid gap-2 xl:grid-cols-2">
+                          {bookings.map((a) => (
+                            <Appointment
+                              key={a.id}
+                              booking={a}
+                              timezone={timezone}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              },
+            )}
+          </div>
+        )}
+        {view === "month" && (
+          <>
+            <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+              <div className="grid grid-cols-7 border-b border-zinc-200 bg-zinc-50">
+                {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map(
+                  (day) => (
+                    <span
+                      key={day}
+                      className="py-3 text-center text-[11px] font-medium text-zinc-500"
+                    >
+                      {day}
+                    </span>
+                  ),
+                )}
+              </div>
+              <div className="grid grid-cols-7">
+                {Array.from(
+                  { length: Math.ceil((offset + monthEnd) / 7) * 7 },
+                  (_, i) => {
+                    const n = i - offset + 1;
+                    if (n < 1 || n > monthEnd)
+                      return (
+                        <div
+                          key={i}
+                          aria-hidden="true"
+                          className="min-h-20 border-b border-r border-zinc-100 bg-zinc-50/50 sm:min-h-28"
+                        />
+                      );
+                    const day =
+                      date.slice(0, 7) + "-" + String(n).padStart(2, "0");
+                    const events = grouped.get(day) ?? [];
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        aria-pressed={date === day}
+                        aria-label={`${labelDay(day)}, ${events.length} agendamentos`}
+                        onClick={() => void setDate(day)}
+                        className={`flex min-h-20 min-w-0 flex-col gap-2 border-b border-r border-zinc-100 p-2 text-left transition-colors sm:min-h-28 sm:p-3 ${date === day ? "bg-[#F5F4FF] ring-1 ring-inset ring-[#635BFF]" : "hover:bg-zinc-50"}`}
+                      >
+                        <span
+                          className={`grid size-6 place-items-center rounded-full text-xs ${day === today ? "bg-[#635BFF] text-white" : "text-zinc-600"}`}
+                        >
+                          {n}
+                        </span>
+                        {events.length > 0 && (
+                          <>
+                            <span className="text-[10px] font-medium text-[#635BFF]">
+                              {events.length}
+                              <span className="hidden sm:inline">
+                                {" "}
+                                reservas
+                              </span>
+                            </span>
+                            <span className="hidden w-full space-y-1 lg:block">
+                              {events.slice(0, 2).map((event) => (
+                                <span
+                                  key={event.id}
+                                  className="block truncate rounded-md bg-zinc-50 px-1.5 py-1 text-[10px] text-zinc-600"
+                                >
+                                  {hourLabel(event.session.startsAt, timezone)}{" "}
+                                  · {event.session.service.name}
+                                </span>
+                              ))}
+                              {events.length > 2 && (
+                                <span className="block text-[10px] text-zinc-400">
+                                  +{events.length - 2} agendamentos
+                                </span>
+                              )}
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    );
+                  },
+                )}
+              </div>
+            </div>
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold capitalize text-zinc-700">
+                {labelDay(date)}
+              </h3>
+              {selected.length ? (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {selected.map((a) => (
+                    <Appointment key={a.id} booking={a} timezone={timezone} />
+                  ))}
+                </div>
+              ) : (
+                empty
+              )}
+            </div>
+          </>
+        )}
+        {view === "timeline" &&
+          (rows.length ? (
+            <div className="space-y-8">
+              {[...grouped].map(([day, bookings]) => (
+                <section key={day} className="flex flex-col gap-5">
+                  <h2 className="m-0 text-lg font-semibold capitalize text-zinc-800">
+                    {labelDay(day)}
+                  </h2>
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {bookings.map((a) => (
+                      <Appointment key={a.id} booking={a} timezone={timezone} />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          ) : (
+            empty
+          ))}
+      </div>
+    </div>
+  );
+}
