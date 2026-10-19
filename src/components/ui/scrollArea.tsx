@@ -11,6 +11,7 @@ export interface ScrollAreaProps extends React.ComponentPropsWithoutRef<
   orientation?: "vertical" | "horizontal" | "both";
   showScrollButtons?: boolean;
   showProgressBar?: boolean;
+  viewportClassName?: string;
 }
 
 const ScrollBar = React.forwardRef<
@@ -46,6 +47,7 @@ const ScrollArea = React.forwardRef<
       orientation = "vertical",
       showScrollButtons = false,
       showProgressBar = false,
+      viewportClassName,
       ...props
     },
     ref,
@@ -103,7 +105,10 @@ const ScrollArea = React.forwardRef<
 
         <ScrollAreaPrimitive.Viewport
           ref={viewportRef}
-          className="size-full rounded-[inherit] [-webkit-overflow-scrolling:touch]"
+          className={cn(
+            "size-full rounded-[inherit] [-webkit-overflow-scrolling:touch]",
+            viewportClassName,
+          )}
         >
           {children}
         </ScrollAreaPrimitive.Viewport>

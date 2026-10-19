@@ -1,6 +1,14 @@
 "use client";
+import { NavigationIndicator } from "@/components/ui/navigation-indicator";
 import { AnimatedArrow } from "@/components/ui/animated-arrow";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Fragment,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQueryStates } from "nuqs";
@@ -37,6 +45,7 @@ export function InternalShell({
   const [mobile, setMobile] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const sidebar = useRef<HTMLElement>(null);
+  const navigationRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!mobile) return;
     const previousOverflow = document.body.style.overflow;
@@ -101,13 +110,15 @@ export function InternalShell({
           }
         }}
       >
-        <ScrollArea className="h-full w-full">
-          <div className="flex min-h-dvh flex-col px-4 pt-6 pb-4">
+        <ScrollArea
+          className="h-full w-full pr-2"
+          viewportClassName="[&>div]:block! [&>div]:w-full [&>div]:min-w-0"
+        >
+          <div className="flex min-h-dvh w-full min-w-0 flex-col px-4 pt-6 pb-4">
             <div className="internal-logo-row">
               <Link href="/" aria-label="Flow início">
                 <img src="/brand/logo_black.svg" alt="Flow" />
               </Link>
-              <span>workspace</span>
               <button
                 className="internal-icon mobile-only"
                 aria-label="Fechar menu"
@@ -116,10 +127,10 @@ export function InternalShell({
                 <X size={18} />
               </button>
             </div>
-            {mode === "business" && (
+            {mode === "business" && plan === "multi" && (
               <div className="workspace-picker">
                 <span>SEU ESTABELECIMENTO</span>
-                {businesses.length > 1 ? (
+                {businesses.length > 0 ? (
                   <FlowSelect
                     value={current?.id ?? ""}
                     onValueChange={(value) => {
@@ -138,14 +149,6 @@ export function InternalShell({
                       </option>
                     ))}
                   </FlowSelect>
-                ) : current ? (
-                  <div className="workspace-name">
-                    <i style={{ background: current.color }}>
-                      {current.name[0]}
-                    </i>
-                    <strong>{current.name}</strong>
-                    <ChevronRight size={14} />
-                  </div>
                 ) : (
                   <Link
                     href="/painel/estabelecimentos/novo"
@@ -160,30 +163,41 @@ export function InternalShell({
               </div>
             )}
             <nav
-              className="internal-navigation"
+              ref={navigationRef}
+              className="internal-navigation relative [&>a]:pr-7"
               aria-label="Navegação principal"
             >
-              <span className="nav-caption">
-                {mode === "business" ? "GESTÃO DO NEGÓCIO" : "SEU ESPAÇO"}
-              </span>
+              <NavigationIndicator
+                containerRef={navigationRef}
+                activeKey={`${pathname}:${mode}:${plan}:${businesses.length}:${mobile}`}
+              />
+              {mode === "consumer" && (
+                <span className="nav-caption">SEU ESPAÇO</span>
+              )}
               {mode === "business" ? (
-                navigation.map((n) => {
+                navigation.map((n, index) => {
                   const active =
                     n.href === "/painel"
                       ? pathname === n.href
                       : pathname.startsWith(n.href);
                   return (
-                    <Link
-                      key={n.href}
-                      href={panelHref(n.href, current?.id)}
-                      className={active ? "active" : ""}
-                      aria-current={active ? "page" : undefined}
-                      onClick={() => setMobile(false)}
-                    >
-                      <n.icon size={18} />
-                      <span>{n.label}</span>
-                      {active && <i />}
-                    </Link>
+                    <Fragment key={n.href}>
+                      {n.group && n.group !== navigation[index - 1]?.group && (
+                        <span className="nav-caption mt-5 mb-1 uppercase">
+                          {n.group}
+                        </span>
+                      )}
+                      <Link
+                        key={n.href}
+                        href={panelHref(n.href, current?.id)}
+                        className={active ? "active" : ""}
+                        aria-current={active ? "page" : undefined}
+                        onClick={() => setMobile(false)}
+                      >
+                        <n.icon size={18} />
+                        <span>{n.label}</span>
+                      </Link>
+                    </Fragment>
                   );
                 })
               ) : (
@@ -195,7 +209,6 @@ export function InternalShell({
                   >
                     <CalendarDays size={18} />
                     Meus agendamentos
-                    <i />
                   </Link>
                   <Link href="/explorar">
                     <Scissors size={18} />
@@ -212,6 +225,9 @@ export function InternalShell({
                     : "/painel"
                 }
                 className={pathname === "/painel/assinatura" ? "active" : ""}
+                aria-current={
+                  pathname === "/painel/assinatura" ? "page" : undefined
+                }
               >
                 <Wallet size={18} />
                 {mode === "business" ? "Minha assinatura" : "Meu negócio"}
@@ -240,7 +256,9 @@ export function InternalShell({
                   </span>
                   <div>
                     <small>SEU PLANO</small>
-                    <strong>{plan === "multi" ? "Flow PRO" : "Flow Essencial"}</strong>
+                    <strong>
+                      {plan === "multi" ? "Flow PRO" : "Flow Essencial"}
+                    </strong>
                   </div>
                 </div>
               ) : (
@@ -248,11 +266,29 @@ export function InternalShell({
                   href="/#planos"
                   className="group relative isolate block overflow-hidden rounded-2xl border border-[#e8e5f6] bg-[#F5F4FF] p-4 transition-colors hover:border-[#635BFF]/40"
                 >
-                  <img src="/brand/icon.svg" alt="" aria-hidden="true" className="pointer-events-none absolute -right-5 -bottom-4 -z-10 w-28 opacity-[0.07]" />
-                  <span className="text-[9px] font-semibold tracking-widest text-[#635BFF] uppercase">Flow para negócios</span>
-                  <strong className="mt-2 block text-sm text-zinc-900">Sua agenda merece Flow.</strong>
-                  <p className="mt-2 text-xs leading-relaxed text-zinc-500">Crie sua página e organize seus serviços, equipe e agendamentos.</p>
-                  <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#635BFF]">Conhecer os planos <AnimatedArrow size={14} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></span>
+                  <img
+                    src="/brand/icon.svg"
+                    alt=""
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -right-5 -bottom-4 -z-10 w-28 opacity-[0.07]"
+                  />
+                  <span className="text-[9px] font-semibold tracking-widest text-[#635BFF] uppercase">
+                    Flow para negócios
+                  </span>
+                  <strong className="mt-2 block text-sm text-zinc-900">
+                    Sua agenda merece Flow.
+                  </strong>
+                  <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                    Crie sua página e organize seus serviços, equipe e
+                    agendamentos.
+                  </p>
+                  <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#635BFF]">
+                    Conhecer os planos{" "}
+                    <AnimatedArrow
+                      size={14}
+                      className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                    />
+                  </span>
                 </Link>
               )}
               <div className="internal-profile">

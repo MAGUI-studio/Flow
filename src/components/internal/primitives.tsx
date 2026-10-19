@@ -67,14 +67,16 @@ export function SectionCard({
   description,
   children,
   aside,
+  className = "",
 }: {
   title: string;
   description?: string;
   children: ReactNode;
   aside?: ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="internal-card">
+    <section className={`internal-card ${className}`}>
       <div className="internal-card-heading">
         <div>
           <h2>{title}</h2>

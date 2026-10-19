@@ -1,4 +1,5 @@
 "use client";
+import { notify, useToastError } from "@/components/ui/flow-toaster";
 import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import { Fragment, useState } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
@@ -85,8 +86,8 @@ export function Plans({
   const { isSignedIn } = useUser(),
     clerk = useClerk(),
     router = useRouter();
-  const [busy, setBusy] = useState(""),
-    [error, setError] = useState("");
+  const setError = useToastError();
+  const [busy, setBusy] = useState("");
   async function select(plan: string) {
     if (!isSignedIn) {
       await clerk.openSignIn({ forceRedirectUrl: window.location.href });
@@ -107,6 +108,7 @@ export function Plans({
       if (!r.ok) throw new Error(data.error);
       if (data.url) window.location.assign(data.url);
       else {
+        notify.success("Plano ativado", "Seu painel está pronto para você.");
         router.push("/painel");
         router.refresh();
       }
@@ -120,11 +122,6 @@ export function Plans({
   }
   return (
     <>
-      {error && (
-        <p className="form-error" role="alert">
-          {error}
-        </p>
-      )}
       <p className="mb-4 text-center text-[11px] text-zinc-400 sm:hidden">
         Deslize para comparar os planos lado a lado.
       </p>

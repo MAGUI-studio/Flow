@@ -1,6 +1,7 @@
 "use client";
+import { notify } from "@/components/ui/flow-toaster";
+import { formValidation } from "@/lib/form-validation";
 import { AnimatedArrow } from "@/components/ui/animated-arrow";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -15,8 +16,8 @@ export function TemplatePicker({
   plan: string;
 }) {
   const router = useRouter();
-  const [message, setMessage] = useState("");
   const form = useForm({
+    ...formValidation,
     resolver: zodResolver(templateSchema),
     defaultValues: {
       establishmentId: business.id,
@@ -28,7 +29,6 @@ export function TemplatePicker({
     <form
       noValidate
       onSubmit={form.handleSubmit(async (input) => {
-        setMessage("");
         try {
           const response = await fetch("/api/templates", {
             method: "POST",
@@ -37,12 +37,12 @@ export function TemplatePicker({
           });
           const data = await response.json();
           if (!response.ok) throw new Error(data.error);
-          setMessage(
+          notify.success(
             "Template atualizado. Sua página já está com o novo visual.",
           );
           router.refresh();
         } catch (error) {
-          setMessage(
+          notify.error(
             error instanceof Error ? error.message : "Não foi possível salvar.",
           );
         }
@@ -115,11 +115,7 @@ export function TemplatePicker({
           {form.formState.errors.templateId.message}
         </p>
       )}
-      {message && (
-        <p role="status" className="mt-5 text-sm text-zinc-600">
-          {message}
-        </p>
-      )}
+
       <div className="mt-7 flex flex-wrap items-center gap-4">
         <button
           type="submit"

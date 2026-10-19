@@ -1,4 +1,6 @@
 "use client";
+import { notify, useToastError } from "@/components/ui/flow-toaster";
+import { formValidation } from "@/lib/form-validation";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
@@ -81,10 +83,11 @@ export function BookingReview({
   professional: string;
   saved?: { establishmentScore: number; professionalScore: number } | null;
 }) {
+  const setError = useToastError();
   const router = useRouter();
-  const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(saved ?? null);
   const form = useForm<z.infer<typeof reviewSchema>>({
+    ...formValidation,
     resolver: zodResolver(reviewSchema),
     defaultValues: {
       bookingId,
@@ -126,6 +129,10 @@ export function BookingReview({
           });
           const data = await response.json();
           if (!response.ok) throw new Error(data.error);
+          notify.success(
+            "Avaliação enviada",
+            "Obrigado por compartilhar sua experiência.",
+          );
           setSubmitted({
             establishmentScore: input.establishmentScore * 2,
             professionalScore: input.professionalScore * 2,
@@ -184,11 +191,7 @@ export function BookingReview({
           )}
         </div>
       </div>
-      {error && (
-        <p role="alert" className="mt-4 text-xs text-rose-600">
-          {error}
-        </p>
-      )}
+
       <button
         type="submit"
         disabled={form.formState.isSubmitting}

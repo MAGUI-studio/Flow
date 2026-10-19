@@ -5,6 +5,7 @@ import "./globals.css";
 import "./internal.css";
 import "leaflet/dist/leaflet.css";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { FlowToaster } from "@/components/ui/flow-toaster";
 export const metadata: Metadata = {
   title: "Flow · Seu tempo, em boa companhia",
   description:
@@ -35,6 +36,7 @@ export default function RootLayout({
           }}
         >
           <NuqsAdapter>
+            <FlowToaster />
             <div className="relative mx-auto w-full max-w-440 [&_h2]:font-bold [&_h3]:font-semibold">
               {children}
             </div>
