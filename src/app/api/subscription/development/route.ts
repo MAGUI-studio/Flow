@@ -29,7 +29,9 @@ export async function POST(request: Request) {
         const establishments = await tx.establishment.findMany({
           where: { ownerId: owner },
           include: {
-            _count: { select: { professionals: { where: { active: true } } } },
+            _count: {
+              select: { professionals: { where: { deletedAt: null } } },
+            },
           },
         });
         if (

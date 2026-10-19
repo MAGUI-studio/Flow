@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { addressSchema } from "@/lib/address";
 import { prisma } from "@/lib/prisma";
+import { appUrl } from "@/lib/app-url";
 const recent = new Map<string, number>();
 export async function POST(request: Request) {
   const { userId } = await auth();
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
       next: { revalidate: 86400 },
       signal: AbortSignal.timeout(10000),
       headers: {
-        "User-Agent": "Flow/1.0 (https://flow.magui.studio)",
+        "User-Agent": `Flow/1.0 (${appUrl})`,
         Accept: "application/json",
       },
     });

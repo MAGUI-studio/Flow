@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { appUrl } from "@/lib/app-url";
 import { currentUser, apiError } from "@/lib/access";
 import { db } from "@/lib/db";
 export async function POST(request: Request) {
@@ -48,8 +49,8 @@ export async function POST(request: Request) {
         line_items: [{ price, quantity: 1 }],
         client_reference_id: userId,
         subscription_data: { metadata: { flowUserId: userId } },
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/painel?checkout=success`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/#planos`,
+        success_url: `${appUrl}/painel?checkout=success`,
+        cancel_url: `${appUrl}/#planos`,
       },
       {
         idempotencyKey: `flow-checkout-${userId}-${body.plan}-${Math.floor(Date.now() / 300000)}`,

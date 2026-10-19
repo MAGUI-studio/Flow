@@ -1,6 +1,9 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
-export default clerkMiddleware();
+export default clerkMiddleware({
+  signInUrl: "/entrar",
+  signUpUrl: "/criar-conta",
+});
 
 export const config = {
   matcher: [
