@@ -1,7 +1,13 @@
 "use client";
+import { Weekday } from "./professional-schedule";
+import { emptyWeeklySchedule, weekdays } from "@/lib/weekly-schedule";
+import { notify, useToastError } from "@/components/ui/flow-toaster";
+import { formValidation } from "@/lib/form-validation";
+import { ProfessionalPhoto } from "./professional-photo";
 import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import { useEffect, useState, type ReactNode } from "react";
 import { businessSlug } from "@/lib/business-slug";
+import { appAddress } from "@/lib/app-url";
 import { businessBioMaxLength } from "@/lib/business-categories";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -41,6 +47,7 @@ import {
   FormProvider,
   useForm,
   useFormContext,
+  useController,
   type FieldValues,
   type Resolver,
 } from "react-hook-form";
@@ -64,7 +71,7 @@ const destinations: Record<FormKind, string> = {
   establishment: "/painel/estabelecimentos",
   professional: "/painel/profissionais",
   service: "/painel/servicos",
-  availability: "/painel/disponibilidade",
+  availability: "/painel/profissionais",
   session: "/painel/sessoes",
 };
 function Choice({
@@ -84,16 +91,19 @@ function Choice({
   checked?: boolean;
   onChange?: () => void;
 }) {
-  const { register } = useFormContext();
+  const { control } = useFormContext();
+  const { field } = useController({ name, control });
   return (
     <label className="choice-tile relative isolate overflow-hidden p-5 has-checked:border-[#635BFF] has-checked:bg-[#F5F4FF]">
       <input
         type="radio"
-        {...register(name)}
+        name={field.name}
+        ref={field.ref}
+        onBlur={field.onBlur}
         value={value}
-        defaultChecked={checked}
-        onChange={(event) => {
-          void register(name).onChange(event);
+        checked={field.value === undefined ? !!checked : field.value === value}
+        onChange={() => {
+          field.onChange(value);
           onChange?.();
         }}
       />
@@ -113,25 +123,46 @@ function Choice({
     </label>
   );
 }
+export type EditableService = {
+  id: string;
+  name: string;
+  kind: "individual" | "collective";
+  modality: "in_person" | "online";
+  durationMinutes: number;
+  stepMinutes: number;
+  bufferBefore: number;
+  bufferAfter: number;
+  price: string;
+  free: boolean;
+  professionalIds: string[];
+};
 export function BusinessForm({
   kind,
   business,
   professionals = [],
   services = [],
+  initialService,
 }: {
   kind: FormKind;
+  initialService?: EditableService;
   business?: FormBusiness;
   professionals?: FormProfessional[];
   services?: FormService[];
 }) {
+  const [savedServiceId, setSavedServiceId] = useState(initialService?.id);
+  const setError = useToastError();
   const router = useRouter();
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [professionalPhotoFile, setProfessionalPhotoFile] = useState<File>();
   const methods = useForm<FieldValues>({
+    ...formValidation,
     resolver: zodResolver(
       businessSchemas[kind] as z.ZodType<FieldValues, FieldValues>,
     ) as Resolver<FieldValues>,
-    mode: "onTouched",
     defaultValues: {
       name: "",
+      photoId: "",
+      days: emptyWeeklySchedule().days,
       slug: "",
       category: "",
       description: "",
@@ -165,6 +196,7 @@ export function BusinessForm({
       mode: "open",
       serviceId: "",
       capacity: 10,
+      ...initialService,
     },
   });
   const {
@@ -181,8 +213,7 @@ export function BusinessForm({
       ? `error-${name}`
       : undefined,
   });
-  const [error, setError] = useState(""),
-    [canEditSlug, setCanEditSlug] = useState(false);
+  const [canEditSlug, setCanEditSlug] = useState(false);
   const [slugStatus, setSlugStatus] = useState("");
   const [slugCheckVersion, setSlugCheckVersion] = useState(0);
   const name = watch("name") as string,
@@ -254,6 +285,7 @@ export function BusinessForm({
         )
       : professionals;
   async function submit(values: FieldValues) {
+    if (photoBusy) return;
     const input: Record<string, unknown> = {
       ...values,
       type: kind,
@@ -284,13 +316,54 @@ export function BusinessForm({
           return;
         }
       }
-      const response = await fetch("/api/manage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      });
+      const photoForm =
+        kind === "professional" && professionalPhotoFile
+          ? new FormData()
+          : null;
+      if (photoForm) {
+        photoForm.set("file", professionalPhotoFile!);
+        photoForm.set("establishmentId", business!.id);
+        photoForm.set("name", String(values.name));
+        photoForm.set("days", JSON.stringify(values.days));
+      }
+      const response = await fetch(
+        photoForm
+          ? "/api/professionals/photo"
+          : kind === "service" && savedServiceId
+            ? `/api/services/${savedServiceId}`
+            : "/api/manage",
+        photoForm
+          ? {
+              method: "POST",
+              body: photoForm,
+            }
+          : {
+              method: kind === "service" && savedServiceId ? "PATCH" : "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(input),
+            },
+      );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
+      notify.success(
+        kind === "professional"
+          ? "Profissional adicionado"
+          : kind === "establishment"
+            ? "Estabelecimento criado"
+            : kind === "service"
+              ? savedServiceId
+                ? "Alterações salvas"
+                : "Serviço cadastrado"
+              : kind === "availability"
+                ? "Disponibilidade salva"
+                : "Sessão criada",
+      );
+      if (kind === "service") {
+        setSavedServiceId(data.id);
+        methods.reset(values);
+        router.refresh();
+        return;
+      }
       router.push(
         panelHref(
           destinations[kind],
@@ -305,7 +378,7 @@ export function BusinessForm({
   }
   const professionalField = (
     <label className="form-field">
-      Profissional <span className="required-mark">*</span>
+      Profissional <span className="required-mark text-red-600">*</span>
       <FlowSelect
         name="professionalId"
         required
@@ -328,13 +401,29 @@ export function BusinessForm({
   );
   return (
     <FormProvider {...methods}>
-      <div className="form-page-grid w-full grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div
+        className={`form-page-grid w-full grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_320px] ${kind === "professional" ? "gap-5" : ""}`}
+      >
         <form
-          className="internal-form"
+          className={
+            kind === "professional"
+              ? "internal-form [&_.internal-form-section]:px-5 [&_.internal-form-section]:py-5 sm:[&_.internal-form-section]:px-6 [&_.internal-form-section>header]:mb-4 [&_.internal-form-section>header]:min-h-14 [&_.internal-form-section>header]:pt-0 [&_.section-watermark]:text-5xl [&_.form-section-fields]:gap-3"
+              : "internal-form"
+          }
           noValidate
           onSubmit={handleSubmit(submit)}
           aria-busy={busy}
         >
+          <p
+            className={
+              kind === "professional"
+                ? "px-5 pt-4 text-xs text-zinc-500 sm:px-6"
+                : "px-5 pt-5 text-xs text-zinc-500 sm:px-8 sm:pt-6"
+            }
+          >
+            Todos os campos marcados com <span className="text-red-600">*</span>{" "}
+            são obrigatórios.
+          </p>
           {kind === "establishment" ? (
             <>
               <FormSection
@@ -344,7 +433,7 @@ export function BusinessForm({
               >
                 <label className="form-field">
                   Nome do estabelecimento{" "}
-                  <span className="required-mark">*</span>
+                  <span className="required-mark text-red-600">*</span>
                   <input
                     {...register("name")}
                     required
@@ -362,12 +451,12 @@ export function BusinessForm({
                 </label>
                 <label className="form-field">
                   Endereço da sua página{" "}
-                  <span className="required-mark">*</span>
+                  <span className="required-mark text-red-600">*</span>
                   <div
                     className={`slug-field flex min-h-12 items-center gap-2 overflow-hidden rounded-xl border border-zinc-200 px-3 py-0 transition-opacity focus-within:border-[#635BFF] ${canEditSlug ? "opacity-100" : "bg-zinc-50 opacity-60"}`}
                   >
                     <span className="shrink-0 bg-transparent p-0 text-xs text-zinc-400">
-                      flow.magui.studio/
+                      {appAddress}/
                     </span>
                     <input
                       {...(canEditSlug ? register("slug") : {})}
@@ -412,7 +501,8 @@ export function BusinessForm({
                 </label>
                 <fieldset className="category-field m-0 min-w-0 border-0 p-0 text-xs text-zinc-600 [&_legend]:mb-3">
                   <legend>
-                    Categoria <span className="required-mark">*</span>
+                    Categoria{" "}
+                    <span className="required-mark text-red-600">*</span>
                   </legend>
                   <p className="mb-4 text-xs leading-relaxed text-zinc-500">
                     Escolha a área que melhor representa o seu negócio.
@@ -564,28 +654,36 @@ export function BusinessForm({
                 title="Seu jeito de organizar a agenda"
                 description="Defina como as reservas chegam até você."
               >
-                <div className="choice-tiles">
-                  <Choice
-                    name="approvalMode"
-                    value="automatic"
-                    title="Confirmação automática"
-                    description="O horário é confirmado assim que o cliente agenda."
-                    icon={<Zap size={19} />}
-                    checked
-                  />
-                  <Choice
-                    name="approvalMode"
-                    value="manual"
-                    title="Aprovação manual"
-                    description="Você analisa cada pedido em até 24 horas."
-                    icon={<ClipboardCheck size={19} />}
-                  />
-                </div>
+                <fieldset className="m-0 min-w-0 border-0 p-0">
+                  <legend className="mb-3 text-xs font-medium text-zinc-600">
+                    Confirmação das reservas{" "}
+                    <span className="text-red-600">*</span>
+                  </legend>
+                  <div className="choice-tiles">
+                    <Choice
+                      name="approvalMode"
+                      value="automatic"
+                      title="Confirmação automática"
+                      description="O horário é confirmado assim que o cliente agenda."
+                      icon={<Zap size={19} />}
+                      checked
+                    />
+                    <Choice
+                      name="approvalMode"
+                      value="manual"
+                      title="Aprovação manual"
+                      description="Você analisa cada pedido em até 24 horas."
+                      icon={<ClipboardCheck size={19} />}
+                    />
+                  </div>
+                </fieldset>
                 <label className="form-field compact-field">
-                  Prazo para cancelar (horas)
+                  Prazo para cancelar (horas){" "}
+                  <span className="text-red-600">*</span>
                   <input
                     {...register("cancelNoticeHours")}
                     type="number"
+                    required
                     min={0}
                     max={720}
                     defaultValue={2}
@@ -599,50 +697,61 @@ export function BusinessForm({
               </FormSection>
             </>
           ) : kind === "professional" ? (
-            <FormSection
-              number="01"
-              title="Quem faz parte da sua equipe?"
-              description="O nome aparece para o cliente ao escolher quem vai atender."
-            >
-              <div className="professional-form-intro">
-                <span>
-                  {name ? (
-                    name
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((w) => w[0])
-                      .join("")
-                  ) : (
-                    <Users size={26} />
-                  )}
-                </span>
-                <div>
-                  <strong>Um atendimento com nome e cuidado.</strong>
-                  <p>
-                    Cadastre um profissional por vez. Cada estabelecimento pode
-                    ter até dez.
-                  </p>
+            <>
+              <FormSection
+                number="01"
+                title="Quem faz parte da sua equipe?"
+                description="O nome aparece para o cliente ao escolher quem vai atender."
+              >
+                <div className="grid items-center gap-4 sm:grid-cols-[192px_minmax(0,1fr)] sm:gap-5">
+                  <div>
+                    <ProfessionalPhoto
+                      name={name}
+                      establishmentId={business!.id}
+                      onFileChange={setProfessionalPhotoFile}
+                      onChange={(id) =>
+                        setValue("photoId", id, {
+                          shouldDirty: true,
+                          shouldValidate: methods.formState.isSubmitted,
+                        })
+                      }
+                      onBusyChange={setPhotoBusy}
+                    />
+                  </div>
+                  <label className="form-field">
+                    Nome do profissional{" "}
+                    <span className="required-mark text-red-600">*</span>
+                    <input
+                      {...register("name")}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      maxLength={150}
+                      placeholder="Ex.: Marina Costa"
+                      autoComplete="off"
+                      autoFocus
+                    />
+                    <small className="field-help">
+                      Depois, vincule os serviços realizados por este
+                      profissional.
+                    </small>
+                    <FieldError name="name" />
+                  </label>
                 </div>
-              </div>
-              <label className="form-field">
-                Nome do profissional <span className="required-mark">*</span>
-                <input
-                  {...register("name")}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  maxLength={150}
-                  placeholder="Ex.: Marina Costa"
-                  autoComplete="off"
-                  autoFocus
-                />
-                <small className="field-help">
-                  Depois, vincule os serviços e abra os horários desse
-                  profissional.
-                </small>
-                <FieldError name="name" />
-              </label>
-            </FormSection>
+              </FormSection>
+              <FormSection
+                number="02"
+                title="Horários de atendimento"
+                description="Selecione pelo menos um dia e defina os horários. A rotina se repete automaticamente toda semana."
+              >
+                <div className="space-y-3">
+                  {weekdays.map((day, index) => (
+                    <Weekday key={day} index={index} />
+                  ))}
+                </div>
+                <FieldError name="days" />
+              </FormSection>
+            </>
           ) : kind === "service" ? (
             <>
               <FormSection
@@ -651,7 +760,8 @@ export function BusinessForm({
                 description="Um nome claro ajuda o cliente a escolher o atendimento certo."
               >
                 <label className="form-field">
-                  Nome do serviço <span className="required-mark">*</span>
+                  Nome do serviço{" "}
+                  <span className="required-mark text-red-600">*</span>
                   <input
                     {...register("name")}
                     required
@@ -704,7 +814,8 @@ export function BusinessForm({
               >
                 <div className="fields-grid">
                   <label className="form-field">
-                    Duração (minutos) <span className="required-mark">*</span>
+                    Duração (minutos){" "}
+                    <span className="required-mark text-red-600">*</span>
                     <input
                       {...register("durationMinutes")}
                       type="number"
@@ -733,17 +844,8 @@ export function BusinessForm({
                     <FieldError name="stepMinutes" />
                   </label>
                 </div>
-                <div className="free-service-field">
-                  <label className="checkbox-field">
-                    <input
-                      {...register("free")}
-                      type="checkbox"
-                      checked={free}
-                      onChange={(e) => setFree(e.target.checked)}
-                    />
-                    Este serviço é gratuito
-                  </label>
-                  <label className="form-field compact-field">
+                <div className="flex min-w-0 flex-col gap-2">
+                  <label className="form-field">
                     Valor do serviço (R$)
                     <input
                       {...register("price", {
@@ -759,6 +861,22 @@ export function BusinessForm({
                       disabled={free}
                     />
                     <FieldError name="price" />
+                  </label>
+                  <label className="group inline-flex w-fit max-w-full min-h-10 cursor-pointer items-center gap-2.5 self-start text-xs font-medium text-zinc-500">
+                    <input
+                      {...register("free")}
+                      type="checkbox"
+                      checked={free}
+                      onChange={(e) => setFree(e.target.checked)}
+                      className="peer sr-only"
+                    />
+                    <span
+                      aria-hidden="true"
+                      className="grid size-5 shrink-0 place-items-center rounded-lg border border-[#dcd8e9] bg-white text-transparent shadow-xs transition-colors group-hover:border-[#635BFF]/50 peer-checked:border-[#635BFF] peer-checked:bg-[#635BFF] peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-[#635BFF]"
+                    >
+                      <Check size={14} strokeWidth={3} />
+                    </span>
+                    Este serviço é gratuito
                   </label>
                 </div>
                 <div className="fields-grid">
@@ -855,18 +973,19 @@ export function BusinessForm({
                 description="Cada período vale para a data escolhida. Você pode abrir datas futuras."
               >
                 <label className="form-field">
-                  Data <span className="required-mark">*</span>
+                  Data <span className="required-mark text-red-600">*</span>
                   <FlowDate name="date" required />
                   <FieldError name="date" />
                 </label>
                 <div className="fields-grid">
                   <label className="form-field">
-                    A partir de <span className="required-mark">*</span>
+                    A partir de{" "}
+                    <span className="required-mark text-red-600">*</span>
                     <FlowTime name="start" required />
                     <FieldError name="start" />
                   </label>
                   <label className="form-field">
-                    Até <span className="required-mark">*</span>
+                    Até <span className="required-mark text-red-600">*</span>
                     <FlowTime name="end" required />
                     <FieldError name="end" />
                   </label>
@@ -886,7 +1005,8 @@ export function BusinessForm({
                 description="Defina o serviço e quem vai conduzir esta sessão."
               >
                 <label className="form-field">
-                  Serviço coletivo <span className="required-mark">*</span>
+                  Serviço coletivo{" "}
+                  <span className="required-mark text-red-600">*</span>
                   <FlowSelect
                     name="serviceId"
                     required
@@ -911,18 +1031,20 @@ export function BusinessForm({
               >
                 <div className="fields-grid">
                   <label className="form-field">
-                    Data <span className="required-mark">*</span>
+                    Data <span className="required-mark text-red-600">*</span>
                     <FlowDate name="date" required />
                     <FieldError name="date" />
                   </label>
                   <label className="form-field">
-                    Começa às <span className="required-mark">*</span>
+                    Começa às{" "}
+                    <span className="required-mark text-red-600">*</span>
                     <FlowTime name="start" required />
                     <FieldError name="start" />
                   </label>
                 </div>
                 <label className="form-field compact-field">
-                  Capacidade da turma <span className="required-mark">*</span>
+                  Capacidade da turma{" "}
+                  <span className="required-mark text-red-600">*</span>
                   <input
                     {...register("capacity")}
                     type="number"
@@ -940,16 +1062,18 @@ export function BusinessForm({
               </FormSection>
             </>
           )}
-          {error && (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          )}
-          <div className="internal-form-footer">
+
+          <div
+            className={
+              kind === "professional"
+                ? "internal-form-footer px-5 py-4 sm:px-6"
+                : "internal-form-footer"
+            }
+          >
             <Link href={back} className="form-cancel">
               Cancelar
             </Link>
-            <button className="button" disabled={busy}>
+            <button className="button" disabled={busy || photoBusy}>
               {busy ? (
                 <>
                   <LoaderCircle size={16} className="spinning" />
@@ -962,7 +1086,9 @@ export function BusinessForm({
                     : kind === "professional"
                       ? "Adicionar profissional"
                       : kind === "service"
-                        ? "Cadastrar serviço"
+                        ? savedServiceId
+                          ? "Salvar alterações"
+                          : "Cadastrar serviço"
                         : kind === "availability"
                           ? "Salvar período"
                           : "Criar sessão"}
@@ -973,7 +1099,13 @@ export function BusinessForm({
           </div>
         </form>
         <aside className="form-companion hidden lg:block">
-          <div className="form-companion-card">
+          <div
+            className={
+              kind === "professional"
+                ? "form-companion-card relative overflow-hidden p-5 [&_h3]:my-2"
+                : "form-companion-card"
+            }
+          >
             <span className="companion-spark">✳</span>
             <small>UM PASSO DE CADA VEZ</small>
             <h3>
@@ -996,7 +1128,9 @@ export function BusinessForm({
                   <BusinessMonogram name={name || "Flow"} />
                 </div>
                 <strong>{name || "Nome do seu negócio"}</strong>
-                <span>flow.magui.studio/{slug || "seu-negocio"}</span>
+                <span>
+                  {appAddress}/{slug || "seu-negocio"}
+                </span>
               </div>
             )}
           </div>
@@ -1014,9 +1148,9 @@ export function BusinessForm({
           {kind === "session" && (
             <Link
               className="internal-back"
-              href={panelHref("/painel/disponibilidade/novo", business?.id)}
+              href={panelHref("/painel/profissionais", business?.id)}
             >
-              Abrir horários antes de criar a sessão
+              Configurar os horários da equipe
               <AnimatedArrow direction="right" size={13} />
             </Link>
           )}
