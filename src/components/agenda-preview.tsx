@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Check,
   MousePointer2,
@@ -14,6 +14,7 @@ import {
   Plus,
 } from "lucide-react";
 import { businessNavigation } from "@/lib/navigation";
+import { NavigationIndicator } from "./ui/navigation-indicator";
 import { money, dayKey } from "@/lib/format";
 import type { BusinessProfile } from "@/lib/catalog";
 import { OwnerAppointment } from "./internal/owner-appointment";
@@ -60,6 +61,7 @@ export function AgendaPreview({
   const scene = useRef<HTMLDivElement>(null);
   const copy = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
+  const navigationRef = useRef<HTMLElement>(null);
   const [scale, setScale] = useState(0.8);
   const [frame, setFrame] = useState(0);
   const [reduced, setReduced] = useState(true);
@@ -244,19 +246,38 @@ export function AgendaPreview({
               <div className="mb-6 rounded-xl border border-[#e9e9f1] p-3 text-xs font-medium">
                 {business?.name}
               </div>
-              <span className="nav-caption">GESTÃO DO NEGÓCIO</span>
-              <nav className="internal-navigation mt-3 p-0">
-                {businessNavigation.map((item) => (
-                  <a
-                    href="#"
-                    data-nav={item.href}
-                    key={item.href}
-                    className={item.href === stages[stage].path ? "active" : ""}
-                  >
-                    <item.icon size={18} />
-                    <span>{item.label}</span>
-                    {item.href === stages[stage].path && <i />}
-                  </a>
+              <nav
+                ref={navigationRef}
+                className="internal-navigation relative mt-3 p-0 [&>a]:pr-7"
+              >
+                <NavigationIndicator
+                  containerRef={navigationRef}
+                  activeKey={stages[stage].path}
+                  followClicks={false}
+                />
+                {businessNavigation.map((item, index) => (
+                  <Fragment key={item.href}>
+                    {item.group &&
+                      item.group !== businessNavigation[index - 1]?.group && (
+                        <span className="nav-caption mt-4 mb-1 uppercase">
+                          {item.group}
+                        </span>
+                      )}
+                    <a
+                      href="#"
+                      data-nav={item.href}
+                      key={item.href}
+                      className={
+                        item.href === stages[stage].path ? "active" : ""
+                      }
+                      aria-current={
+                        item.href === stages[stage].path ? "page" : undefined
+                      }
+                    >
+                      <item.icon size={18} />
+                      <span>{item.label}</span>
+                    </a>
+                  </Fragment>
                 ))}
               </nav>
             </aside>

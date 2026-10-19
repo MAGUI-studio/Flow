@@ -42,7 +42,7 @@ export type BusinessProfile = BusinessCard & {
     modality: string;
     professionalIds: string[];
   }[];
-  professionals: { id: string; name: string }[];
+  professionals: { id: string; name: string; photoUrl?: string }[];
 };
 export async function catalog() {
   const rows = await prisma().establishment.findMany({
@@ -100,7 +100,11 @@ export async function profile(slug: string): Promise<BusinessProfile | null> {
     where: { slug },
     include: {
       owner: { include: { subscription: true } },
-      professionals: { where: { active: true }, orderBy: { name: "asc" } },
+      professionals: {
+        where: { active: true },
+        orderBy: { name: "asc" },
+        include: { photo: { select: { url: true } } },
+      },
       services: {
         where: { active: true },
         include: { professionals: true },
@@ -153,7 +157,11 @@ export async function profile(slug: string): Promise<BusinessProfile | null> {
     cancelNoticeHours: e.cancelNoticeHours,
     logoUrl: e.logoUrl,
     coverUrl: e.coverUrl,
-    professionals: e.professionals.map((p) => ({ id: p.id, name: p.name })),
+    professionals: e.professionals.map((p) => ({
+      id: p.id,
+      name: p.name,
+      photoUrl: p.photo?.url,
+    })),
     services: e.services.map((s) => ({
       id: s.id,
       name: s.name,

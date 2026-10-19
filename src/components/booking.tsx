@@ -1,4 +1,6 @@
 "use client";
+import { useToastError } from "@/components/ui/flow-toaster";
+import { formValidation } from "@/lib/form-validation";
 import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import { Container } from "@/components/container";
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
@@ -27,6 +29,7 @@ export function Booking({
   myBookings?: UpcomingBooking[];
   bookingsUserId?: string | null;
 }) {
+  const setError = useToastError();
   const { isSignedIn, user } = useUser(),
     clerk = useClerk();
   const [step, setStep] = useState(0),
@@ -38,7 +41,6 @@ export function Booking({
     [slots, setSlots] = useState<Slot[]>([]),
     [loading, setLoading] = useState(false),
     [saving, setSaving] = useState(false),
-    [error, setError] = useState(""),
     [success, setSuccess] = useState<{ id: string; status: string } | null>(
       null,
     ),
@@ -63,8 +65,8 @@ export function Booking({
   const service = b.services.find((s) => s.id === serviceId),
     professional = b.professionals.find((p) => p.id === professionalId);
   const bookingForm = useForm({
+    ...formValidation,
     resolver: zodResolver(bookingSchema(service?.modality === "online")),
-    mode: "onTouched",
     defaultValues: {
       serviceId: "",
       professionalId: "",
@@ -339,7 +341,16 @@ export function Booking({
                       setSlot(null);
                     }}
                   >
-                    <strong>{p.name}</strong>
+                    <span className="flex items-center gap-3">
+                      {p.photoUrl && (
+                        <img
+                          src={p.photoUrl}
+                          alt=""
+                          className="size-10 shrink-0 rounded-lg object-cover"
+                        />
+                      )}
+                      <strong>{p.name}</strong>
+                    </span>
                     <span>↗</span>
                   </button>
                 ))}
@@ -492,11 +503,7 @@ export function Booking({
                   </div>
                 </>
               )}
-              {error && (
-                <p className="form-error" role="alert">
-                  {error}
-                </p>
-              )}
+
               <div className="form-actions">
                 {step > 0 ? (
                   <button
