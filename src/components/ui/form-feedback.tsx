@@ -3,6 +3,9 @@ import {
   cloneElement,
   createContext,
   useContext,
+  useEffect,
+  useRef,
+  useState,
   type ReactElement,
   type ButtonHTMLAttributes,
   type ReactNode,
@@ -31,17 +34,32 @@ export function FormSubmitGuard({
   className?: string;
 }) {
   const pending = [...validationMessages(schema, values), ...issues];
+  const [helpOpen, setHelpOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
+  function openHelp() {
+    clearTimeout(closeTimer.current);
+    setHelpOpen(true);
+  }
+  function closeHelp() {
+    clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setHelpOpen(false), 150);
+  }
   return (
     <div className={`inline-flex min-w-0 items-center gap-2 ${className}`}>
       {cloneElement(children, {
         disabled: children.props.disabled || pending.length > 0,
       })}
       {pending.length > 0 && (
-        <Popover.Root>
+        <Popover.Root open={helpOpen} onOpenChange={setHelpOpen}>
           <Popover.Trigger asChild>
             <button
               type="button"
               aria-label="Ver campos pendentes para salvar"
+              onPointerEnter={openHelp}
+              onPointerLeave={closeHelp}
+              onFocus={openHelp}
+              onBlur={closeHelp}
               className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[#635BFF] hover:bg-[#F5F4FF] focus-visible:outline-2 focus-visible:outline-[#635BFF]"
             >
               <QuestionIcon size={20} aria-hidden="true" />
@@ -52,6 +70,10 @@ export function FormSubmitGuard({
               side="top"
               align="end"
               sideOffset={8}
+              onOpenAutoFocus={(event) => event.preventDefault()}
+              onCloseAutoFocus={(event) => event.preventDefault()}
+              onPointerEnter={openHelp}
+              onPointerLeave={closeHelp}
               className="z-[1100] max-h-72 w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-[#635BFF] bg-[#635BFF] p-4 text-xs text-white shadow-lg"
             >
               <p className="mb-2 font-semibold text-white">
