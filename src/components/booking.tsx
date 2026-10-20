@@ -368,7 +368,9 @@ export function Booking({
                   />
                   {!dates.length && !bookedDates.length && !loading ? (
                     <p className="muted-text">
-                      Este profissional ainda não abriu novas datas.
+                      {service?.kind === "collective"
+                        ? "Não há sessões em grupo disponíveis para este profissional no momento."
+                        : "Não há horários disponíveis para este atendimento no momento. Escolha outro profissional ou consulte novamente mais tarde."}
                     </p>
                   ) : (
                     date && (

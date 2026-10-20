@@ -1,3 +1,4 @@
+import { weeklyScheduleSchema } from "./weekly-schedule";
 import { prisma } from "./prisma";
 import { effectiveTemplate, type TemplateId } from "./plan-features";
 import { publicRatings } from "./public-ratings";
@@ -101,9 +102,16 @@ export async function profile(slug: string): Promise<BusinessProfile | null> {
     include: {
       owner: { include: { subscription: true } },
       professionals: {
-        where: { active: true },
+        where: { active: true, deletedAt: null },
         orderBy: { name: "asc" },
-        include: { photo: { select: { url: true } } },
+        include: {
+          photo: { select: { url: true } },
+          windows: {
+            where: { endsAt: { gt: new Date() } },
+            select: { id: true },
+            take: 1,
+          },
+        },
       },
       services: {
         where: { active: true },
@@ -119,6 +127,18 @@ export async function profile(slug: string): Promise<BusinessProfile | null> {
     e.owner.subscription.paidUntil <= new Date()
   )
     return null;
+  const bookableProfessionals = e.professionals.filter((p) => {
+    if (p.weeklySchedule === null) return p.windows.length > 0;
+    const schedule = weeklyScheduleSchema.safeParse(p.weeklySchedule);
+    return (
+      schedule.success &&
+      schedule.data.days.some((day) => day.enabled && day.intervals.length > 0)
+    );
+  });
+  const bookableIds = new Set(bookableProfessionals.map((p) => p.id));
+  const bookableServices = e.services.filter((service) =>
+    service.professionals.some((link) => bookableIds.has(link.professionalId)),
+  );
   const card = (await catalog()).find((business) => business.id === e.id);
   const details = e.addressDetails;
   const location = locationSchema.safeParse(
@@ -157,19 +177,21 @@ export async function profile(slug: string): Promise<BusinessProfile | null> {
     cancelNoticeHours: e.cancelNoticeHours,
     logoUrl: e.logoUrl,
     coverUrl: e.coverUrl,
-    professionals: e.professionals.map((p) => ({
+    professionals: bookableProfessionals.map((p) => ({
       id: p.id,
       name: p.name,
       photoUrl: p.photo?.url,
     })),
-    services: e.services.map((s) => ({
+    services: bookableServices.map((s) => ({
       id: s.id,
       name: s.name,
       durationMinutes: s.durationMinutes,
       priceCents: s.priceCents,
       kind: s.kind,
       modality: s.modality,
-      professionalIds: s.professionals.map((p) => p.professionalId),
+      professionalIds: s.professionals
+        .filter((p) => bookableIds.has(p.professionalId))
+        .map((p) => p.professionalId),
     })),
   };
 }
