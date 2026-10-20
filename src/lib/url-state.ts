@@ -25,7 +25,29 @@ const professionalFilter = createParser({
       : null,
   serialize: (value: string) => value,
 }).withDefault("all");
+const linkedIds = createParser<string[]>({
+  parse: (value) =>
+    [
+      ...new Set(
+        value
+          .split(",")
+          .filter((id) =>
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+              id,
+            ),
+          )
+          .map((id) => id.toLowerCase()),
+      ),
+    ].slice(0, 100),
+  serialize: (value) => value.join(","),
+  eq: (a, b) =>
+    a.length === b.length && a.every((id, index) => id === b[index]),
+}).withDefault([]);
 export const panelSearch = {
+  servicos: linkedIds,
+  profissionais: linkedIds,
+  combinarServicos: parseAsStringEnum(["all", "any"]).withDefault("all"),
+  combinarProfissionais: parseAsStringEnum(["all", "any"]).withDefault("all"),
   modalidade: parseAsStringEnum(["all", "online", "in_person"]).withDefault(
     "all",
   ),
@@ -62,6 +84,7 @@ export function panelHref(path: string, establishmentId?: string | null) {
   return serializePanel(path, { estabelecimento: establishmentId ?? null });
 }
 export const consumerSearch = {
+  avaliacoes: parseAsStringEnum(["all", "pending"]).withDefault("all"),
   busca: parseAsString.withDefault(""),
   status: bookingStatus,
   periodo: parseAsStringEnum(["upcoming", "past", "all"]).withDefault(

@@ -30,6 +30,8 @@ export type BusinessProfile = BusinessCard & {
   timezone: string;
   address: string | null;
   contactPhone: string | null;
+  website?: string | null;
+  instagram?: string | null;
   approvalMode: string;
   cancelNoticeHours: number;
   logoUrl: string | null;
@@ -173,6 +175,8 @@ export async function profile(slug: string): Promise<BusinessProfile | null> {
     timezone: e.timezone,
     address: e.address,
     contactPhone: e.contactPhone,
+    website: e.website,
+    instagram: e.instagram,
     approvalMode: e.approvalMode,
     cancelNoticeHours: e.cancelNoticeHours,
     logoUrl: e.logoUrl,

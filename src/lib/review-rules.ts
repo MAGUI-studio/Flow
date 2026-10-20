@@ -7,7 +7,7 @@ const score = z
 export const reviewSchema = z.object({
   bookingId: z.string().uuid(),
   establishmentScore: score,
-  professionalScore: score,
+  serviceScore: score,
 });
 export function reviewEligible(
   status: string,
@@ -15,17 +15,15 @@ export function reviewEligible(
   now = new Date(),
 ) {
   return (
-    ["confirmed", "completed"].includes(status) &&
-    now.getTime() >= new Date(startsAt).getTime() + 24 * 3600000
+    status === "completed" && now.getTime() >= new Date(startsAt).getTime()
   );
 }
 export function combinedRating(
-  scores: { establishmentScore: number; professionalScore: number }[],
+  scores: { establishmentScore: number; serviceScore: number }[],
 ) {
   return scores.length
     ? scores.reduce(
-        (total, score) =>
-          total + score.establishmentScore + score.professionalScore,
+        (total, score) => total + score.establishmentScore + score.serviceScore,
         0,
       ) /
         (scores.length * 4)

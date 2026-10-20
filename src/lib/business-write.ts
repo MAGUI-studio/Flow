@@ -1,3 +1,4 @@
+import { businessContactsSchema } from "./business-contacts";
 import { weeklyScheduleSchema } from "./weekly-schedule";
 import type { Prisma } from "@/generated/prisma/client";
 import { planFeatures } from "./plan-features";
@@ -47,6 +48,10 @@ export async function createEstablishment(
   owner: string,
   input: Record<string, unknown>,
 ) {
+  const parsedContacts = businessContactsSchema.safeParse(input);
+  if (!parsedContacts.success) throw new Error("INVALID_INPUT");
+  const contacts = parsedContacts.data;
+  const coverUrl = await businessBannerUrl(tx, owner, contacts.bannerId);
   const sub = await paidAccount(tx, owner);
   if (
     (await tx.establishment.count({ where: { ownerId: owner } })) >=
@@ -61,6 +66,7 @@ export async function createEstablishment(
       "planos",
       "assinatura",
       "agendamentos",
+      "favoritos",
       "explorar",
       "entrar",
       "sign-in",
@@ -79,6 +85,9 @@ export async function createEstablishment(
   return tx.establishment.create({
     data: {
       ownerId: owner,
+      website: contacts.website || null,
+      instagram: contacts.instagram || null,
+      coverUrl,
       name: text(input.name),
       slug,
       category,
@@ -185,4 +194,17 @@ export async function professionalPhotoId(
   });
   if (!photo) throw new Error("INVALID_INPUT");
   return photo.id;
+}
+
+export async function businessBannerUrl(
+  tx: Prisma.TransactionClient,
+  owner: string,
+  id: unknown,
+) {
+  if (!id) return null;
+  const banner = await tx.businessBanner.findFirst({
+    where: { id: text(id), ownerId: owner },
+  });
+  if (!banner) throw new Error("INVALID_INPUT");
+  return banner.url;
 }

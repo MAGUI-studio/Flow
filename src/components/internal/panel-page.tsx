@@ -5,6 +5,8 @@ import { ServicesTable } from "./services-table";
 import { PlanLimitButton } from "./plan-limit-button";
 import { ProfessionalsTable } from "./professionals-table";
 import { professionalList } from "@/lib/professional-list";
+import { matchesLinks, matchesListSearch } from "@/lib/list-filters";
+import { EntityListFilters } from "./entity-list-filters";
 import { BusinessOnboarding } from "./business-onboarding";
 import { appAddress, businessPageUrl } from "@/lib/app-url";
 import { locationSchema } from "@/lib/address";
@@ -157,7 +159,9 @@ export async function PanelPage({
         where: {
           establishmentId: b.id,
           deletedAt: null,
-          ...(section === "professionals" ? {} : { active: true }),
+          ...(section === "professionals" || (section === "services" && !form)
+            ? {}
+            : { active: true }),
         },
         include: {
           photo: { select: { url: true } },
@@ -346,19 +350,27 @@ export async function PanelPage({
                   key={e.id}
                 >
                   <div
-                    className="establishment-card-cover"
+                    className="establishment-card-cover relative overflow-hidden"
                     style={{ background: e.color }}
                   >
-                    <span>
-                      {e.name
-                        .split(" ")
-                        .slice(0, 2)
-                        .map((w) => w[0])
-                        .join("")
-                        .toLowerCase()}
-                      <i>✳</i>
-                    </span>
-                    <span className="live-pill">
+                    {e.coverUrl ? (
+                      <img
+                        src={e.coverUrl}
+                        alt=""
+                        className="absolute inset-0 size-full object-cover"
+                      />
+                    ) : (
+                      <span>
+                        {e.name
+                          .split(" ")
+                          .slice(0, 2)
+                          .map((w) => w[0])
+                          .join("")
+                          .toLowerCase()}
+                        <i>✳</i>
+                      </span>
+                    )}
+                    <span className="live-pill z-10">
                       <i />
                       Página ativa
                     </span>
@@ -386,8 +398,8 @@ export async function PanelPage({
                       </span>
                     </div>
                     <div className="establishment-card-footer">
-                      <Link href={panelHref("/painel", e.id)}>
-                        Gerenciar
+                      <Link href={`/painel/estabelecimentos/${e.id}/editar`}>
+                        Editar estabelecimento
                         <AnimatedArrow direction="right" size={15} />
                       </Link>
                       <Link
@@ -665,7 +677,15 @@ export async function PanelPage({
       .includes(query.busca.toLocaleLowerCase("pt-BR"));
   if (section === "professionals") {
     const rows = professionalList(
-      professionals.filter((p) => matches(p.name)),
+      professionals.filter(
+        (p) =>
+          matchesListSearch(p.name, query.busca) &&
+          matchesLinks(
+            p.services.map((link) => link.serviceId),
+            query.servicos,
+            query.combinarServicos,
+          ),
+      ),
       query.ordem,
       query.vinculos,
     );
@@ -686,9 +706,14 @@ export async function PanelPage({
             )
           }
         />
-        <ListFilters
-          placeholder="Buscar profissional pelo nome"
-          professionalFilters
+        <EntityListFilters
+          kind="professionals"
+          options={services.map((service) => ({
+            id: service.id,
+            name: service.name,
+          }))}
+          count={rows.length}
+          total={professionals.length}
         />
         {!rows.length ? (
           <EmptyState
@@ -725,7 +750,14 @@ export async function PanelPage({
     const rows = services
       .filter(
         (s) =>
-          matches(s.name) &&
+          matchesListSearch(s.name, query.busca) &&
+          matchesLinks(
+            s.professionals
+              .filter((link) => !link.professional.deletedAt)
+              .map((link) => link.professionalId),
+            query.profissionais,
+            query.combinarProfissionais,
+          ) &&
           (query.modalidade === "all" || s.modality === query.modalidade) &&
           (query.tipo === "all" || s.kind === query.tipo) &&
           (query.preco === "all" ||
@@ -752,10 +784,20 @@ export async function PanelPage({
           description={meta.description}
           action={createAction}
         />
-        <ListFilters placeholder="Buscar serviço" serviceFilters />
+        <EntityListFilters
+          kind="services"
+          options={professionals.map((professional) => ({
+            id: professional.id,
+            name: professional.name,
+          }))}
+          count={rows.length}
+          total={services.length}
+        />
         {!rows.length ? (
           <EmptyState
             title={
+              services.length > 0 ||
+              query.profissionais.length > 0 ||
               query.busca ||
               query.modalidade !== "all" ||
               query.tipo !== "all" ||
@@ -764,6 +806,8 @@ export async function PanelPage({
                 : "O que seu negócio faz de melhor?"
             }
             description={
+              services.length > 0 ||
+              query.profissionais.length > 0 ||
               query.busca ||
               query.modalidade !== "all" ||
               query.tipo !== "all" ||
@@ -771,7 +815,11 @@ export async function PanelPage({
                 ? "Ajuste a busca ou os filtros para encontrar seu serviço."
                 : "Cadastre seus atendimentos com duração, valor e profissionais."
             }
-            href={query.busca ? undefined : link("/painel/servicos/novo")}
+            href={
+              services.length || query.profissionais.length || query.busca
+                ? undefined
+                : link("/painel/servicos/novo")
+            }
             label="Cadastrar serviço"
             icon={<Scissors size={25} />}
           />

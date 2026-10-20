@@ -1,3 +1,4 @@
+import { FavoritesProvider } from "@/components/favorites";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ptBR } from "@clerk/localizations";
 import type { Metadata } from "next";
@@ -51,9 +52,11 @@ export default function RootLayout({
         >
           <NuqsAdapter>
             <FlowToaster />
-            <div className="relative mx-auto w-full max-w-440 [&_h2]:font-bold [&_h3]:font-semibold">
-              {children}
-            </div>
+            <FavoritesProvider>
+              <div className="relative mx-auto w-full max-w-440 [&_h2]:font-bold [&_h3]:font-semibold">
+                {children}
+              </div>
+            </FavoritesProvider>
           </NuqsAdapter>
         </ClerkProvider>
       </body>

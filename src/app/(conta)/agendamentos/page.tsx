@@ -25,6 +25,7 @@ import { ListFilters } from "@/components/internal/filters";
 import { BookingActions } from "@/components/internal/booking-actions";
 import { BookingReview } from "@/components/internal/booking-review";
 import { reviewEligible } from "@/lib/review-rules";
+import { completeOverdueBookings } from "@/lib/booking-completion";
 import { BusinessMonogram } from "@/components/ui/business-monogram";
 import { LocationMap } from "@/components/ui/location-map";
 import { locationSchema } from "@/lib/address";
@@ -36,6 +37,7 @@ export default async function Page({
   const { userId } = await auth.protect();
   const query = await loadConsumerSearch(searchParams);
   const now = new Date();
+  await completeOverdueBookings(prisma(), now, { consumerId: userId });
   const records = await prisma().booking.findMany({
     where: { consumerId: userId },
     include: {
@@ -58,8 +60,13 @@ export default async function Page({
       b.session.startsAt >= now &&
       ["confirmed", "pending"].includes(b.effectiveStatus),
   );
+  const canReview = (booking: (typeof all)[number]) =>
+    !booking.review &&
+    booking.session.establishment.ownerId !== userId &&
+    reviewEligible(booking.effectiveStatus, booking.session.startsAt, now);
   const rows = all.filter(
     (b) =>
+      (query.avaliacoes !== "pending" || canReview(b)) &&
       (query.periodo === "all" ||
         (query.periodo === "upcoming"
           ? b.session.startsAt >= now
@@ -70,10 +77,7 @@ export default async function Page({
         .includes(query.busca.toLocaleLowerCase("pt-BR")),
   );
   if (query.periodo === "past") rows.reverse();
-  const awaitingReview = all.filter(
-    (b) =>
-      !b.review && reviewEligible(b.effectiveStatus, b.session.startsAt, now),
-  ).length;
+  const awaitingReview = all.filter(canReview).length;
   return (
     <>
       <PageHeading
@@ -128,7 +132,10 @@ export default async function Page({
             .
           </span>
           <Link
-            href={serializeConsumer("/agendamentos", { periodo: "past" })}
+            href={serializeConsumer("/agendamentos", {
+              periodo: "past",
+              avaliacoes: "pending",
+            })}
             className="inline-flex items-center gap-2 text-xs font-medium text-[#635BFF]"
           >
             Avaliar atendimentos
@@ -141,6 +148,22 @@ export default async function Page({
         statuses
         period
       />
+      {query.avaliacoes === "pending" && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#e8e5f6] bg-white p-4 text-xs text-zinc-500">
+          <span>
+            Mostrando apenas atendimentos concluídos que você ainda não avaliou.
+          </span>
+          <Link
+            href={serializeConsumer("/agendamentos", {
+              periodo: "past",
+              avaliacoes: null,
+            })}
+            className="font-medium text-[#635BFF] hover:underline"
+          >
+            Ver todo o histórico
+          </Link>
+        </div>
+      )}
       <div className="section-subline">
         <span>
           {rows.length} {rows.length === 1 ? "agendamento" : "agendamentos"}
@@ -188,7 +211,13 @@ export default async function Page({
                       className="relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl pr-1"
                       style={{ background: e.color }}
                     >
-                      {e.logoUrl ? (
+                      {e.coverUrl ? (
+                        <img
+                          src={e.coverUrl}
+                          alt=""
+                          className="absolute inset-0 size-full object-cover"
+                        />
+                      ) : e.logoUrl ? (
                         <img
                           src={e.logoUrl}
                           alt=""
@@ -249,7 +278,9 @@ export default async function Page({
                       </strong>
                     </div>
 
-                    <h2 className="m-0 leading-tight">{b.session.service.name}</h2>
+                    <h2 className="m-0 leading-tight">
+                      {b.session.service.name}
+                    </h2>
                     <p className="mt-1">Com {b.session.professional.name}</p>
                     <div className="booking-detail-line mt-2 gap-x-3 gap-y-2">
                       <span>
@@ -276,7 +307,8 @@ export default async function Page({
                         <span className="block min-w-0 break-words">
                           {b.session.service.modality === "online"
                             ? "Atendimento online"
-                            : [e.address, e.city].filter(Boolean).join(" · ") || "Endereço não informado"}
+                            : [e.address, e.city].filter(Boolean).join(" · ") ||
+                              "Endereço não informado"}
                         </span>
                       </span>
                     </div>
@@ -299,16 +331,12 @@ export default async function Page({
                     canCancel={canCancel}
                   />
                 </div>
-                {(b.review ||
-                  reviewEligible(
-                    b.effectiveStatus,
-                    b.session.startsAt,
-                    now,
-                  )) && (
+                {(b.review || canReview(b)) && (
                   <BookingReview
                     bookingId={b.id}
                     establishment={e.name}
                     professional={b.session.professional.name}
+                    service={b.session.service.name}
                     saved={b.review}
                   />
                 )}

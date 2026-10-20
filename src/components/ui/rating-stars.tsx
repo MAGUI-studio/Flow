@@ -36,7 +36,15 @@ export function RatingSummary({
   rating?: number | null;
   count?: number;
 }) {
-  if (rating === null || rating === undefined || count === 0)
+  if (
+    rating === null ||
+    rating === undefined ||
+    !Number.isFinite(rating) ||
+    rating < 0 ||
+    rating > 5 ||
+    !Number.isInteger(count) ||
+    count <= 0
+  )
     return (
       <span className="inline-flex items-center gap-1.5 text-[10px] text-zinc-400">
         <Star aria-hidden="true" size={12} />

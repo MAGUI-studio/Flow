@@ -76,12 +76,14 @@ export function BookingReview({
   bookingId,
   establishment,
   professional,
+  service,
   saved,
 }: {
   bookingId: string;
   establishment: string;
   professional: string;
-  saved?: { establishmentScore: number; professionalScore: number } | null;
+  service: string;
+  saved?: { establishmentScore: number; serviceScore: number } | null;
 }) {
   const setError = useToastError();
   const router = useRouter();
@@ -102,14 +104,20 @@ export function BookingReview({
         </span>
         <div className="flex flex-wrap gap-x-8 gap-y-4">
           {[
-            { label: establishment, score: submitted.establishmentScore },
-            { label: professional, score: submitted.professionalScore },
+            {
+              label: `Estabelecimento · ${establishment}`,
+              score: submitted.establishmentScore,
+            },
+            { label: `Serviço · ${service}`, score: submitted.serviceScore },
           ].map((item, index) => (
             <div key={index}>
               <span className="mb-2 block text-[10px] text-zinc-500">
                 {item.label}
               </span>
               <RatingStars value={item.score / 2} />
+              <span className="sr-only">
+                Nota {(item.score / 2).toLocaleString("pt-BR")} de 5
+              </span>
             </div>
           ))}
         </div>
@@ -135,7 +143,7 @@ export function BookingReview({
           );
           setSubmitted({
             establishmentScore: input.establishmentScore * 2,
-            professionalScore: input.professionalScore * 2,
+            serviceScore: input.serviceScore * 2,
           });
           router.refresh();
         } catch (error) {
@@ -147,10 +155,14 @@ export function BookingReview({
         }
       })}
     >
-      <span className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-zinc-800">
+      <span className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-zinc-800">
         <Star size={16} className="text-[#635BFF]" />
         Como foi seu atendimento?
       </span>
+      <p className="mb-5 text-xs leading-6 text-zinc-500">
+        Avalie o serviço recebido com {professional} e sua experiência no
+        estabelecimento. As duas notas compõem a avaliação pública.
+      </p>
       <div className="grid gap-6 lg:grid-cols-2">
         <div>
           <Controller
@@ -158,7 +170,7 @@ export function BookingReview({
             name="establishmentScore"
             render={({ field }) => (
               <StarInput
-                label={establishment}
+                label={`Estabelecimento · ${establishment}`}
                 name={field.name}
                 value={field.value}
                 onChange={field.onChange}
@@ -174,19 +186,19 @@ export function BookingReview({
         <div>
           <Controller
             control={form.control}
-            name="professionalScore"
+            name="serviceScore"
             render={({ field }) => (
               <StarInput
-                label={professional}
+                label={`Serviço · ${service}`}
                 name={field.name}
                 value={field.value}
                 onChange={field.onChange}
               />
             )}
           />
-          {form.formState.errors.professionalScore && (
+          {form.formState.errors.serviceScore && (
             <p role="alert" className="mt-2 text-xs text-rose-600">
-              {form.formState.errors.professionalScore.message}
+              {form.formState.errors.serviceScore.message}
             </p>
           )}
         </div>

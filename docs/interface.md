@@ -62,3 +62,9 @@ Páginas internas seguem `paginas-internas.md`: layout próprio em `internal.css
 
 - Aparência em `/painel/aparencia`: cards de template com miniaturas, opções Pro bloqueadas no Essencial, formulário RHF/Zod e link para a página pública. Relatórios em `/painel/relatorios` com período via Nuqs e acesso validado no servidor.
 - A animação para assinantes usa os mesmos componentes `OwnerAppointment` e `BookingActionControls` da agenda real. Demonstra aprovação em memória, sem acessar dados privados de clientes e sem enviar alterações à API de reservas.
+
+# Pesquisa e filtros de equipe e serviços
+
+As listas de profissionais e serviços permitem selecionar vários vínculos, buscar opções sem acentos e combinar todos os selecionados (interseção) ou qualquer um deles (união). As seleções ficam na URL via Nuqs, aparecem como etiquetas removíveis e são limpas ao trocar de estabelecimento. A pesquisa por nome aceita várias palavras, ignora acentos e espaços extras. A barra mostra a quantidade filtrada e o total do estabelecimento, preservando ordenação e filtros existentes.
+
+A seleção de serviços na página pública do estabelecimento usa cartões em duas colunas a partir de `sm`, com uma coluna no celular, altura limitada e o ScrollArea compartilhado. A escolha atual possui indicador visual e `aria-pressed`; os preços ficam destacados em uma faixa própria. O resumo e o botão Continuar permanecem fora da área de rolagem.

@@ -229,7 +229,13 @@ export function DirectoryMap({
     >
       {avatars.map(({ node, business }) =>
         createPortal(
-          business.logoUrl ? (
+          business.coverUrl ? (
+            <img
+              src={business.coverUrl}
+              alt=""
+              className="size-full rounded-[inherit] object-cover"
+            />
+          ) : business.logoUrl ? (
             <img
               src={business.logoUrl}
               alt=""

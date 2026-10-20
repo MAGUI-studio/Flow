@@ -1,7 +1,13 @@
-import { Globe, MapPin } from "lucide-react";
+import { FavoriteButton } from "./favorites";
+import { BusinessContactLinks } from "./business-contact-links";
+import {
+  GlobeIcon as Globe,
+  MapPinIcon as MapPin,
+} from "@phosphor-icons/react/ssr";
 import type { BusinessProfile } from "@/lib/catalog";
 import { RatingSummary } from "./ui/rating-stars";
 import { TopRatedBadge } from "./ui/top-rated-badge";
+import { LocationMap } from "./ui/location-map";
 export function BusinessProfileHero({
   business: b,
 }: {
@@ -16,21 +22,32 @@ export function BusinessProfileHero({
           alt=""
         />
       )}
-      <span className="relative z-10 text-6xl font-medium tracking-tighter">
-        {b.logoUrl ? (
-          <img
-            src={b.logoUrl}
-            alt={b.name}
-            className="size-24 object-contain"
-          />
-        ) : (
-          b.initials
-        )}
-        <span className="text-[#635BFF]">✳</span>
-      </span>
+      {(!b.coverUrl || b.logoUrl) && (
+        <span className="relative z-10 text-6xl font-medium tracking-tighter">
+          {b.logoUrl ? (
+            <img
+              src={b.logoUrl}
+              alt={b.name}
+              className="size-24 object-contain"
+            />
+          ) : (
+            b.initials
+          )}
+          <span className="text-[#635BFF]">✳</span>
+        </span>
+      )}
     </>
   );
-  const location = (
+  const location = b.location ? (
+    <div className="w-full min-w-0 sm:max-w-xl">
+      <LocationMap point={b.location} unframed heightClassName="h-56 lg:h-60" />
+      {b.address && (
+        <p className="mt-3 text-xs leading-6 text-zinc-500">
+          {b.address} · {b.city}
+        </p>
+      )}
+    </div>
+  ) : (
     <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[#F5F4FF] px-3 py-2 text-xs text-[#635BFF]">
       {b.online ? <Globe size={13} /> : <MapPin size={13} />} {b.city}
     </span>
@@ -47,6 +64,7 @@ export function BusinessProfileHero({
           {b.name}
         </h1>
         {b.isTopRated && <TopRatedBadge />}
+        <FavoriteButton id={b.id} name={b.name} className="ml-auto" />
       </div>
       <div className="mb-4">
         <RatingSummary rating={b.rating} count={b.ratingCount} />
@@ -54,7 +72,12 @@ export function BusinessProfileHero({
       <p className="max-w-xl text-sm leading-relaxed opacity-65">
         {b.description}
       </p>
-      {b.address && <p className="mt-3 text-xs opacity-60">{b.address}</p>}
+      <BusinessContactLinks business={b} />
+      {b.address && !b.location && (
+        <p className="mt-3 text-xs opacity-60">
+          {b.address} · {b.city}
+        </p>
+      )}
     </>
   );
   if (b.templateId === "minimal")
@@ -108,6 +131,13 @@ export function BusinessProfileHero({
           </span>
           {location}
         </div>
+        {b.coverUrl && (
+          <img
+            src={b.coverUrl}
+            alt=""
+            className="mb-6 h-48 w-full rounded-2xl object-cover"
+          />
+        )}
         {copy}
       </section>
     );
@@ -117,25 +147,35 @@ export function BusinessProfileHero({
         {b.coverUrl && (
           <img className="profile-image" src={b.coverUrl} alt={b.name} />
         )}
-        <span className="business-monogram">
-          {b.logoUrl ? <img src={b.logoUrl} alt={b.name} /> : b.initials}
-          <span>✳</span>
-        </span>
+        {!b.coverUrl && (
+          <span className="business-monogram">
+            {b.logoUrl ? <img src={b.logoUrl} alt={b.name} /> : b.initials}
+            <span>✳</span>
+          </span>
+        )}
       </div>
-      <div className="profile-heading">
-        <div>
+      <div
+        className={`profile-heading ${b.location ? "grid! items-start! gap-6 lg:grid-cols-2" : ""}`}
+      >
+        <div className="min-w-0">
           <div className="eyebrow" style={{ justifyContent: "flex-start" }}>
             {b.tag}
           </div>
           <div className="flex items-center gap-4">
-            <h1 className="min-w-0">{b.name}</h1>
+            <h1 className="min-w-0 tracking-tight">{b.name}</h1>
             {b.isTopRated && <TopRatedBadge />}
+            <FavoriteButton id={b.id} name={b.name} className="ml-auto" />
           </div>
           <div className="mb-4">
             <RatingSummary rating={b.rating} count={b.ratingCount} />
           </div>
           <p>{b.description}</p>
-          {b.address && <p>{b.address}</p>}
+          <BusinessContactLinks business={b} />
+          {b.address && !b.location && (
+            <p>
+              {b.address} · {b.city}
+            </p>
+          )}
         </div>
         {location}
       </div>

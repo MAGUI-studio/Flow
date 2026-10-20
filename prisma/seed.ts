@@ -221,10 +221,12 @@ try {
         await db.$queryRaw`SELECT reserve_session(${session.id}::uuid,${consumer}::text,${"+5511999990000"}::text,${randomUUID()}::uuid)`;
     }
   }
-  const reviewsCreated = await seedReviews(db);
-  console.log(
-    `${reviewsCreated} avaliações adicionadas a agendamentos históricos do seed.`,
-  );
+  if (process.argv.includes("--with-demo-reviews")) {
+    const reviewsCreated = await seedReviews(db);
+    console.log(
+      `${reviewsCreated} avaliações de demonstração criadas; não entram nas notas públicas.`,
+    );
+  }
   console.log(
     "Seed concluído: estabelecimentos, profissionais, serviços e agendas persistidos.",
   );

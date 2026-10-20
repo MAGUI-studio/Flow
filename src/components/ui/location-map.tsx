@@ -8,11 +8,15 @@ export function LocationMap({
   onChange,
   compact = false,
   disabled = false,
+  unframed = false,
+  heightClassName = "h-80",
 }: {
   point?: LocationPoint;
   onChange?: (point: LocationPoint) => void;
   compact?: boolean;
   disabled?: boolean;
+  unframed?: boolean;
+  heightClassName?: string;
 }) {
   const element = useRef<HTMLDivElement>(null);
   const instance = useRef<LeafletMap | null>(null);
@@ -113,7 +117,9 @@ export function LocationMap({
     return () => cancelAnimationFrame(frame);
   }, [disabled, ready, !!onChange]);
   return (
-    <div className="relative isolate overflow-hidden rounded-2xl border border-zinc-200">
+    <div
+      className={`relative isolate overflow-hidden ${unframed ? "rounded-none" : "rounded-2xl border border-zinc-200"}`}
+    >
       <div
         className={`transition-[opacity,filter] ${disabled ? "pointer-events-none opacity-60 grayscale" : ""}`}
       >
@@ -123,7 +129,7 @@ export function LocationMap({
           aria-label="Mapa do endereço do estabelecimento"
           aria-disabled={disabled}
           inert={disabled ? true : undefined}
-          className={`relative z-0 w-full bg-zinc-100 ${compact ? "aspect-square" : "h-80"}`}
+          className={`relative z-0 w-full bg-zinc-100 ${compact ? "aspect-square" : heightClassName}`}
         />
       </div>
       {disabled && (

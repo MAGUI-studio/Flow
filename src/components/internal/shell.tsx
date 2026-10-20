@@ -1,4 +1,5 @@
 "use client";
+import { AccountMenu } from "../account-menu";
 import { NavigationIndicator } from "@/components/ui/navigation-indicator";
 import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import {
@@ -12,17 +13,19 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQueryStates } from "nuqs";
-import { useUser, UserButton } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import {
-  CalendarDays,
-  Users,
-  Scissors,
-  ChevronRight,
-  Menu,
-  X,
-  Plus,
-  Wallet,
-} from "lucide-react";
+  HeartIcon as Heart,
+  CalendarDotsIcon as CalendarDays,
+  UsersIcon as Users,
+  CompassIcon as Compass,
+  CaretRightIcon as ChevronRight,
+  ListIcon as Menu,
+  XIcon as X,
+  PlusIcon as Plus,
+  WalletIcon as Wallet,
+  BuildingsIcon as Buildings,
+} from "@phosphor-icons/react";
 import { FlowSelect } from "@/components/ui/flow-select";
 import { ScrollArea } from "@/components/ui/scrollArea";
 import { Container } from "@/components/container";
@@ -65,7 +68,9 @@ export function InternalShell({
     businesses.find((b) => b.id === query.estabelecimento) ?? businesses[0];
   const activeLabel =
     mode === "consumer"
-      ? "Meus agendamentos"
+      ? pathname === "/favoritos"
+        ? "Meus favoritos"
+        : "Meus agendamentos"
       : (navigation.find(
           (n) => n.href !== "/painel" && pathname.startsWith(n.href),
         )?.label ??
@@ -137,6 +142,10 @@ export function InternalShell({
                       void setQuery({
                         estabelecimento: value,
                         profissional: null,
+                        servicos: null,
+                        profissionais: null,
+                        combinarServicos: null,
+                        combinarProfissionais: null,
                         busca: null,
                         status: null,
                       });
@@ -190,7 +199,6 @@ export function InternalShell({
                       <Link
                         key={n.href}
                         href={panelHref(n.href, current?.id)}
-                        className={active ? "active" : ""}
                         aria-current={active ? "page" : undefined}
                         onClick={() => setMobile(false)}
                       >
@@ -203,41 +211,60 @@ export function InternalShell({
               ) : (
                 <>
                   <Link
-                    className="active"
                     href="/agendamentos"
-                    aria-current="page"
+                    aria-current={
+                      pathname === "/agendamentos" ? "page" : undefined
+                    }
+                    onClick={() => setMobile(false)}
                   >
                     <CalendarDays size={18} />
-                    Meus agendamentos
-                  </Link>
-                  <Link href="/explorar">
-                    <Scissors size={18} />
-                    Explorar profissionais
-                    <AnimatedArrow size={14} />
+                    <span>Meus agendamentos</span>
                   </Link>
                 </>
               )}
-              <span className="nav-caption secondary">CONTA</span>
               <Link
-                href={
-                  mode === "business"
-                    ? panelHref("/painel/assinatura", current?.id)
-                    : "/painel"
-                }
-                className={pathname === "/painel/assinatura" ? "active" : ""}
-                aria-current={
-                  pathname === "/painel/assinatura" ? "page" : undefined
-                }
+                href="/favoritos"
+                aria-current={pathname === "/favoritos" ? "page" : undefined}
+                onClick={() => setMobile(false)}
               >
-                <Wallet size={18} />
-                {mode === "business" ? "Minha assinatura" : "Meu negócio"}
+                <Heart size={18} />
+                <span>Meus favoritos</span>
               </Link>
-              <Link href={mode === "business" ? "/agendamentos" : "/#planos"}>
-                <Users size={18} />
-                {mode === "business"
-                  ? "Meus agendamentos"
-                  : "Flow para negócios"}
-              </Link>
+              {mode === "consumer" && (
+                <Link href="/explorar" onClick={() => setMobile(false)}>
+                  <Compass size={18} />
+                  <span>Explorar</span>
+                  <AnimatedArrow size={14} />
+                </Link>
+              )}
+              {(mode === "business" || !!plan) && (
+                <span className="nav-caption secondary">NEGÓCIO</span>
+              )}
+              {(mode === "business" || !!plan) && (
+                <Link
+                  href={
+                    mode === "business"
+                      ? panelHref("/painel/assinatura", current?.id)
+                      : "/painel"
+                  }
+                  aria-current={
+                    pathname === "/painel/assinatura" ? "page" : undefined
+                  }
+                >
+                  {mode === "business" ? (
+                    <Wallet size={18} />
+                  ) : (
+                    <Buildings size={18} />
+                  )}
+                  {mode === "business" ? "Minha assinatura" : "Meu negócio"}
+                </Link>
+              )}
+              {mode === "business" && (
+                <Link href="/agendamentos">
+                  <Users size={18} />
+                  Meus agendamentos
+                </Link>
+              )}
             </nav>
             <div className="internal-sidebar-bottom">
               {plan ? (
@@ -264,7 +291,7 @@ export function InternalShell({
               ) : (
                 <Link
                   href="/#planos"
-                  className="group relative isolate block overflow-hidden rounded-2xl border border-[#e8e5f6] bg-[#F5F4FF] p-4 transition-colors hover:border-[#635BFF]/40"
+                  className="group relative isolate mb-5 block overflow-hidden rounded-2xl border border-[#e8e5f6] bg-[#F5F4FF] p-4 transition-colors hover:border-[#635BFF]/40"
                 >
                   <img
                     src="/brand/icon.svg"
@@ -291,14 +318,12 @@ export function InternalShell({
                   </span>
                 </Link>
               )}
-              <div className="internal-profile">
-                <UserButton />
+              <div className="internal-profile [&>div:last-child]:gap-0.5! [&_strong]:leading-tight [&_small]:leading-tight">
+                <AccountMenu businessAccess={!!plan} />
                 <div>
                   <strong>{user?.firstName ?? "Sua conta"}</strong>
                   <small>
-                    {mode === "business"
-                      ? "Responsável pelo negócio"
-                      : "Sua conta Flow"}
+                    {user?.primaryEmailAddress?.emailAddress}
                   </small>
                 </div>
               </div>
@@ -354,7 +379,7 @@ export function InternalShell({
         <footer className="internal-footer">
           <span>Flow · Seu tempo, organizado.</span>
           <span>
-            Feito por <strong>MAGUI.studio</strong>
+            Feito por <a href="https://magui.studio" target="_blank" rel="noopener noreferrer" className="font-semibold transition-colors hover:text-[#635BFF] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#635BFF]">MAGUI.studio</a>
           </span>
         </footer>
       </div>

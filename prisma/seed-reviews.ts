@@ -164,7 +164,7 @@ export async function seedReviews(db: PrismaClient) {
         await createReview(tx, consumer, {
           bookingId: booking.id,
           establishmentScore: scores[0],
-          professionalScore: scores[1],
+          serviceScore: scores[1],
         });
         created++;
       });

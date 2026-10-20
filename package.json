@@ -18,8 +18,9 @@
     "db:migrate": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "test:db": "tsx --test tests/db.integration.ts",
-    "db:seed": "tsx prisma/seed.ts"
+    "test:db": "tsx --test tests/db.integration.ts tests/booking-completion.integration.ts tests/business-profile.integration.ts",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:seed:account": "tsx scripts/seed-account.ts"
   },
   "keywords": [],
   "type": "module",
@@ -29,6 +30,7 @@
     "@clerk/nextjs": "^7.9.15",
     "@hookform/resolvers": "^5.9.1",
     "@iconify/react": "^6.0.2",
+    "@phosphor-icons/react": "^2.1.10",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "@radix-ui/react-alert-dialog": "^1.2.1",

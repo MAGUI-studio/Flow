@@ -18,7 +18,7 @@ export default async function Layout({
   return (
     <Suspense
       fallback={
-        <div className="internal-loading">Carregando seus agendamentos…</div>
+        <div className="internal-loading">Carregando sua conta…</div>
       }
     >
       <InternalShell mode="consumer" plan={plan}>{children}</InternalShell>

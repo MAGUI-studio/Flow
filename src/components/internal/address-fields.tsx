@@ -1,9 +1,16 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { LoaderCircle, MapPin } from "lucide-react";
+import {
+  CircleNotchIcon as LoaderCircle,
+  MapPinIcon as MapPin,
+} from "@phosphor-icons/react";
 import { FieldError } from "@/components/ui/form-controls";
-import { addressSchema, type LocationPoint } from "@/lib/address";
+import {
+  addressSchema,
+  locationSchema,
+  type LocationPoint,
+} from "@/lib/address";
 import { LocationMap } from "@/components/ui/location-map";
 
 export function AddressFields() {
@@ -24,7 +31,11 @@ export function AddressFields() {
   );
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
-  const [point, setPoint] = useState<LocationPoint>();
+  const initialAddress = useRef(getValues("addressDetails"));
+  const [point, setPoint] = useState<LocationPoint | undefined>(() => {
+    const result = locationSchema.safeParse(initialAddress.current?.location);
+    return result.success ? result.data : undefined;
+  });
   const [mapStatus, setMapStatus] = useState("");
   const [locating, setLocating] = useState(false);
   const manuallyAdjusted = useRef(false);
@@ -42,6 +53,20 @@ export function AddressFields() {
     values?.state,
   ]);
   useEffect(() => {
+    const initial = initialAddress.current;
+    if (
+      initial &&
+      JSON.stringify([
+        initial.postalCode,
+        initial.street,
+        initial.number,
+        initial.neighborhood,
+        initial.city,
+        initial.state,
+      ]) === addressKey &&
+      locationSchema.safeParse(initial.location).success
+    )
+      return;
     manuallyAdjusted.current = false;
     setValue("addressDetails.location", undefined);
     setPoint(undefined);
@@ -104,13 +129,18 @@ export function AddressFields() {
       shouldValidate: isSubmitted,
     });
     setMapStatus(
-      "Localização ajustada. A posição será salva ao criar o estabelecimento.",
+      "Localização ajustada. A posição será salva junto com os dados do estabelecimento.",
     );
   };
   useEffect(() => {
     setStatus("");
     setLoading(false);
-    if (cep.length !== 8) return;
+    if (
+      cep.length !== 8 ||
+      cep ===
+        String(initialAddress.current?.postalCode ?? "").replace(/\D/g, "")
+    )
+      return;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       setLoading(true);

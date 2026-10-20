@@ -26,7 +26,8 @@ Solicitado → pendente ou confirmado conforme configuração. Pendente → conf
 
 - Pendentes ocupam horário/vaga.
 - Expiração: menor entre criação + 24h e início do atendimento.
-- Reservas criadas pelo responsável seguem as mesmas validações e conflitos.
+- O responsável não pode reservar serviços no próprio estabelecimento; a regra é aplicada na página pública e na API.
+- Reservas confirmadas são concluídas automaticamente 24 horas após o início agendado, liberando a avaliação do cliente mesmo sem conclusão manual. O processamento é idempotente, registra auditoria e não altera cancelamentos, recusas, pendências, expirações ou faltas.
 - Cancelamento/recusa/expiração libera capacidade. Liberar bloqueio da sessão individual quando não houver reservas ativas; sessão coletiva continua bloqueando o profissional enquanto aberta.
 - Uma conta não pode reservar duas vagas na mesma sessão no MVP.
 - Aprovação após expiração deve falhar. Aprovar não reinicia o prazo nem altera o início.

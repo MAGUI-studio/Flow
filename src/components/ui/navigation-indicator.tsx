@@ -1,5 +1,5 @@
 "use client";
-import { useLayoutEffect, useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 export function NavigationIndicator({
   containerRef,
   activeKey,
@@ -10,7 +10,7 @@ export function NavigationIndicator({
   followClicks?: boolean;
 }) {
   const [indicatorY, setIndicatorY] = useState<number | null>(null);
-  useLayoutEffect(() => {
+  useEffect(() => {
     const nav = containerRef.current;
     if (!nav) return;
     const position = (link: HTMLElement | null) => {
@@ -18,7 +18,15 @@ export function NavigationIndicator({
         setIndicatorY(null);
         return;
       }
-      setIndicatorY(link.offsetTop + link.offsetHeight / 2 - 2.5);
+      const linkBounds = link.getBoundingClientRect();
+      const navBounds = nav.getBoundingClientRect();
+      setIndicatorY(
+        linkBounds.top -
+          navBounds.top +
+          nav.scrollTop +
+          linkBounds.height / 2 -
+          2.5,
+      );
     };
     const update = () =>
       position(nav.querySelector<HTMLElement>('a[aria-current="page"]'));

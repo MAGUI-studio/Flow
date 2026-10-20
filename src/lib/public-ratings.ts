@@ -11,7 +11,12 @@ export async function publicRatings(
   >(Prisma.sql`
     SELECT s.establishment_id AS id, AVG((r.establishment_score+r.professional_score)/4.0)::float8 AS rating, COUNT(*)::int AS "ratingCount"
     FROM reviews r JOIN bookings b ON b.id=r.booking_id JOIN sessions s ON s.id=b.session_id
-    WHERE b.status IN ('confirmed','completed') AND s.establishment_id IN (${Prisma.join(establishmentIds.map((id) => Prisma.sql`${id}::uuid`))})
+    JOIN establishments e ON e.id=s.establishment_id
+    WHERE b.status='completed'
+      AND LEFT(b.consumer_id,10) <> 'flow_seed_'
+      AND b.consumer_id <> e.owner_id
+      AND s.starts_at <= NOW()
+      AND s.establishment_id IN (${Prisma.join(establishmentIds.map((id) => Prisma.sql`${id}::uuid`))})
     GROUP BY s.establishment_id
   `);
   return new Map(

@@ -1,20 +1,21 @@
+import { FavoriteButton } from "./favorites";
 import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import Link from "next/link";
 import {
-  MapPin,
-  Globe,
-  Scissors,
-  Heart,
-  Stethoscope,
-  GraduationCap,
-  BriefcaseBusiness,
-  Palette,
-  PenTool,
-  Flower2,
-  Dumbbell,
-  PawPrint,
-  Camera,
-} from "lucide-react";
+  MapPinIcon as MapPin,
+  GlobeIcon as Globe,
+  ScissorsIcon as Scissors,
+  HeartIcon as Heart,
+  StethoscopeIcon as Stethoscope,
+  GraduationCapIcon as GraduationCap,
+  BriefcaseIcon as BriefcaseBusiness,
+  PaletteIcon as Palette,
+  PenNibIcon as PenTool,
+  FlowerIcon as Flower2,
+  BarbellIcon as Dumbbell,
+  PawPrintIcon as PawPrint,
+  CameraIcon as Camera,
+} from "@phosphor-icons/react/ssr";
 import type { BusinessCard } from "@/lib/catalog";
 import { RatingSummary } from "./ui/rating-stars";
 import { TopRatedBadge } from "./ui/top-rated-badge";
@@ -47,6 +48,11 @@ export function BusinessListingCard({
         href={`/${b.slug}`}
         aria-label={`Conhecer e agendar em ${b.name}`}
         className="absolute inset-0 z-10 rounded-[22px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#635BFF]"
+      />
+      <FavoriteButton
+        id={b.id}
+        name={b.name}
+        className="absolute! right-3 top-3"
       />
       <div
         className="relative isolate grid h-40 shrink-0 place-items-center overflow-hidden sm:h-44"

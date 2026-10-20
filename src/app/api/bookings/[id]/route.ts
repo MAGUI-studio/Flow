@@ -1,6 +1,7 @@
 import { markBookingArrival } from "@/lib/booking-arrival";
 import { currentUser, apiError } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -90,6 +91,8 @@ export async function PATCH(
           data: { active: false },
         });
     });
+    revalidatePath("/agendamentos");
+    revalidatePath("/painel/agenda");
     return Response.json({ updated: true });
   } catch (error) {
     return apiError(error);

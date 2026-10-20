@@ -3,6 +3,7 @@ export const reservedSlugs = [
   "planos",
   "assinatura",
   "agendamentos",
+  "favoritos",
   "explorar",
   "entrar",
   "sign-in",

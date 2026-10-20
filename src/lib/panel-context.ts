@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "./prisma";
 import { loadPanelSearch, type SearchInput } from "./url-state";
+import { completeOverdueBookings } from "./booking-completion";
 export const ownerContext = cache(async () => {
   const { userId } = await auth.protect();
   const subscription = await prisma().subscription.findUnique({
@@ -14,6 +15,7 @@ export const ownerContext = cache(async () => {
     subscription.paidUntil <= new Date()
   )
     redirect("/#planos");
+  await completeOverdueBookings(prisma(), new Date(), { ownerId: userId });
   const businesses = await prisma().establishment.findMany({
     where: { ownerId: userId, active: true },
     orderBy: { name: "asc" },

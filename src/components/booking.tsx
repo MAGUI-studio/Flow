@@ -1,9 +1,14 @@
 "use client";
 import { authModalAppearance } from "@/lib/auth-modal-appearance";
+import {
+  isEstablishmentOwner,
+  ownEstablishmentBookingMessage,
+} from "@/lib/booking-policy";
 import { useToastError } from "@/components/ui/flow-toaster";
 import { formValidation } from "@/lib/form-validation";
 import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import { Container } from "@/components/container";
+import { ScrollArea } from "@/components/ui/scrollArea";
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +17,7 @@ import { phoneMask } from "@/lib/masks";
 import { useQueryState, parseAsString } from "nuqs";
 import Link from "next/link";
 import { BusinessProfileHero } from "./business-profile-hero";
+import { UpcomingBookingNotice } from "./upcoming-booking-notice";
 import { DateRail } from "@/components/ui/date-rail";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { ArrowLeft, Check, CalendarDays, LoaderCircle } from "lucide-react";
@@ -25,14 +31,17 @@ export function Booking({
   business: b,
   myBookings = [],
   bookingsUserId,
+  ownerUserId,
 }: {
   business: BusinessProfile;
   myBookings?: UpcomingBooking[];
   bookingsUserId?: string | null;
+  ownerUserId?: string | null;
 }) {
   const setError = useToastError();
   const { isSignedIn, user } = useUser(),
     clerk = useClerk();
+  const isOwner = isEstablishmentOwner(user?.id, ownerUserId);
   const [step, setStep] = useState(0),
     [serviceId, setServiceId] = useState(""),
     [professionalId, setProfessionalId] = useState(""),
@@ -87,6 +96,10 @@ export function Booking({
     service?.professionalIds.includes(p.id),
   );
   useEffect(() => {
+    if (isOwner) {
+      sessionStorage.removeItem(`flow-booking-${b.id}`);
+      return;
+    }
     if (resume === "1") {
       const raw = sessionStorage.getItem(`flow-booking-${b.id}`);
       if (raw)
@@ -102,9 +115,9 @@ export function Booking({
           sessionStorage.removeItem(`flow-booking-${b.id}`);
         }
     }
-  }, [b.id, resume]);
+  }, [b.id, resume, isOwner]);
   useEffect(() => {
-    if (!serviceId || !professionalId) return;
+    if (isOwner || !serviceId || !professionalId) return;
     const abort = new AbortController();
     setLoading(true);
     setError("");
@@ -134,7 +147,7 @@ export function Booking({
         if (!abort.signal.aborted) setLoading(false);
       });
     return () => abort.abort();
-  }, [serviceId, professionalId, date, user?.id]);
+  }, [serviceId, professionalId, date, user?.id, isOwner]);
   function selectService(id: string) {
     setServiceId(id);
     setProfessionalId("");
@@ -169,6 +182,10 @@ export function Booking({
     await bookingForm.handleSubmit(sendReservation)();
   }
   async function sendReservation() {
+    if (isOwner) {
+      setError(ownEstablishmentBookingMessage);
+      return;
+    }
     if (!service || !professional || !slot) return;
     if (!isSignedIn) {
       sessionStorage.setItem(
@@ -210,52 +227,41 @@ export function Booking({
   return (
     <>
       <Header />
-      <Container as="main" className="page-intro">
+      <Container as="main" className="page-intro pb-4">
         <Link className="back-link" href="/#explorar">
           <ArrowLeft size={14} />
           Explorar espaços
         </Link>
         <BusinessProfileHero business={b} />
         {ownBookings.length > 0 && !success && (
-          <section
-            className="existing-bookings"
-            aria-label="Seus agendamentos neste estabelecimento"
-          >
-            <div className="existing-bookings-heading">
-              <CalendarDays size={18} />
-              <div>
-                <strong>
-                  Você já tem{" "}
-                  {ownBookings.length === 1 ? "um agendamento" : "agendamentos"}{" "}
-                  aqui
-                </strong>
-                <p>Confira seus próximos horários em {b.name}.</p>
-              </div>
-              <Link href="/agendamentos">
-                Ver todos <AnimatedArrow direction="right" size={14} />
+          <UpcomingBookingNotice
+            bookings={ownBookings}
+            businessName={b.name}
+            timezone={b.timezone}
+          />
+        )}
+        {isOwner ? (
+          <section className="my-8 flex flex-col items-start gap-5 rounded-2xl border border-[#e8e5f6] bg-[#f5f4ff] p-6 sm:flex-row sm:p-8">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#635BFF]">
+              <CalendarDays size={21} aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight text-zinc-900">
+                Este é o seu estabelecimento
+              </h2>
+              <p className="mt-2 text-sm leading-7 text-zinc-500">
+                {ownEstablishmentBookingMessage} Para acompanhar os horários e
+                atender seus clientes, acesse a agenda do negócio.
+              </p>
+              <Link
+                href={`/painel/agenda?estabelecimento=${b.id}`}
+                className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#635BFF] px-5 text-sm font-semibold text-white hover:bg-[#5046E5]"
+              >
+                Ir para minha agenda <AnimatedArrow size={15} />
               </Link>
             </div>
-            {ownBookings.map((booking) => (
-              <div className="existing-booking" key={booking.id}>
-                <span className="existing-booking-date">
-                  {new Date(booking.startsAt).toLocaleDateString("pt-BR", {
-                    timeZone: b.timezone,
-                    weekday: "short",
-                    day: "2-digit",
-                    month: "short",
-                  })}
-                  <strong>{hourLabel(booking.startsAt, b.timezone)}</strong>
-                </span>
-                <div>
-                  <strong>{booking.serviceName}</strong>
-                  <small>Com {booking.professionalName}</small>
-                </div>
-                <span className="badge">{statusLabel[booking.status]}</span>
-              </div>
-            ))}
           </section>
-        )}
-        {success ? (
+        ) : success ? (
           <section className="panel empty">
             <Check size={32} color="#635BFF" />
             <h2>
@@ -277,9 +283,9 @@ export function Booking({
             </Link>
           </section>
         ) : (
-          <div className="booking-grid">
+          <div className="booking-grid mb-0">
             <form
-              className="panel"
+              className="panel p-5 sm:p-6"
               noValidate
               onSubmit={(event) => {
                 event.preventDefault();
@@ -294,7 +300,7 @@ export function Booking({
               <div className="eyebrow" style={{ justifyContent: "flex-start" }}>
                 PASSO {step + 1} DE 4
               </div>
-              <h2 style={{ marginTop: 12 }}>
+              <h2 className="tracking-tight" style={{ marginTop: 12 }}>
                 {
                   [
                     "Qual cuidado você procura?",
@@ -311,24 +317,71 @@ export function Booking({
                       Nenhum serviço disponível para agendamento.
                     </p>
                   )}
-                  {b.services.map((s) => (
-                    <button
-                      type="button"
-                      className={`choice ${s.id === serviceId ? "active" : ""}`}
-                      key={s.id}
-                      onClick={() => selectService(s.id)}
-                    >
-                      <div>
-                        <strong>{s.name}</strong>
-                        <small>
-                          {s.durationMinutes} minutos ·{" "}
-                          {s.kind === "collective" ? "Em grupo" : "Individual"}{" "}
-                          · {s.modality === "online" ? "Online" : "Presencial"}
-                        </small>
+                  {b.services.length > 0 && (
+                    <>
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[11px] leading-5 text-zinc-400">
+                        <span>
+                          {b.services.length}{" "}
+                          {b.services.length === 1
+                            ? "serviço disponível"
+                            : "serviços disponíveis"}
+                        </span>
+                        {b.services.length > 4 && (
+                          <span>Role para ver todos</span>
+                        )}
                       </div>
-                      <strong>{money(s.priceCents)}</strong>
-                    </button>
-                  ))}
+                      <ScrollArea
+                        role="region"
+                        aria-label="Serviços disponíveis para agendamento"
+                        className={`mt-2 ${b.services.length === 1 ? "h-[145px]" : b.services.length === 2 ? "h-[min(300px,60svh)] sm:h-[145px]" : b.services.length <= 4 ? "h-[min(360px,60svh)] sm:h-[300px]" : "h-[min(360px,60svh)]"}`}
+                        viewportClassName="overscroll-contain"
+                      >
+                        <div className="grid auto-rows-fr grid-cols-1 gap-3 p-1 pr-3 sm:grid-cols-2">
+                          {b.services.map((s) => (
+                            <button
+                              type="button"
+                              aria-pressed={s.id === serviceId}
+                              className={`flex min-h-[120px] min-w-0 flex-col items-stretch gap-3 rounded-xl border p-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#635BFF] ${s.id === serviceId ? "border-[#635BFF] bg-[#f5f4ff]" : "border-[#e8e5f6] bg-white hover:border-[#635BFF]/40 hover:bg-[#faf9ff]"}`}
+                              key={s.id}
+                              onClick={() => selectService(s.id)}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <strong className="block text-sm leading-5 font-semibold text-zinc-800">
+                                    {s.name}
+                                  </strong>
+                                  <small className="mt-1 block text-[10px] leading-4 text-zinc-500">
+                                    {s.durationMinutes} minutos ·{" "}
+                                    {s.kind === "collective"
+                                      ? "Em grupo"
+                                      : "Individual"}{" "}
+                                    ·{" "}
+                                    {s.modality === "online"
+                                      ? "Online"
+                                      : "Presencial"}
+                                  </small>
+                                </div>
+                                <span
+                                  aria-hidden="true"
+                                  className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${s.id === serviceId ? "border-[#635BFF] bg-[#635BFF] text-white" : "border-zinc-200 bg-white"}`}
+                                >
+                                  {s.id === serviceId && <Check size={12} />}
+                                </span>
+                              </div>
+                              <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+                                <span className="text-[10px] text-zinc-500">
+                                  Valor do serviço
+                                </span>
+                                <strong className="text-lg leading-6 font-semibold tracking-tight text-zinc-900">
+                                  {money(s.priceCents)}
+                                </strong>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </>
+                  )}
                 </>
               )}
               {step === 1 &&
@@ -508,8 +561,10 @@ export function Booking({
                 </>
               )}
 
-              <div className="form-actions">
-                {step > 0 ? (
+              <div
+                className={`form-actions mt-4! grid! grid-cols-1 gap-3! border-t border-zinc-100 pt-4 [&>.button]:w-full [&>.button]:justify-center ${step > 0 ? "sm:grid-cols-2" : ""}`}
+              >
+                {step > 0 && (
                   <button
                     type="button"
                     className="button secondary"
@@ -519,8 +574,6 @@ export function Booking({
                     <ArrowLeft size={15} />
                     Voltar
                   </button>
-                ) : (
-                  <span />
                 )}
                 {step < 3 ? (
                   <button
@@ -548,56 +601,62 @@ export function Booking({
                 )}
               </div>
             </form>
-            <aside>
-              <div className="panel">
-                <h2>Seu agendamento</h2>
-                <div className="summary-row">
-                  <span>Espaço</span>
-                  <strong>{b.name}</strong>
+            <aside className="self-stretch">
+              <div className="panel flex h-full flex-col p-5 sm:p-6">
+                <h2 className="mb-4 text-2xl tracking-tight">
+                  Seu agendamento
+                </h2>
+                <div className="grid flex-1 auto-rows-fr">
+                  {[
+                    { label: "Espaço", value: b.name },
+                    { label: "Serviço", value: service?.name },
+                    {
+                      label: "Duração",
+                      value: service
+                        ? `${service.durationMinutes} min`
+                        : undefined,
+                    },
+                    {
+                      label: "Profissional",
+                      value:
+                        professional && step >= 1
+                          ? professional.name
+                          : undefined,
+                    },
+                    {
+                      label: "Data",
+                      value:
+                        date && step >= 2
+                          ? date.split("-").reverse().join("/")
+                          : undefined,
+                    },
+                    {
+                      label: "Horário",
+                      value:
+                        slot && step >= 2
+                          ? hourLabel(slot.startsAt, b.timezone)
+                          : undefined,
+                    },
+                    {
+                      label: "Valor do serviço",
+                      value: service ? money(service.priceCents) : undefined,
+                    },
+                  ].map(({ label, value }) => (
+                    <div
+                      key={label}
+                      className="summary-row items-center gap-4 py-3.5"
+                    >
+                      <span className="shrink-0">{label}</span>
+                      <strong
+                        className={`min-w-0 break-words text-right ${value ? "text-zinc-800" : "font-normal text-zinc-300"}`}
+                        aria-label={value ? undefined : "Ainda não selecionado"}
+                      >
+                        {value ?? "—"}
+                      </strong>
+                    </div>
+                  ))}
                 </div>
-                {service && (
-                  <>
-                    <div className="summary-row">
-                      <span>Serviço</span>
-                      <strong>{service.name}</strong>
-                    </div>
-                    <div className="summary-row">
-                      <span>Duração</span>
-                      <strong>{service.durationMinutes} min</strong>
-                    </div>
-                    <div className="summary-row">
-                      <span>Valor do serviço</span>
-                      <strong>{money(service.priceCents)}</strong>
-                    </div>
-                  </>
-                )}
-                {professional && step >= 1 && (
-                  <div className="summary-row">
-                    <span>Profissional</span>
-                    <strong>{professional.name}</strong>
-                  </div>
-                )}
-                {date && step >= 2 && (
-                  <div className="summary-row">
-                    <span>Data</span>
-                    <strong>{date.split("-").reverse().join("/")}</strong>
-                  </div>
-                )}
-                {slot && step >= 2 && (
-                  <div className="summary-row">
-                    <span>Horário</span>
-                    <strong>{hourLabel(slot.startsAt, b.timezone)}</strong>
-                  </div>
-                )}
-                {!service && (
-                  <p className="muted-text" style={{ marginTop: 20 }}>
-                    Escolha um serviço para começar.
-                  </p>
-                )}
-                <p
-                  className="muted-text"
-                  style={{ marginTop: 18, fontSize: 11 }}
-                >
+                <p className="mt-5 border-t border-zinc-100 pt-4 text-[11px] leading-6 text-zinc-500">
                   O pagamento, quando houver, é combinado diretamente com o
                   estabelecimento.
                 </p>

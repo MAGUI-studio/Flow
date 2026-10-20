@@ -1,3 +1,4 @@
+import { businessContactsSchema } from "./business-contacts";
 import { weeklyScheduleSchema } from "./weekly-schedule";
 import { z } from "zod";
 import { optionalAddressSchema } from "./address";
@@ -33,7 +34,7 @@ const time = z
   .string()
   .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Escolha a hora e os minutos.");
 const professionalId = z.string().uuid("Escolha um profissional.");
-export const establishmentSchema = z.object({
+export const establishmentSchema = businessContactsSchema.extend({
   name,
   slug: z
     .string()
@@ -49,6 +50,7 @@ export const establishmentSchema = z.object({
           "painel",
           "planos",
           "agendamentos",
+          "favoritos",
           "explorar",
           "entrar",
           "sign-in",

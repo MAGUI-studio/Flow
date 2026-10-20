@@ -627,17 +627,39 @@ test("PostgreSQL prevents overlapping sessions and overselling concurrent bookin
         (b) => b.id === bReservation.id,
       ),
     );
-    const reviewBooking = await orm.booking.findFirstOrThrow({
+    const reviewSource = await orm.booking.findFirstOrThrow({
       where: { status: "confirmed" },
       include: { session: true },
     });
-    const eligibleAt = new Date(
-      reviewBooking.session.startsAt.getTime() + 24 * 3600000,
-    );
+    const historicalStart = new Date("2020-02-01T12:00:00Z");
+    const reviewSession = await orm.session.create({
+      data: {
+        establishmentId: e,
+        serviceId: reviewSource.session.serviceId,
+        professionalId: reviewSource.session.professionalId,
+        startsAt: historicalStart,
+        endsAt: new Date(historicalStart.getTime() + 3600000),
+        occupiedStart: historicalStart,
+        occupiedEnd: new Date(historicalStart.getTime() + 3600000),
+        capacity: 1,
+      },
+    });
+    const reviewBooking = await orm.booking.create({
+      data: {
+        sessionId: reviewSession.id,
+        consumerId: reviewSource.consumerId,
+        status: "confirmed",
+        priceCents: reviewSource.priceCents,
+        durationMinutes: reviewSource.durationMinutes,
+        idempotencyKey: randomUUID(),
+      },
+      include: { session: true },
+    });
+    const eligibleAt = historicalStart;
     const reviewInput = {
       bookingId: reviewBooking.id,
       establishmentScore: 4.5,
-      professionalScore: 3,
+      serviceScore: 3,
     };
     await assert.rejects(
       orm.$transaction((tx) =>
@@ -660,6 +682,17 @@ test("PostgreSQL prevents overlapping sessions and overselling concurrent bookin
       orm.$transaction((tx) =>
         createReview(
           tx,
+          reviewBooking.consumerId,
+          reviewInput,
+          new Date(eligibleAt.getTime() + 86400000 - 1),
+        ),
+      ),
+      /REVIEW_NOT_ELIGIBLE/,
+    );
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        createReview(
+          tx,
           "b",
           { ...reviewInput, bookingId: bReservation.id },
           new Date(eligibleAt.getTime() + 86400000),
@@ -667,6 +700,20 @@ test("PostgreSQL prevents overlapping sessions and overselling concurrent bookin
       ),
       /REVIEW_NOT_ELIGIBLE/,
     );
+    await orm.booking.update({
+      where: { id: reviewBooking.id },
+      data: { status: "completed", consumerId: "owner" },
+    });
+    await assert.rejects(
+      orm.$transaction((tx) =>
+        createReview(tx, "owner", reviewInput, eligibleAt),
+      ),
+      /FORBIDDEN/,
+    );
+    await orm.booking.update({
+      where: { id: reviewBooking.id },
+      data: { consumerId: reviewBooking.consumerId },
+    });
     const reviewRace = await Promise.allSettled(
       [0, 1].map(() =>
         orm.$transaction((tx) =>
@@ -685,6 +732,26 @@ test("PostgreSQL prevents overlapping sessions and overselling concurrent bookin
     const aggregate = (await publicRatings([e], orm)).get(e);
     assert.equal(aggregate?.rating, 3.75);
     assert.equal(aggregate?.ratingCount, 1);
+    await orm.account.create({ data: { id: "flow_seed_reviewer_test" } });
+    await orm.booking.update({
+      where: { id: reviewBooking.id },
+      data: { consumerId: "flow_seed_reviewer_test" },
+    });
+    assert.equal((await publicRatings([e], orm)).get(e), undefined);
+    await orm.booking.update({
+      where: { id: reviewBooking.id },
+      data: { consumerId: "owner" },
+    });
+    assert.equal((await publicRatings([e], orm)).get(e), undefined);
+    await orm.booking.update({
+      where: { id: reviewBooking.id },
+      data: { consumerId: reviewBooking.consumerId, status: "canceled" },
+    });
+    assert.equal((await publicRatings([e], orm)).get(e), undefined);
+    await orm.booking.update({
+      where: { id: reviewBooking.id },
+      data: { status: "completed" },
+    });
     await assert.rejects(
       pool.query(
         "INSERT INTO reviews(booking_id,establishment_score,professional_score) VALUES($1,11,0)",

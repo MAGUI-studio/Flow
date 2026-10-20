@@ -56,6 +56,9 @@ export function BookingActions({
               : value === "decline"
                 ? "Solicitação recusada"
                 : "Agendamento cancelado",
+        value === "complete"
+          ? "O cliente já pode avaliar o serviço e o estabelecimento no histórico de agendamentos."
+          : undefined,
       );
       setConfirm("");
       router.refresh();

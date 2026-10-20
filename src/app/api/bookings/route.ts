@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAvailability } from "@/lib/availability";
 import { dayKey } from "@/lib/format";
 import { text } from "@/lib/business-write";
+import { isEstablishmentOwner } from "@/lib/booking-policy";
 export async function POST(request: Request) {
   try {
     const consumer = await currentUser();
@@ -21,6 +22,8 @@ export async function POST(request: Request) {
         include: { establishment: true },
       });
       if (!service) throw new Error("SERVICE_UNAVAILABLE");
+      if (isEstablishmentOwner(consumer, service.establishment.ownerId))
+        throw new Error("OWN_ESTABLISHMENT_BOOKING");
       const professionalId = text(body.professionalId);
       await tx.$queryRaw`SELECT id FROM establishments WHERE id=${service.establishmentId}::uuid FOR UPDATE`;
       await tx.$queryRaw`SELECT id FROM professionals WHERE id=${professionalId}::uuid FOR UPDATE`;

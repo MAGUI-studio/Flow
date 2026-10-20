@@ -26,6 +26,10 @@ export async function requireBusinessOwner(establishmentId: string) {
 export function apiError(error: unknown) {
   const message = error instanceof Error ? error.message : "";
   const errors: Record<string, [number, string]> = {
+    OWN_ESTABLISHMENT_BOOKING: [
+      403,
+      "Você não pode agendar serviços no seu próprio estabelecimento.",
+    ],
     BILLING_QUOTE_EXPIRED: [
       409,
       "A prévia expirou ou a assinatura mudou. Atualize a prévia e tente novamente.",
@@ -55,7 +59,7 @@ export function apiError(error: unknown) {
     ],
     REVIEW_NOT_ELIGIBLE: [
       409,
-      "A avaliação fica disponível 24 horas após o horário de um agendamento confirmado ou concluído.",
+      "A avaliação fica disponível assim que o estabelecimento concluir o atendimento.",
     ],
     REVIEW_EXISTS: [409, "Este agendamento já foi avaliado."],
     INVALID_SLUG: [

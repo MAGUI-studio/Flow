@@ -1,4 +1,5 @@
 "use client";
+import { BusinessBanner } from "./business-banner";
 import { Weekday } from "./professional-schedule";
 import { emptyWeeklySchedule, weekdays } from "@/lib/weekly-schedule";
 import { notify, useToastError } from "@/components/ui/flow-toaster";
@@ -12,28 +13,28 @@ import { businessBioMaxLength } from "@/lib/business-categories";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Heart,
-  Stethoscope,
-  GraduationCap,
-  BriefcaseBusiness,
-  Sparkles,
-  Check,
-  Info,
-  LoaderCircle,
-  Scissors,
-  Users,
-  Globe,
-  MapPin,
-  Zap,
-  ClipboardCheck,
-  Clock,
-  LockKeyhole,
-  PenTool,
-  Flower2,
-  Dumbbell,
-  PawPrint,
-  Camera,
-} from "lucide-react";
+  HeartIcon as Heart,
+  StethoscopeIcon as Stethoscope,
+  GraduationCapIcon as GraduationCap,
+  BriefcaseIcon as BriefcaseBusiness,
+  SparkleIcon as Sparkles,
+  CheckIcon as Check,
+  InfoIcon as Info,
+  CircleNotchIcon as LoaderCircle,
+  ScissorsIcon as Scissors,
+  UsersIcon as Users,
+  GlobeIcon as Globe,
+  MapPinIcon as MapPin,
+  LightningIcon as Zap,
+  ClipboardTextIcon as ClipboardCheck,
+  ClockIcon as Clock,
+  LockKeyIcon as LockKeyhole,
+  PenNibIcon as PenTool,
+  FlowerIcon as Flower2,
+  BarbellIcon as Dumbbell,
+  PawPrintIcon as PawPrint,
+  CameraIcon as Camera,
+} from "@phosphor-icons/react";
 import { FormSection } from "./primitives";
 import { AddressFields } from "./address-fields";
 import { BusinessMonogram } from "@/components/ui/business-monogram";
@@ -142,8 +143,14 @@ export function BusinessForm({
   professionals = [],
   services = [],
   initialService,
+  initialEstablishment,
 }: {
   kind: FormKind;
+  initialEstablishment?: {
+    id: string;
+    coverUrl?: string | null;
+    [key: string]: unknown;
+  };
   initialService?: EditableService;
   business?: FormBusiness;
   professionals?: FormProfessional[];
@@ -154,6 +161,10 @@ export function BusinessForm({
   const router = useRouter();
   const [photoBusy, setPhotoBusy] = useState(false);
   const [professionalPhotoFile, setProfessionalPhotoFile] = useState<File>();
+  const [bannerFile, setBannerFile] = useState<File>();
+  const [bannerPreview, setBannerPreview] = useState(
+    initialEstablishment?.coverUrl ?? "",
+  );
   const methods = useForm<FieldValues>({
     ...formValidation,
     resolver: zodResolver(
@@ -178,6 +189,9 @@ export function BusinessForm({
         state: "",
       },
       contactPhone: "",
+      website: "",
+      instagram: "",
+      bannerId: undefined,
       approvalMode: "automatic",
       cancelNoticeHours: 2,
       kind: "individual",
@@ -197,6 +211,7 @@ export function BusinessForm({
       serviceId: "",
       capacity: 10,
       ...initialService,
+      ...initialEstablishment,
     },
   });
   const {
@@ -226,7 +241,12 @@ export function BusinessForm({
   const setSlug = (v: string) =>
     setValue("slug", v, { shouldValidate: methods.formState.isSubmitted });
   useEffect(() => {
-    if (kind !== "establishment" || !name.trim() || !slug) {
+    if (
+      kind !== "establishment" ||
+      initialEstablishment ||
+      !name.trim() ||
+      !slug
+    ) {
       setSlugStatus("");
       return;
     }
@@ -296,7 +316,7 @@ export function BusinessForm({
     if (kind === "availability") input.block = values.mode === "block";
     setError("");
     try {
-      if (kind === "establishment") {
+      if (kind === "establishment" && !initialEstablishment) {
         const check = await fetch(
           `/api/establishment-slug?${new URLSearchParams({ name: String(values.name), slug: String(values.slug) })}`,
           { cache: "no-store" },
@@ -316,6 +336,19 @@ export function BusinessForm({
           return;
         }
       }
+      if (kind === "establishment" && bannerFile) {
+        const uploadForm = new FormData();
+        uploadForm.set("file", bannerFile);
+        const uploadResponse = await fetch("/api/business-banner", {
+          method: "POST",
+          body: uploadForm,
+        });
+        const banner = await uploadResponse.json();
+        if (!uploadResponse.ok) throw new Error(banner.error);
+        input.bannerId = banner.id;
+        setValue("bannerId", banner.id, { shouldDirty: true });
+        setBannerFile(undefined);
+      }
       const photoForm =
         kind === "professional" && professionalPhotoFile
           ? new FormData()
@@ -331,14 +364,19 @@ export function BusinessForm({
           ? "/api/professionals/photo"
           : kind === "service" && savedServiceId
             ? `/api/services/${savedServiceId}`
-            : "/api/manage",
+            : initialEstablishment
+              ? `/api/establishments/${initialEstablishment.id}`
+              : "/api/manage",
         photoForm
           ? {
               method: "POST",
               body: photoForm,
             }
           : {
-              method: kind === "service" && savedServiceId ? "PATCH" : "POST",
+              method:
+                initialEstablishment || (kind === "service" && savedServiceId)
+                  ? "PATCH"
+                  : "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(input),
             },
@@ -349,7 +387,9 @@ export function BusinessForm({
         kind === "professional"
           ? "Profissional adicionado"
           : kind === "establishment"
-            ? "Estabelecimento criado"
+            ? initialEstablishment
+              ? "Alterações salvas"
+              : "Estabelecimento criado"
             : kind === "service"
               ? savedServiceId
                 ? "Alterações salvas"
@@ -443,7 +483,8 @@ export function BusinessForm({
                     onChange={(e) => {
                       setName(e.target.value);
                       setCanEditSlug(false);
-                      setSlug(businessSlug(e.target.value));
+                      if (!initialEstablishment)
+                        setSlug(businessSlug(e.target.value));
                     }}
                     autoComplete="organization"
                   />
@@ -628,10 +669,48 @@ export function BusinessForm({
               </FormSection>
               <FormSection
                 number="02"
+                title="A primeira impressão do seu espaço"
+                description="Escolha uma imagem de capa para sua página e para os cards do Flow."
+              >
+                <BusinessBanner
+                  initialUrl={initialEstablishment?.coverUrl}
+                  onBusyChange={setPhotoBusy}
+                  onChange={(file, previewUrl) => {
+                    setBannerPreview(previewUrl);
+                    setBannerFile(file ?? undefined);
+                    setValue("bannerId", file ? undefined : "", {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                  }}
+                />
+                <FieldError name="bannerId" />
+              </FormSection>
+              <FormSection
+                number="03"
                 title="Onde e como encontrar você"
                 description="Informe os contatos e a localização do seu atendimento."
               >
                 <div className="fields-grid">
+                  <label className="form-field">
+                    Site
+                    <input
+                      {...register("website")}
+                      placeholder="https://seusite.com.br"
+                      autoComplete="url"
+                    />
+                    <FieldError name="website" />
+                  </label>
+                  <label className="form-field">
+                    Instagram
+                    <input
+                      {...register("instagram")}
+                      placeholder="@seuestabelecimento"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                    />
+                    <FieldError name="instagram" />
+                  </label>
                   <label className="form-field">
                     WhatsApp de contato
                     <input
@@ -650,7 +729,7 @@ export function BusinessForm({
                 <AddressFields />
               </FormSection>
               <FormSection
-                number="03"
+                number="04"
                 title="Seu jeito de organizar a agenda"
                 description="Defina como as reservas chegam até você."
               >
@@ -1082,7 +1161,9 @@ export function BusinessForm({
               ) : (
                 <>
                   {kind === "establishment"
-                    ? "Criar estabelecimento"
+                    ? initialEstablishment
+                      ? "Salvar alterações"
+                      : "Criar estabelecimento"
                     : kind === "professional"
                       ? "Adicionar profissional"
                       : kind === "service"
@@ -1124,8 +1205,16 @@ export function BusinessForm({
             </p>
             {kind === "establishment" && (
               <div className="page-preview">
-                <div className="mb-4 grid h-28 place-items-center overflow-hidden rounded-xl bg-[#e5dff0] pr-5">
-                  <BusinessMonogram name={name || "Flow"} />
+                <div className="relative mb-4 grid h-28 place-items-center overflow-hidden rounded-xl bg-[#e5dff0] pr-5">
+                  {bannerPreview ? (
+                    <img
+                      src={bannerPreview}
+                      alt=""
+                      className="absolute inset-0 size-full object-cover"
+                    />
+                  ) : (
+                    <BusinessMonogram name={name || "Flow"} />
+                  )}
                 </div>
                 <strong>{name || "Nome do seu negócio"}</strong>
                 <span>
