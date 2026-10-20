@@ -7,6 +7,7 @@ export default defineConfig({
   datasource: {
     url:
       process.env.DIRECT_DATABASE_URL ??
+      process.env.DATABASE_URL_UNPOOLED ??
       process.env.DATABASE_URL ??
       "postgresql://flow:flow_local_only@localhost:5433/flow",
   },

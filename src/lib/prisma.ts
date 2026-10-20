@@ -1,5 +1,7 @@
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
+import { attachDatabasePool } from "@vercel/functions";
 const globalPrisma = globalThis as unknown as {
   flowPrisma?: PrismaClient;
   flowPrismaConstructor?: typeof PrismaClient;
@@ -17,7 +19,17 @@ export function prisma() {
     globalPrisma.flowPrisma = undefined;
   }
   globalPrisma.flowPrismaConstructor = PrismaClient;
-  return (globalPrisma.flowPrisma ??= new PrismaClient({
-    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
-  }));
+  if (!globalPrisma.flowPrisma) {
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: 5,
+      connectionTimeoutMillis: 15000,
+      idleTimeoutMillis: 30000,
+    });
+    if (process.env.VERCEL === "1") attachDatabasePool(pool);
+    globalPrisma.flowPrisma = new PrismaClient({
+      adapter: new PrismaPg(pool, { disposeExternalPool: true }),
+    });
+  }
+  return globalPrisma.flowPrisma;
 }
