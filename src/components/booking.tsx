@@ -1,4 +1,8 @@
 "use client";
+import {
+  BookingServiceOption,
+  bookingServiceOptionStyle,
+} from "./booking-service-option";
 import { authModalAppearance } from "@/lib/auth-modal-appearance";
 import {
   isEstablishmentOwner,
@@ -341,41 +345,16 @@ export function Booking({
                             <button
                               type="button"
                               aria-pressed={s.id === serviceId}
-                              className={`flex min-h-[120px] min-w-0 flex-col items-stretch gap-3 rounded-xl border p-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#635BFF] ${s.id === serviceId ? "border-[#635BFF] bg-[#f5f4ff]" : "border-[#e8e5f6] bg-white hover:border-[#635BFF]/40 hover:bg-[#faf9ff]"}`}
+                              className={bookingServiceOptionStyle(
+                                s.id === serviceId,
+                              )}
                               key={s.id}
                               onClick={() => selectService(s.id)}
                             >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <strong className="block text-sm leading-5 font-semibold text-zinc-800">
-                                    {s.name}
-                                  </strong>
-                                  <small className="mt-1 block text-[10px] leading-4 text-zinc-500">
-                                    {s.durationMinutes} minutos ·{" "}
-                                    {s.kind === "collective"
-                                      ? "Em grupo"
-                                      : "Individual"}{" "}
-                                    ·{" "}
-                                    {s.modality === "online"
-                                      ? "Online"
-                                      : "Presencial"}
-                                  </small>
-                                </div>
-                                <span
-                                  aria-hidden="true"
-                                  className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${s.id === serviceId ? "border-[#635BFF] bg-[#635BFF] text-white" : "border-zinc-200 bg-white"}`}
-                                >
-                                  {s.id === serviceId && <Check size={12} />}
-                                </span>
-                              </div>
-                              <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-                                <span className="text-[10px] text-zinc-500">
-                                  Valor do serviço
-                                </span>
-                                <strong className="text-lg leading-6 font-semibold tracking-tight text-zinc-900">
-                                  {money(s.priceCents)}
-                                </strong>
-                              </div>
+                              <BookingServiceOption
+                                service={s}
+                                selected={s.id === serviceId}
+                              />
                             </button>
                           ))}
                         </div>

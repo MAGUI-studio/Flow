@@ -1,25 +1,25 @@
 "use client";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  Check,
-  MousePointer2,
-  CalendarDays,
-  Users,
-  Scissors,
-  Clock,
-  Layers,
-  Globe,
-  MapPin,
-  ArrowRight,
-  Plus,
-} from "lucide-react";
+  CheckIcon as Check,
+  CursorIcon as MousePointer2,
+  CalendarDotsIcon as CalendarDays,
+  UsersIcon as Users,
+  ScissorsIcon as Scissors,
+  ClockIcon as Clock,
+  PlusIcon as Plus,
+} from "@phosphor-icons/react";
 import { businessNavigation } from "@/lib/navigation";
 import { NavigationIndicator } from "./ui/navigation-indicator";
-import { money, dayKey } from "@/lib/format";
+import { dayKey, hourLabel } from "@/lib/format";
 import type { BusinessProfile } from "@/lib/catalog";
-import { OwnerAppointment } from "./internal/owner-appointment";
+import { ProfessionalsTable } from "./internal/professionals-table";
+import { ServicesTable } from "./internal/services-table";
+import { EntityListFilters } from "./internal/entity-list-filters";
+import { AgendaViews } from "./internal/agenda-views";
+import { HeartIcon, WalletIcon, CaretDownIcon } from "@phosphor-icons/react";
 import { BookingActionControls } from "./internal/booking-action-controls";
-import { PageHeading, StatusPill } from "./internal/primitives";
+import { PageHeading, StatusPill, SectionCard } from "./internal/primitives";
 import { ListFilters } from "./internal/filters";
 import { ArrowLink } from "./ui/arrow-link";
 const stages = [
@@ -76,7 +76,15 @@ export function AgendaPreview({
   );
   const stage = frame < 3 ? 0 : frame < 6 ? 1 : frame < 9 ? 2 : 3;
   const approved = frame >= 13;
-  const clicking = [2, 5, 8, 11, 16].includes(frame);
+  const clicking = [2, 5, 8, 11, 15, 18, 21, 24].includes(frame);
+  const agendaView =
+    frame < 16
+      ? "table"
+      : frame < 19
+        ? "day"
+        : frame < 22
+          ? "month"
+          : "timeline";
   const target =
     frame < 3
       ? '[data-nav="/painel/profissionais"]'
@@ -84,9 +92,15 @@ export function AgendaPreview({
         ? '[data-nav="/painel/servicos"]'
         : frame < 9
           ? '[data-nav="/painel/agenda"]'
-          : frame < 15
+          : frame < 14
             ? "[data-approve]"
-            : '[data-nav="/painel"]';
+            : frame < 17
+              ? '[role="tab"][id="agenda-tab-day"]'
+              : frame < 20
+                ? '[role="tab"][id="agenda-tab-month"]'
+                : frame < 23
+                  ? '[role="tab"][id="agenda-tab-timeline"]'
+                  : '[data-nav="/painel"]';
   useEffect(() => {
     const preference = matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setReduced(preference.matches);
@@ -136,10 +150,10 @@ export function AgendaPreview({
   }, [service?.id, professional?.id]);
   useEffect(() => {
     if (reduced || !visible || (stage === 3 && !startsAt)) return;
-    const hold = [0, 3, 6, 9, 13, 14].includes(frame);
+    const hold = [0, 3, 6, 9, 13, 16, 19, 22].includes(frame);
     const timer = setTimeout(
       () => {
-        if (!document.hidden) setFrame((frame) => (frame + 1) % 17);
+        if (!document.hidden) setFrame((frame) => (frame + 1) % 25);
       },
       clicking ? 260 : hold ? 1550 : frame === 12 ? 900 : 850,
     );
@@ -153,7 +167,7 @@ export function AgendaPreview({
     };
   }, [frame, reduced, visible, stage, startsAt]);
   useLayoutEffect(() => {
-    if (![1, 2, 4, 5, 7, 8, 10, 11, 12, 15, 16].includes(frame)) return;
+    if ([0, 3, 6, 9, 13].includes(frame)) return;
     const element = scene.current;
     if (!element) return;
     const measure = () => {
@@ -243,8 +257,10 @@ export function AgendaPreview({
           <div className="grid h-[646px] grid-cols-[210px_1fr]">
             <aside className="border-r border-[#e9e9f1] bg-white p-5">
               <img src="/brand/logo_black.svg" alt="" className="mb-6 w-20" />
-              <div className="mb-6 rounded-xl border border-[#e9e9f1] p-3 text-xs font-medium">
-                {business?.name}
+              <span className="nav-caption mb-2">SEU ESTABELECIMENTO</span>
+              <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-[#e9e9f1] bg-white p-3 text-xs font-medium">
+                <span>{business?.name}</span>
+                <CaretDownIcon size={14} />
               </div>
               <nav
                 ref={navigationRef}
@@ -267,9 +283,6 @@ export function AgendaPreview({
                       href="#"
                       data-nav={item.href}
                       key={item.href}
-                      className={
-                        item.href === stages[stage].path ? "active" : ""
-                      }
                       aria-current={
                         item.href === stages[stage].path ? "page" : undefined
                       }
@@ -279,263 +292,312 @@ export function AgendaPreview({
                     </a>
                   </Fragment>
                 ))}
+                <a href="#">
+                  <HeartIcon size={18} />
+                  <span>Meus favoritos</span>
+                </a>
+                <span className="nav-caption secondary">NEGÓCIO</span>
+                <a href="#">
+                  <WalletIcon size={18} />
+                  <span>Minha assinatura</span>
+                </a>
               </nav>
             </aside>
-            <div className="overflow-hidden p-7" ref={content}>
-              {stage === 0 && (
-                <>
-                  <PageHeading
-                    eyebrow={business?.name}
-                    title="Tudo flui por aqui."
-                    description="Um olhar sobre a sua agenda e os próximos passos do seu negócio."
-                  />
-                  <div className="overview-metrics">
-                    {[
-                      {
-                        label: "Agendamentos hoje",
-                        value:
-                          startsAt &&
-                          business &&
-                          dayKey(startsAt, business.timezone) ===
-                            dayKey(new Date(), business.timezone)
-                            ? "1"
-                            : "0",
-                        icon: CalendarDays,
-                      },
-                      {
-                        label: "Aguardando aprovação",
-                        value: startsAt ? "1" : "0",
-                        icon: Clock,
-                      },
-                      {
-                        label: "Profissionais",
-                        value: String(business?.professionals.length ?? 0),
-                        icon: Users,
-                      },
-                      {
-                        label: "Serviços",
-                        value: String(business?.services.length ?? 0),
-                        icon: Scissors,
-                      },
-                    ].map((metric) => (
-                      <div
-                        key={metric.label}
-                        className="metric-card relative isolate overflow-hidden"
-                      >
-                        <metric.icon
-                          aria-hidden
-                          className="absolute -right-3 -bottom-4 -z-10 size-24 stroke-1 text-[#635BFF] opacity-[0.08]"
-                        />
-                        <span className="text-xs text-zinc-500">
-                          {metric.label}
+            <div className="min-w-0 overflow-hidden">
+              <header className="internal-topbar">
+                <div>
+                  <span className="topbar-root">Meu negócio</span>
+                  <span className="text-zinc-400">›</span>
+                  <strong>
+                    {stages[stage].name === "Equipe"
+                      ? "Quem faz acontecer."
+                      : stages[stage].name}
+                  </strong>
+                </div>
+                <div>
+                  <span className="workspace-status">
+                    <i />
+                    Tudo no seu tempo
+                  </span>
+                  <span className="public-page-link">Ver minha página →</span>
+                </div>
+              </header>
+              <div className="overflow-hidden p-7" ref={content}>
+                {stage === 0 && (
+                  <>
+                    <PageHeading
+                      eyebrow={new Date().toLocaleDateString("pt-BR", {
+                        timeZone: business?.timezone ?? "America/Sao_Paulo",
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                      })}
+                      title="Tudo flui por aqui."
+                      description={`Um novo dia para cuidar de ${business?.name}. Veja o que está acontecendo.`}
+                      action={
+                        <span className="button">
+                          <Plus size={16} />
+                          Abrir horários
                         </span>
-                        <strong className="mt-3 block text-3xl">
-                          {metric.value}
-                        </strong>
-                      </div>
-                    ))}
-                  </div>
-                  <section className="internal-card mt-6">
-                    <div className="internal-card-heading">
-                      <h2>Próximos agendamentos</h2>
-                      <span className="text-xs text-[#635BFF]">
-                        Ver agenda →
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-4 px-6 pb-6">
-                      <div>
-                        <strong className="text-sm">{service?.name}</strong>
-                        <p className="mt-2 text-xs text-zinc-400">
-                          Com {professional?.name}
-                        </p>
-                      </div>
-                      <StatusPill
-                        status="pending"
-                        label="Aguardando aprovação"
-                      />
-                    </div>
-                  </section>
-                </>
-              )}
-              {stage === 1 && (
-                <>
-                  <PageHeading
-                    eyebrow={business?.name}
-                    title="Quem faz acontecer."
-                    description="Sua equipe, seus talentos e as pessoas por trás de cada atendimento."
-                    action={
-                      <span className="button">
-                        <Plus size={16} />
-                        Adicionar profissional
-                      </span>
-                    }
-                  />
-                  <ListFilters
-                    preview
-                    placeholder="Buscar profissional pelo nome"
-                  />
-                  <div className="section-subline">
-                    <span>{business?.professionals.length} profissionais</span>
-                    <span>Estabelecimento: {business?.name}</span>
-                  </div>
-                  <div className="professional-grid">
-                    {business?.professionals.slice(0, 3).map((person) => {
-                      const services = business.services.filter((service) =>
-                        service.professionalIds.includes(person.id),
-                      );
-                      return (
-                        <article key={person.id} className="professional-card">
-                          <div className="professional-card-top">
-                            <span className="professional-avatar">
-                              {person.name
-                                .split(" ")
-                                .slice(0, 2)
-                                .map((part) => part[0])
-                                .join("")}
-                            </span>
-                            <StatusPill status="confirmed" label="Ativo" />
-                          </div>
-                          <h2>{person.name}</h2>
-                          <p>{services.length} serviços vinculados</p>
-                          <div className="service-chips">
-                            {services.slice(0, 3).map((service) => (
-                              <span key={service.id}>{service.name}</span>
-                            ))}
-                          </div>
-                          <div className="professional-card-footer">
-                            Organizar horários
-                            <ArrowRight size={15} />
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-              {stage === 2 && (
-                <>
-                  <PageHeading
-                    eyebrow={business?.name}
-                    title="Seu talento, em serviços."
-                    description="Organize o que você oferece e facilite a escolha dos seus clientes."
-                    action={
-                      <span className="button">
-                        <Plus size={16} />
-                        Novo serviço
-                      </span>
-                    }
-                  />
-                  <ListFilters preview placeholder="Buscar serviço" />
-                  <div className="section-subline">
-                    <span>{business?.services.length} serviços</span>
-                    <span>Valores combinados diretamente com o cliente</span>
-                  </div>
-                  <div className="service-list">
-                    {business?.services.slice(0, 3).map((item) => (
-                      <article key={item.id} className="service-list-card">
-                        <span className="service-list-icon">
-                          {item.kind === "collective" ? (
-                            <Layers size={21} />
-                          ) : (
-                            <Scissors size={21} />
-                          )}
-                        </span>
-                        <div className="service-list-main">
-                          <h2>{item.name}</h2>
-                          <div>
-                            <span>
-                              <Clock size={12} />
-                              {item.durationMinutes} min
-                            </span>
-                            <span>
-                              {item.kind === "collective"
-                                ? "Em grupo"
-                                : "Individual"}
-                            </span>
-                            <span>
-                              {item.modality === "online" ? (
-                                <Globe size={12} />
-                              ) : (
-                                <MapPin size={12} />
-                              )}{" "}
-                              {item.modality === "online"
-                                ? "Online"
-                                : "Presencial"}
-                            </span>
-                          </div>
-                          <p>
-                            {business.professionals
-                              .filter((person) =>
-                                item.professionalIds.includes(person.id),
-                              )
-                              .map((person) => person.name)
-                              .join(" · ")}
-                          </p>
-                        </div>
-                        <div className="service-list-price">
-                          <strong>{money(item.priceCents)}</strong>
-                          <small>por atendimento</small>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </>
-              )}
-              {stage === 3 && (
-                <>
-                  <PageHeading
-                    eyebrow={business?.name}
-                    title="Agenda"
-                    description="Cada horário, cada cliente, cada próximo encontro. Tudo em um só lugar."
-                    action={
-                      <span className="button secondary">
-                        <Plus size={16} />
-                        Abrir horários
-                      </span>
-                    }
-                  />
-                  <ListFilters
-                    preview
-                    placeholder="Buscar serviço ou profissional"
-                    statuses
-                    period
-                    professionals={business?.professionals}
-                  />
-                  <div className="section-subline">
-                    <span>
-                      {startsAt ? "1 agendamento" : "Nenhum agendamento"}
-                    </span>
-                    <span>Fuso: {business?.timezone}</span>
-                  </div>
-                  {service && professional && startsAt && (
-                    <OwnerAppointment
-                      startsAt={startsAt}
-                      timezone={business!.timezone}
-                      service={service.name}
-                      professional={professional.name}
-                      durationMinutes={service.durationMinutes}
-                      priceCents={service.priceCents}
-                      status={approved ? "confirmed" : "pending"}
-                      actions={
-                        <div className="appointment-actions flex-nowrap self-center [&>button]:my-0 [&>button]:h-9 [&>button]:min-h-9 [&>button]:py-0">
-                          <BookingActionControls
-                            status={approved ? "confirmed" : "pending"}
-                            busy={frame === 12 ? "approve" : ""}
-                            onAction={noop}
-                            onConfirm={noop}
-                          />
-                        </div>
                       }
                     />
-                  )}
-                  <div
-                    className={`mt-5 flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs text-emerald-700 transition-all duration-300 ${approved ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}
-                  >
-                    <Check size={16} />
-                    Agendamento aprovado. Sua agenda está atualizada.
-                  </div>
-                </>
-              )}
+                    <div className="overview-metrics">
+                      {[
+                        {
+                          label: "Agendamentos hoje",
+                          value:
+                            startsAt &&
+                            business &&
+                            dayKey(startsAt, business.timezone) ===
+                              dayKey(new Date(), business.timezone)
+                              ? "1"
+                              : "0",
+                          icon: CalendarDays,
+                        },
+                        {
+                          label: "Aguardando aprovação",
+                          value: startsAt ? "1" : "0",
+                          icon: Clock,
+                        },
+                        {
+                          label: "Profissionais ativos",
+                          value: String(business?.professionals.length ?? 0),
+                          icon: Users,
+                        },
+                        {
+                          label: "Serviços disponíveis",
+                          value: String(business?.services.length ?? 0),
+                          icon: Scissors,
+                        },
+                      ].map((metric, index) => (
+                        <div
+                          key={metric.label}
+                          className="metric-card relative isolate overflow-hidden"
+                        >
+                          <div>
+                            <span>{metric.label}</span>
+                            <i
+                              aria-hidden="true"
+                              className="pointer-events-none absolute -right-3 -bottom-5 -z-10 rotate-[-12deg] bg-transparent p-0 opacity-10"
+                            >
+                              <metric.icon className="size-28" weight="light" />
+                            </i>
+                          </div>
+                          <strong>{metric.value.padStart(2, "0")}</strong>
+                          <small>
+                            {
+                              [
+                                "No horário do seu estabelecimento",
+                                "Seus clientes estão esperando",
+                                "Até 20 no seu estabelecimento",
+                                "Seu talento em cada atendimento",
+                              ][index]
+                            }
+                          </small>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="overview-columns items-stretch">
+                      <SectionCard
+                        title="Próximos encontros"
+                        description="Os momentos que estão chegando."
+                        aside={
+                          <span className="subtle-link">Ver agenda →</span>
+                        }
+                      >
+                        <div className="upcoming-row">
+                          <div className="upcoming-time">
+                            <strong>
+                              {startsAt &&
+                                hourLabel(startsAt, business!.timezone)}
+                            </strong>
+                            <small>
+                              {startsAt &&
+                                new Date(startsAt).toLocaleDateString("pt-BR", {
+                                  timeZone: business!.timezone,
+                                  day: "2-digit",
+                                  month: "short",
+                                })}
+                            </small>
+                          </div>
+                          <div>
+                            <strong>{service?.name}</strong>
+                            <small>{professional?.name}</small>
+                          </div>
+                          <StatusPill
+                            status="pending"
+                            label="Aguardando aprovação"
+                          />
+                        </div>
+                      </SectionCard>
+                      <SectionCard
+                        title="Tudo pronto para fluir?"
+                        description="Complete estas etapas para começar a receber agendamentos."
+                      >
+                        {[
+                          "Apresente sua equipe",
+                          "Cadastre seus serviços",
+                          "Configure os horários da equipe",
+                        ].map((title) => (
+                          <div className="setup-step" key={title}>
+                            <span className="done">
+                              <Check size={13} />
+                            </span>
+                            {title}
+                          </div>
+                        ))}
+                      </SectionCard>
+                    </div>
+                  </>
+                )}
+                {stage === 1 && (
+                  <>
+                    <PageHeading
+                      eyebrow={business?.name}
+                      title="Quem faz acontecer."
+                      description="Sua equipe, seus talentos e as pessoas por trás de cada atendimento."
+                      action={
+                        <span className="button">
+                          <Plus size={16} />
+                          Adicionar profissional
+                        </span>
+                      }
+                    />
+                    <EntityListFilters
+                      kind="professionals"
+                      options={business?.services ?? []}
+                      count={business?.professionals.length ?? 0}
+                      total={business?.professionals.length ?? 0}
+                    />
+                    {business && (
+                      <ProfessionalsTable
+                        establishmentId={business.id}
+                        timezone={business.timezone}
+                        now={new Date().toISOString()}
+                        rows={business.professionals.map((person) => ({
+                          ...person,
+                          active: true,
+                          photo: person.photoUrl
+                            ? { url: person.photoUrl }
+                            : null,
+                          vacationStartsAt: null,
+                          vacationEndsAt: null,
+                          services: business.services
+                            .filter((item) =>
+                              item.professionalIds.includes(person.id),
+                            )
+                            .map((item) => ({
+                              serviceId: item.id,
+                              service: item,
+                            })),
+                        }))}
+                      />
+                    )}
+                  </>
+                )}
+                {stage === 2 && (
+                  <>
+                    <PageHeading
+                      eyebrow={business?.name}
+                      title="Seu talento, em serviços."
+                      description="Organize o que você oferece e facilite a escolha dos seus clientes."
+                      action={
+                        <span className="button">
+                          <Plus size={16} />
+                          Novo serviço
+                        </span>
+                      }
+                    />
+                    <EntityListFilters
+                      kind="services"
+                      options={business?.professionals ?? []}
+                      count={business?.services.length ?? 0}
+                      total={business?.services.length ?? 0}
+                    />
+                    {business && (
+                      <ServicesTable
+                        establishmentId={business.id}
+                        rows={business.services.map((item) => ({
+                          ...item,
+                          professionals: business.professionals
+                            .filter((person) =>
+                              item.professionalIds.includes(person.id),
+                            )
+                            .map((person) => ({
+                              professional: { name: person.name },
+                            })),
+                        }))}
+                      />
+                    )}
+                  </>
+                )}
+                {stage === 3 && (
+                  <>
+                    <PageHeading
+                      eyebrow={business?.name}
+                      title="Agenda"
+                      description="Cada horário, cada cliente, cada próximo encontro. Tudo em um só lugar."
+                      action={
+                        <span className="button secondary">
+                          <Plus size={16} />
+                          Abrir horários
+                        </span>
+                      }
+                    />
+                    <ListFilters
+                      preview
+                      placeholder="Buscar serviço ou profissional"
+                      statuses
+                      period
+                      professionals={business?.professionals}
+                    />
+                    <div className="section-subline">
+                      <span>
+                        {startsAt ? "1 agendamento" : "Nenhum agendamento"}
+                      </span>
+                      <span>Fuso: {business?.timezone}</span>
+                    </div>
+                    {service && professional && startsAt && (
+                      <AgendaViews
+                        preview
+                        previewView={agendaView}
+                        previewDate={dayKey(startsAt, business!.timezone)}
+                        timezone={business!.timezone}
+                        rows={[
+                          {
+                            id: "preview-appointment",
+                            effectiveStatus: approved ? "confirmed" : "pending",
+                            durationMinutes: service.durationMinutes,
+                            priceCents: service.priceCents,
+                            whatsapp: null,
+                            session: {
+                              startsAt: new Date(startsAt),
+                              service: { name: service.name },
+                              professional: { name: professional.name },
+                            },
+                            actions: (
+                              <div className="appointment-actions flex-nowrap self-center [&>button]:my-0 [&>button]:h-9 [&>button]:min-h-9 [&>button]:py-0">
+                                <BookingActionControls
+                                  status={approved ? "confirmed" : "pending"}
+                                  busy={frame === 12 ? "approve" : ""}
+                                  onAction={noop}
+                                  onConfirm={noop}
+                                />
+                              </div>
+                            ),
+                          },
+                        ]}
+                      />
+                    )}
+                    <div
+                      className={`mt-5 flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs text-emerald-700 transition-all duration-300 ${approved ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}
+                    >
+                      <Check size={16} />
+                      Agendamento aprovado. Sua agenda está atualizada.
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           {!reduced && (
@@ -551,8 +613,8 @@ export function AgendaPreview({
               )}
               <MousePointer2
                 size={24}
-                fill="white"
-                className={`origin-top-left text-zinc-800 drop-shadow-sm transition-transform duration-150 ${clicking ? "scale-85" : "scale-100"}`}
+                weight="fill"
+                className={`origin-top-left text-black drop-shadow-sm transition-transform duration-150 ${clicking ? "scale-85" : "scale-100"}`}
               />
             </div>
           )}

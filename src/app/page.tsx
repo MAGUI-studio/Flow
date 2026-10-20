@@ -27,12 +27,16 @@ export default async function Page() {
   const previewBusiness =
     automatic.find(
       (business) =>
-        business!.services.length >= 3 &&
+        business!.services.filter((service) => service.priceCents > 0).length >=
+          4 &&
         business!.services.some(
-          (service) => service.professionalIds.length >= 2,
+          (service) =>
+            service.priceCents > 0 && service.professionalIds.length >= 2,
         ),
     ) ??
-    automatic[0] ??
+    automatic.find((business) =>
+      business!.services.some((service) => service.priceCents > 0),
+    ) ??
     null;
   const managementBusiness =
     candidates.find(

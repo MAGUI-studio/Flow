@@ -79,12 +79,19 @@ function Appointment({
 export function AgendaViews({
   rows: incomingRows,
   timezone,
+  preview = false,
+  previewView,
+  previewDate,
 }: {
   rows: BookingRow[];
   timezone: string;
+  preview?: boolean;
+  previewView?: "table" | "day" | "month" | "timeline";
+  previewDate?: string;
 }) {
   const router = useRouter();
   useEffect(() => {
+    if (preview) return;
     const refresh = () => {
       if (
         document.visibilityState !== "visible" ||
@@ -101,7 +108,7 @@ export function AgendaViews({
       window.removeEventListener("focus", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, [router]);
+  }, [router, preview]);
   const rows = incomingRows
     .filter((a) => !["canceled", "declined"].includes(a.effectiveStatus))
     .sort((a, b) => {
@@ -113,18 +120,21 @@ export function AgendaViews({
           new Date(b.session.startsAt).getTime()
       );
     });
-  const [view, setView] = useQueryState(
+  const [queryView, setView] = useQueryState(
     "visualizacao",
     parseAsStringEnum(["table", "day", "month", "timeline"])
       .withDefault("table")
       .withOptions({ shallow: true, scroll: false }),
   );
-  const today = dayKey(new Date(), timezone);
+  const view = preview ? (previewView ?? "table") : queryView;
+  const today =
+    preview && previewDate ? previewDate : dayKey(new Date(), timezone);
   const [dateParam, setDate] = useQueryState(
     "data-agenda",
     parseAsString.withOptions({ shallow: true, scroll: false }),
   );
   const date =
+    !preview &&
     dateParam &&
     /^\d{4}-\d{2}-\d{2}$/.test(dateParam) &&
     !Number.isNaN(new Date(dateParam + "T12:00:00Z").getTime()) &&

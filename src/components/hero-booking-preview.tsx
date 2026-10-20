@@ -1,6 +1,14 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowRight, Check, MousePointer2 } from "lucide-react";
+import {
+  ArrowRightIcon as ArrowRight,
+  CheckIcon as Check,
+  CursorIcon as MousePointer2,
+} from "@phosphor-icons/react";
+import {
+  BookingServiceOption,
+  bookingServiceOptionStyle,
+} from "./booking-service-option";
 import type { BusinessProfile } from "@/lib/catalog";
 import type { Slot } from "@/lib/availability";
 import { money, hourLabel } from "@/lib/format";
@@ -21,14 +29,18 @@ export function HeroBookingPreview({
     dates: string[];
     slots: Slot[];
   }>({ dates: [], slots: [] });
+  const paidServices =
+    business?.services.filter((item) => item.priceCents > 0) ?? [];
   const service =
-    business?.services.find((service) => service.professionalIds.length >= 2) ??
-    business?.services.find((service) => service.professionalIds.length > 0);
-  const services =
-    business?.services.filter((item) => item.id !== service?.id).slice(0, 2) ??
-    [];
+    paidServices.find((service) => service.professionalIds.length >= 2) ??
+    paidServices.find((service) => service.professionalIds.length > 0);
+  const services = paidServices
+    .filter((item) => item.id !== service?.id)
+    .slice(0, 3);
   const serviceOptions = service
-    ? [services[0], service, services[1]].filter((item) => item !== undefined)
+    ? [services[0], service, services[1], services[2]].filter(
+        (item) => item !== undefined,
+      )
     : [];
   const professionals =
     business?.professionals
@@ -66,15 +78,27 @@ export function HeroBookingPreview({
         if (!response.ok) return;
         const initial = await response.json();
         if (!initial.dates?.length) return;
-        params.set("date", initial.dates[0]);
-        const slotsResponse = await fetch(`/api/availability?${params}`, {
-          signal: abort.signal,
-        });
-        if (!slotsResponse.ok) return;
-        const data = await slotsResponse.json();
+        let chosenDate = initial.dates[0];
+        let slots: Slot[] = [];
+        // Prefer a fuller day rather than today's final available appointment.
+        for (const date of initial.dates.slice(0, 5)) {
+          params.set("date", date);
+          const response = await fetch(`/api/availability?${params}`, {
+            signal: abort.signal,
+          });
+          if (!response.ok) continue;
+          const data = await response.json();
+          if (data.slots.length > slots.length) {
+            slots = data.slots;
+            chosenDate = date;
+          }
+          if (slots.length >= 8) break;
+        }
         setAvailability({
-          dates: initial.dates.slice(0, 5),
-          slots: data.slots,
+          dates: initial.dates
+            .filter((date: string) => date >= chosenDate)
+            .slice(0, 5),
+          slots,
         });
       } catch {
         /* Keep the service preview available when availability cannot load. */
@@ -151,11 +175,7 @@ export function HeroBookingPreview({
   }, [step, reduced, done]);
   const slot = availability.slots[0];
   return (
-    <div
-      ref={root}
-      className="hero-art"
-      aria-label="Como agendar com o Flow"
-    >
+    <div ref={root} className="hero-art" aria-label="Como agendar com o Flow">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 rotate-[-22deg] scale-95 rounded-full border border-[#e8e5f6]"
@@ -213,7 +233,7 @@ export function HeroBookingPreview({
         </div>
         <div
           ref={scene}
-          className="pointer-events-none relative flex min-h-[470px] flex-col select-none"
+          className="pointer-events-none relative flex h-[520px] min-h-[520px] flex-col select-none"
           inert
         >
           {!done && (
@@ -228,11 +248,11 @@ export function HeroBookingPreview({
               </div>
             </>
           )}
-          <div data-demo-content className="flex-1">
+          <div data-demo-content className="min-h-0 flex-1 overflow-hidden">
             {done ? (
-              <div className="flex min-h-[400px] flex-col items-center justify-center text-center">
+              <div className="flex h-full flex-col items-center justify-center text-center">
                 <span className="mb-6 grid size-20 place-items-center rounded-full bg-emerald-50 text-emerald-600">
-                  <Check size={38} strokeWidth={1.8} />
+                  <Check size={38} weight="regular" />
                 </span>
                 <span className="text-[9px] font-semibold tracking-widest text-[#635BFF] uppercase">
                   Tudo certo!
@@ -264,31 +284,31 @@ export function HeroBookingPreview({
                     ][step]
                   }
                 </h2>
-                {step === 0 &&
-                  serviceOptions.map((option) => (
-                    <div
-                      key={option.id}
-                      data-demo-choice={
-                        option.id === service?.id ? "" : undefined
-                      }
-                      className={`choice ${selected && option.id === service?.id ? "active" : ""}`}
-                    >
-                      <div>
-                        <strong>{option.name}</strong>
-                        <small>
-                          {option.durationMinutes} minutos ·{" "}
-                          {option.kind === "collective"
-                            ? "Em grupo"
-                            : "Individual"}{" "}
-                          ·{" "}
-                          {option.modality === "online"
-                            ? "Online"
-                            : "Presencial"}
-                        </small>
-                      </div>
-                      <strong>{money(option.priceCents)}</strong>
+                {step === 0 && (
+                  <>
+                    <p className="mb-3 text-[10px] text-zinc-400">
+                      {serviceOptions.length} serviços disponíveis
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {serviceOptions.map((option) => (
+                        <div
+                          key={option.id}
+                          data-demo-choice={
+                            option.id === service?.id ? "" : undefined
+                          }
+                          className={bookingServiceOptionStyle(
+                            selected && option.id === service?.id,
+                          )}
+                        >
+                          <BookingServiceOption
+                            service={option}
+                            selected={selected && option.id === service?.id}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </>
+                )}
                 {step === 1 &&
                   professionals.map((option) => (
                     <div
@@ -313,7 +333,7 @@ export function HeroBookingPreview({
                     <div
                       className={`slot-grid mt-4 transition-opacity duration-300 ${selected ? "opacity-100" : "invisible opacity-0"}`}
                     >
-                      {availability.slots.slice(0, 4).map((time, index) => (
+                      {availability.slots.slice(0, 8).map((time, index) => (
                         <button
                           type="button"
                           key={time.startsAt}
@@ -360,10 +380,10 @@ export function HeroBookingPreview({
             )}
           </div>
           {!done && (
-            <div className="mt-6 flex shrink-0 justify-end">
+            <div className="mt-4 flex shrink-0 border-t border-[#e8e5f6] pt-4">
               <span
                 data-demo-next
-                className={`inline-flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-medium text-white transition-colors duration-500 ${done ? "bg-emerald-600" : "bg-[#635BFF]"}`}
+                className={`inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-xl px-4 py-3 text-xs font-medium text-white transition-colors duration-500 ${done ? "bg-emerald-600" : "bg-[#635BFF]"}`}
               >
                 {done ? (
                   <>
@@ -397,8 +417,8 @@ export function HeroBookingPreview({
               )}
               <MousePointer2
                 size={24}
-                fill="white"
-                className={`origin-top-left text-zinc-800 drop-shadow-sm transition-transform duration-150 ${clicking ? "scale-85" : "scale-100"}`}
+                weight="fill"
+                className={`origin-top-left text-black drop-shadow-sm transition-transform duration-150 ${clicking ? "scale-85" : "scale-100"}`}
               />
             </div>
           )}
