@@ -1,11 +1,12 @@
 "use client";
 import {
   cloneElement,
+  isValidElement,
   useId,
   useLayoutEffect,
   useRef,
   useState,
-  type ReactElement,
+  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 export function Tooltip({
@@ -15,7 +16,7 @@ export function Tooltip({
 }: {
   text: string;
   className?: string;
-  children: ReactElement<{ "aria-describedby"?: string; title?: string }>;
+  children: ReactNode;
 }) {
   const id = useId();
   const ref = useRef<HTMLSpanElement>(null);
@@ -62,6 +63,7 @@ export function Tooltip({
   return (
     <span
       ref={ref}
+      aria-describedby={open ? id : undefined}
       className={`inline-flex shrink-0 ${className ?? ""}`}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => {
@@ -77,10 +79,14 @@ export function Tooltip({
         if (event.key === "Escape") setOpen(false);
       }}
     >
-      {cloneElement(children, {
-        "aria-describedby": open ? id : children.props["aria-describedby"],
-        title: undefined,
-      })}
+      {isValidElement<{ "aria-describedby"?: string; title?: string }>(children)
+        ? cloneElement(children, {
+            "aria-describedby": open
+              ? id
+              : children.props?.["aria-describedby"],
+            title: undefined,
+          })
+        : children}
       {open &&
         createPortal(
           <span
