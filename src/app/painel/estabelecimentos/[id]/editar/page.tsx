@@ -1,3 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata(
+  "Editar estabelecimento",
+  "Atualize a apresentação, o banner, os contatos e o endereço do estabelecimento.",
+  "/painel/estabelecimentos",
+  true,
+);
 import { notFound } from "next/navigation";
 import { ownerContext } from "@/lib/panel-context";
 import { prisma } from "@/lib/prisma";

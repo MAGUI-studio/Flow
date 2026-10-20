@@ -1,3 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata(
+  "Editar serviço",
+  "Atualize preços, duração, modalidade e profissionais do serviço.",
+  "/painel/servicos",
+  true,
+);
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { panelContext } from "@/lib/panel-context";

@@ -1,3 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata(
+  "Relatórios do negócio",
+  "Consulte indicadores e resultados dos atendimentos do seu estabelecimento.",
+  "/painel/relatorios",
+  true,
+);
 import {
   Download,
   CalendarDays,

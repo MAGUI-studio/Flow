@@ -1,3 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata(
+  "Meus favoritos",
+  "Acesse os estabelecimentos que você salvou e encontre seu próximo cuidado.",
+  "/favoritos",
+  true,
+);
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { catalog } from "@/lib/catalog";

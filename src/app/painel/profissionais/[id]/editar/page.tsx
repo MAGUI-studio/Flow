@@ -1,3 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata(
+  "Editar profissional",
+  "Atualize os dados, a foto e a disponibilidade do profissional.",
+  "/painel/profissionais",
+  true,
+);
 import { weeklyScheduleSchema } from "@/lib/weekly-schedule";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";

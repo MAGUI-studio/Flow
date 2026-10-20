@@ -1,3 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata(
+  "Aparência do estabelecimento",
+  "Personalize o visual da página pública do seu estabelecimento.",
+  "/painel/aparencia",
+  true,
+);
 import { panelContext } from "@/lib/panel-context";
 import type { SearchInput } from "@/lib/url-state";
 import { PageHeading } from "@/components/internal/primitives";

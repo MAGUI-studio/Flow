@@ -1,3 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata(
+  "Continuar assinatura",
+  "Continue a contratação do plano escolhido para o seu negócio.",
+  "/assinatura/continuar",
+  true,
+);
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { createLoader, parseAsStringEnum } from "nuqs/server";

@@ -1,3 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata(
+  "Meus agendamentos",
+  "Consulte seus próximos horários, acompanhe confirmações e avalie os atendimentos concluídos.",
+  "/agendamentos",
+  true,
+);
 import { AnimatedArrow } from "@/components/ui/animated-arrow";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";

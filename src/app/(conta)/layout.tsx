@@ -1,3 +1,4 @@
+export const metadata = { robots: { index: false, follow: false } };
 import { auth } from "@clerk/nextjs/server";
 import { Suspense } from "react";
 import { InternalShell } from "@/components/internal/shell";
@@ -17,11 +18,11 @@ export default async function Layout({
       : undefined;
   return (
     <Suspense
-      fallback={
-        <div className="internal-loading">Carregando sua conta…</div>
-      }
+      fallback={<div className="internal-loading">Carregando sua conta…</div>}
     >
-      <InternalShell mode="consumer" plan={plan}>{children}</InternalShell>
+      <InternalShell mode="consumer" plan={plan}>
+        {children}
+      </InternalShell>
     </Suspense>
   );
 }

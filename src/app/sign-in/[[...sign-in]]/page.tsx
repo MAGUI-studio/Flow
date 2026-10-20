@@ -1,3 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata(
+  "Entrar",
+  "Acesse sua conta Flow.",
+  "/entrar",
+  true,
+);
 import { redirectAuth } from "@/lib/auth-redirect";
 export default async function Page({
   params,

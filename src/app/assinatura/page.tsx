@@ -1,3 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata(
+  "Gerenciar assinatura",
+  "Consulte seu plano e gerencie pagamentos e cancelamento da assinatura Flow.",
+  "/assinatura",
+  true,
+);
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";

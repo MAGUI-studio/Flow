@@ -1,3 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata(
+  "Alterar plano",
+  "Confira os detalhes do novo plano e o ajuste de cobrança antes de confirmar a alteração.",
+  "/assinatura/alterar",
+  true,
+);
 import { auth } from "@clerk/nextjs/server";
 import { createLoader, parseAsStringEnum } from "nuqs/server";
 import { Container } from "@/components/container";

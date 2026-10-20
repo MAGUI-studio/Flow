@@ -1,5 +1,11 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata(
+  "Criar conta",
+  "Crie sua conta Flow para agendar serviços, salvar espaços e organizar seu negócio.",
+  "/criar-conta",
+  true,
+);
 import { AuthPage } from "@/components/auth-page";
-export const metadata = { title: "Criar conta · Flow" };
 export default async function Page({
   params,
 }: {

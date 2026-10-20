@@ -1,3 +1,5 @@
+import { appUrl } from "@/lib/app-url";
+import { pageMetadata, siteDescription } from "@/lib/seo";
 import { FavoritesProvider } from "@/components/favorites";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ptBR } from "@clerk/localizations";
@@ -8,10 +10,14 @@ import "leaflet/dist/leaflet.css";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { FlowToaster } from "@/components/ui/flow-toaster";
 export const metadata: Metadata = {
-  title: "Flow · Seu tempo, em boa companhia",
-  description:
-    "Encontre profissionais e agende seu próximo cuidado. Um produto MAGUI.studio.",
+  ...pageMetadata("Seu tempo, em boa companhia", siteDescription, "/"),
+  metadataBase: new URL(appUrl),
+  applicationName: "Flow",
+  category: "Agendamentos",
+  icons: { icon: "/brand/icon.svg" },
+  referrer: "strict-origin-when-cross-origin",
 };
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {

@@ -1,3 +1,4 @@
+import { pageMetadata } from "@/lib/seo";
 import { Suspense } from "react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
@@ -5,11 +6,12 @@ import { Container } from "@/components/container";
 import { BusinessDirectory } from "@/components/business-directory";
 import { catalog } from "@/lib/catalog";
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "Explore serviços e profissionais · Flow",
-  description:
-    "Encontre estabelecimentos, serviços e profissionais. Pesquise por cidade, categoria ou atendimento online.",
-};
+export const metadata = pageMetadata(
+  "Explore serviços e profissionais",
+  "Encontre estabelecimentos e profissionais por cidade, categoria ou atendimento online. Compare serviços e escolha seu próximo horário.",
+  "/explorar",
+);
+
 export default async function Page() {
   const businesses = await catalog();
   return (

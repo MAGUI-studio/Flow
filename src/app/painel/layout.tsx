@@ -1,3 +1,4 @@
+export const metadata = { robots: { index: false, follow: false } };
 import { Suspense } from "react";
 import { InternalShell } from "@/components/internal/shell";
 import { ownerContext } from "@/lib/panel-context";
