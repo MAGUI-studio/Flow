@@ -18,7 +18,21 @@ export default function RootLayout({
     <html lang="pt-BR" data-scroll-behavior="smooth">
       <body>
         <ClerkProvider
-          localization={ptBR}
+          dynamic
+          afterSignOutUrl="/"
+          localization={{
+            ...ptBR,
+            signIn: {
+              ...ptBR.signIn,
+              start: {
+                ...ptBR.signIn?.start,
+                subtitle:
+                  "Entre com sua conta para continuar sua assinatura ou confirmar seu próximo agendamento.",
+                subtitleCombined:
+                  "Entre com sua conta para continuar sua assinatura ou confirmar seu próximo agendamento.",
+              },
+            },
+          }}
           signInUrl="/entrar"
           signUpUrl="/criar-conta"
           signInFallbackRedirectUrl="/agendamentos"

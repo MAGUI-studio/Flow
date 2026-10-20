@@ -10,7 +10,10 @@ export default async function Page() {
     ? await prisma().subscription.findUnique({ where: { ownerId: userId } })
     : null;
   const currentPlan =
-    subscription?.status === "active" && subscription.paidUntil > new Date()
+    subscription?.status === "active" &&
+    subscription.paidUntil > new Date() &&
+    (subscription.provider === "stripe" ||
+      process.env.DEV_SUBSCRIPTIONS_ENABLED === "true")
       ? subscription.plan
       : null;
   const candidates = await Promise.all(

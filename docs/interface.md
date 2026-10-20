@@ -2,6 +2,8 @@
 
 ## Padrões de implementação
 
+- Modais de login disparadas na contratação e no agendamento compartilham `auth-modal-appearance.ts`: logo Flow, ícone decorativo suave, superfícies sólidas, tipografia e bordas lilás, botão Google e foco visível. Personalização pela API `appearance` do Clerk com classes Tailwind, preservando autenticação e retorno ao fluxo original.
+
 - O selo Flow King fica à direita do nome, com `justify-between`, nunca sobre a capa. Tooltip roxo explica o reconhecimento no hover/foco e no toque; renderizar em portal para não cortar no card. Abrir o tooltip não navega para o estabelecimento; card e controle do selo são elementos interativos separados.
 
 - Sidebar empresarial usa `pro_plan.svg` ou `essential_plan.svg` ao lado de “Seu plano”, conforme a assinatura. Cards dos cinco líderes globais em avaliações exibem `flow_king.svg` ao lado do nome, com `justify-between`, com identificação acessível. O selo não é comercial e não depende do plano.

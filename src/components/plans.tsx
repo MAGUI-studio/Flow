@@ -7,6 +7,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { arrowMotion } from "./ui/arrow-link";
+import { authModalAppearance } from "@/lib/auth-modal-appearance";
+import {
+  subscriptionAuthRedirects,
+  type SubscriptionPlan,
+} from "@/lib/subscription-flow";
 type ComparisonRow = {
   label: string;
   description?: string;
@@ -88,9 +93,16 @@ export function Plans({
     router = useRouter();
   const setError = useToastError();
   const [busy, setBusy] = useState("");
-  async function select(plan: string) {
+  async function select(plan: SubscriptionPlan) {
     if (!isSignedIn) {
-      await clerk.openSignIn({ forceRedirectUrl: window.location.href });
+      await clerk.openSignIn({
+        ...subscriptionAuthRedirects(plan),
+        appearance: authModalAppearance,
+      });
+      return;
+    }
+    if (currentPlan && !development) {
+      router.push(`/assinatura/alterar?plano=${plan}`);
       return;
     }
     setBusy(plan);
@@ -122,11 +134,8 @@ export function Plans({
   }
   return (
     <>
-      <p className="mb-4 text-center text-[11px] text-zinc-400 sm:hidden">
-        Deslize para comparar os planos lado a lado.
-      </p>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] table-fixed border-collapse text-left">
+        <table className="w-full table-fixed border-collapse text-left">
           <caption className="sr-only">
             Comparação dos planos mensais do Flow
           </caption>
@@ -134,30 +143,40 @@ export function Plans({
             <tr className="border-b border-[#e8e5f6]">
               <th
                 scope="col"
-                className="w-[44%] pt-5 pr-6 pb-8 align-bottom font-normal"
+                className="w-[38%] pt-5 pr-3 pb-6 align-top font-normal sm:w-[44%] sm:pr-6 sm:pb-8 sm:align-bottom"
               >
-                <span className="text-[10px] font-medium tracking-[.18em] text-zinc-400 uppercase">
+                <span className="text-[8px] font-medium tracking-[.12em] text-zinc-400 uppercase sm:text-[10px] sm:tracking-[.18em]">
                   Comparativo
                 </span>
-                <h3 className="mt-3 text-2xl font-semibold tracking-tight">
+                <h3 className="mt-3 text-base font-semibold tracking-tight sm:text-2xl">
                   Recursos por plano
                 </h3>
-                <p className="mt-3 max-w-64 text-xs leading-relaxed text-zinc-500">
+                <p className="mt-3 hidden max-w-64 text-xs leading-relaxed text-zinc-500 sm:block">
                   Compare cada detalhe e encontre o plano que acompanha o seu
                   negócio.
                 </p>
+                {isSignedIn && !development && (
+                  <Link
+                    href="/assinatura"
+                    className="mt-5 inline-flex text-[10px] leading-relaxed font-medium text-[#635BFF] underline underline-offset-4 sm:text-xs"
+                  >
+                    Minha assinatura e pagamentos
+                  </Link>
+                )}
               </th>
               {[
                 {
                   id: "basic",
                   name: "Essencial",
+                  price: "49,90",
                   description: "Tudo para a sua primeira unidade.",
                   capacity: "1 estabelecimento",
                   label: "Para começar",
                 },
                 {
                   id: "multi",
-                  name: "Flow PRO",
+                  name: "PRO",
+                  price: "89,90",
                   description: "Mais equipe, mais liberdade para crescer.",
                   capacity: "Até 3 estabelecimentos",
                   label: "Para ir além",
@@ -166,47 +185,72 @@ export function Plans({
                 <th
                   scope="col"
                   key={plan.id}
-                  className={`w-[28%] border-l border-[#e8e5f6] px-5 pt-5 pb-8 text-center align-bottom font-normal sm:px-7 ${plan.id === "multi" ? "border-t-2 border-t-[#635BFF] bg-[#F5F4FF]/50" : ""}`}
+                  className={`w-[31%] border-l border-[#e8e5f6] px-1.5 pt-5 pb-6 text-center align-bottom font-normal sm:w-[28%] sm:px-7 sm:pb-8 ${plan.id === "multi" ? "border-t-2 border-t-[#635BFF] bg-[#F5F4FF]/50" : ""}`}
                 >
                   <span
-                    className={`inline-flex rounded-full px-3 py-1 text-[9px] font-semibold tracking-[.12em] uppercase ${plan.id === "multi" ? "bg-[#635BFF] text-white" : "bg-zinc-100 text-zinc-500"}`}
+                    className={`hidden rounded-full px-3 py-1 text-[9px] font-semibold tracking-[.12em] uppercase sm:inline-flex ${plan.id === "multi" ? "bg-[#635BFF] text-white" : "bg-zinc-100 text-zinc-500"}`}
                   >
                     {plan.label}
                   </span>
-                  <h3 className="mt-4 text-2xl font-semibold tracking-tight">
-                    Flow {plan.name}
+                  <h3 className="text-sm font-semibold tracking-tight sm:mt-4 sm:text-2xl">
+                    <span className="hidden sm:inline">Flow </span>
+                    {plan.name}
                   </h3>
-                  <p className="mt-2 min-h-10 text-xs leading-relaxed text-zinc-500">
+                  <p className="mt-2 hidden min-h-10 text-xs leading-relaxed text-zinc-500 sm:block">
                     {plan.description}
                   </p>
-                  <p className="mt-5 text-base font-semibold text-zinc-800">
+                  <p className="mt-4 text-zinc-900 sm:mt-5 sm:flex sm:flex-wrap sm:items-baseline sm:justify-center sm:gap-x-1">
+                    <span className="block text-[9px] font-medium sm:inline sm:text-sm">
+                      R$
+                    </span>
+                    <span className="text-[22px] font-semibold tracking-tight sm:text-4xl">
+                      {plan.price}
+                    </span>
+                    <span className="block text-[9px] font-normal text-zinc-500 sm:inline sm:text-xs">
+                      /mês
+                    </span>
+                  </p>
+                  <span className="mt-3 inline-block rounded-lg border border-[#635BFF]/15 bg-[#F5F4FF] px-1.5 py-1 text-[9px] leading-relaxed font-medium text-[#635BFF] sm:rounded-full sm:px-2.5 sm:text-[10px]">
+                    7 dias grátis
+                    <span className="block text-[8px] sm:inline sm:text-[10px]">
+                      {" "}
+                      na primeira assinatura
+                    </span>
+                  </span>
+                  <p className="mt-3 min-h-8 text-[9px] leading-relaxed text-zinc-500 sm:min-h-0 sm:text-[11px]">
                     {plan.capacity}
                   </p>
-                  <span className="mt-1 block text-[11px] text-zinc-400">
-                    Assinatura mensal
-                  </span>
                   {currentPlan === plan.id ? (
                     <Link
-                      href="/painel"
-                      className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#635BFF]/30 bg-white px-3 text-xs font-medium text-[#635BFF] transition-colors hover:bg-[#F5F4FF]"
+                      href="/painel/assinatura"
+                      className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1 rounded-lg border border-[#635BFF]/30 bg-white px-1 text-[9px] leading-relaxed font-medium text-[#635BFF] transition-colors hover:bg-[#F5F4FF] sm:mt-6 sm:gap-2 sm:rounded-xl sm:px-3 sm:text-xs"
                     >
-                      Plano ativo <Check size={15} />
+                      Gerenciar meu plano{" "}
+                      <Check size={15} className="hidden shrink-0 sm:block" />
                     </Link>
                   ) : (
                     <button
                       type="button"
                       disabled={!!busy}
-                      onClick={() => select(plan.id)}
-                      className={`group mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#635BFF] disabled:opacity-50 ${plan.id === "multi" ? "border-[#635BFF] bg-[#635BFF] text-white hover:bg-[#5046E5]" : "border-zinc-200 bg-white text-zinc-700 hover:border-[#635BFF] hover:text-[#635BFF]"}`}
+                      onClick={() => select(plan.id as SubscriptionPlan)}
+                      className={`group mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1 rounded-lg border px-1 text-[9px] leading-relaxed font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#635BFF] disabled:opacity-50 sm:mt-6 sm:gap-2 sm:rounded-xl sm:px-3 sm:text-xs ${plan.id === "multi" ? "border-[#635BFF] bg-[#635BFF] text-white hover:bg-[#5046E5]" : "border-zinc-200 bg-white text-zinc-700 hover:border-[#635BFF] hover:text-[#635BFF]"}`}
                     >
                       {busy === plan.id
                         ? "Ativando…"
                         : currentPlan
                           ? "Mudar plano"
                           : "Escolher " + plan.name}
-                      <AnimatedArrow size={15} className={arrowMotion} />
+                      <AnimatedArrow
+                        size={15}
+                        className={`hidden shrink-0 sm:block ${arrowMotion}`}
+                      />
                     </button>
                   )}
+                  <p className="mt-3 mb-0 hidden text-[10px] leading-relaxed text-zinc-400 sm:block">
+                    {currentPlan
+                      ? "Altere seu plano com ajuste proporcional."
+                      : "Depois do teste, cobrança mensal. Cancele quando quiser."}
+                  </p>
                 </th>
               ))}
             </tr>
@@ -230,13 +274,13 @@ export function Plans({
                   >
                     <th
                       scope="row"
-                      className="py-5 pr-6 align-middle font-normal"
+                      className="py-4 pr-3 align-middle font-normal sm:py-5 sm:pr-6"
                     >
-                      <span className="text-[13px] font-medium text-zinc-800">
+                      <span className="text-[10px] leading-relaxed font-medium text-zinc-800 sm:text-[13px]">
                         {feature.label}
                       </span>
                       {feature.description && (
-                        <span className="mt-1 block text-[11px] leading-relaxed text-zinc-400">
+                        <span className="mt-1 hidden text-[11px] leading-relaxed text-zinc-400 sm:block">
                           {feature.description}
                         </span>
                       )}
@@ -244,11 +288,11 @@ export function Plans({
                     {[0, 1].map((index) => (
                       <td
                         key={index}
-                        className={`border-l border-[#e8e5f6] px-5 py-5 text-center align-middle sm:px-7 ${index === 1 ? "bg-[#F5F4FF]/35" : ""}`}
+                        className={`border-l border-[#e8e5f6] px-1.5 py-4 text-center align-middle sm:px-7 sm:py-5 ${index === 1 ? "bg-[#F5F4FF]/35" : ""}`}
                       >
                         {feature.values ? (
                           <span
-                            className={`text-xs leading-relaxed ${index === 1 ? "font-semibold text-zinc-800" : "text-zinc-500"}`}
+                            className={`text-[9px] leading-relaxed sm:text-xs ${index === 1 ? "font-semibold text-zinc-800" : "text-zinc-500"}`}
                           >
                             {feature.values[index]}
                           </span>

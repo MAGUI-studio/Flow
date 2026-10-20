@@ -26,6 +26,24 @@ export async function requireBusinessOwner(establishmentId: string) {
 export function apiError(error: unknown) {
   const message = error instanceof Error ? error.message : "";
   const errors: Record<string, [number, string]> = {
+    BILLING_QUOTE_EXPIRED: [
+      409,
+      "A prévia expirou ou a assinatura mudou. Atualize a prévia e tente novamente.",
+    ],
+    BILLING_SUBSCRIPTION_REQUIRED: [
+      409,
+      "Contrate um plano para começar sua assinatura.",
+    ],
+    BILLING_PLAN_UNCHANGED: [409, "Este já é o seu plano atual."],
+    BILLING_CHANGE_UNAVAILABLE: [
+      409,
+      "Resolva o pagamento ou o cancelamento pendente na gestão da assinatura antes de mudar de plano.",
+    ],
+    BILLING_PAYMENT_PENDING: [
+      409,
+      "Existe um pagamento pendente. Abra a gestão de pagamentos para concluir.",
+    ],
+    BILLING_NOT_CONFIGURED: [503, "Cobrança ainda não configurada."],
     INVALID_INPUT: [400, "Confira os campos informados e tente novamente."],
     VACATION_BOOKINGS_CONFLICT: [
       409,

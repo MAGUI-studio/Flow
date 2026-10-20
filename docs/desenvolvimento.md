@@ -29,3 +29,5 @@ Usar URL pooled para runtime e conexão direta em `DIRECT_DATABASE_URL` para mig
 ## Cobrança
 
 Checkout fica desabilitado por padrão (`FLOW_BILLING_ENABLED=false`). Só habilitar após configurar preços mensais, assinatura do webhook, gestão de cancelamento/downgrade e testar os fluxos em Stripe test mode. Webhook: `/api/billing/webhook`. Cadastro de Google em produção exige configurar a instância Clerk de produção e suas credenciais OAuth.
+
+A cobrança Stripe de teste já está configurada no ambiente local. `npm run dev` conecta o listener e inicia o Next.js no mesmo terminal; para iniciar somente o aplicativo, use `npm run dev:app`. Guia e comandos de verificação: [Stripe](stripe.md). A chave de teste não habilita cobranças reais em produção.

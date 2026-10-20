@@ -1,6 +1,6 @@
 # Estado da implementação
 
-Atualizado em 14/10/2026.
+Atualizado em 20/10/2026 para a integração Stripe.
 
 ## Funcionando com PostgreSQL
 
@@ -25,7 +25,7 @@ Campos de assinatura: plano, status, período inicial/final, cancelamento ao fim
 
 ## Ainda pendente
 
-- Valores e cobrança Stripe efetiva; validação ponta a ponta de renovação/cancelamento/webhooks.
+- Publicação e configuração de credenciais/webhook de produção. Stripe de teste já implementado: Checkout com trial, portal, upgrade/downgrade com prévia e validação dos limites, cobrança proporcional, webhooks, inadimplência e reativação. Testes com Stripe real de teste, PostgreSQL isolado e Test Clocks cobrem renovação, cancelamento e eventos atrasados. Ver [Integração Stripe](stripe.md).
 - Downgrade com escolha/exclusão; atualmente bloqueado quando há mais de um estabelecimento ao escolher Essencial.
 - Edição/exclusão de cadastros, uploads e editor de recorrência semanal. Abertura por datas funciona sem limite de 90 dias.
 - Reagendamento transacional e código de presença.

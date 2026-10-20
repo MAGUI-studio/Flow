@@ -5,6 +5,7 @@ Fonte de consulta para decisões e regras acordadas com Guilherme. Atualizada em
 - [Produto e decisões](produto.md)
 - [Regras de agenda](agendamentos.md)
 - [Assinaturas e acesso](assinaturas.md)
+- [Configuração e testes Stripe](stripe.md)
 - [Arquitetura e segurança](arquitetura.md)
 - [Estado da implementação](implementacao.md)
 - [Desenvolvimento e banco local](desenvolvimento.md)

@@ -3,14 +3,14 @@
 - Stripe para assinaturas SaaS, exclusivamente mensais.
 - Clerk Billing foi avaliado em 14/10/2026. A documentação oficial informa indisponibilidade no Brasil; manter Clerk para autenticação e Stripe direto para cobrança. Referência: https://clerk.com/docs/guides/billing/overview. Reavaliar caso a disponibilidade mude.
 - Conta sem assinatura pode reservar gratuitamente, sem criar/gerenciar estabelecimentos.
-- Essencial: 1 estabelecimento, até 10 profissionais por estabelecimento e 2 templates (Flow e Essência). Pro: até 3 estabelecimentos, 20 profissionais por estabelecimento, 4 templates (incluindo Editorial e Noturno exclusivos), relatórios avançados e exportação CSV. Cobrança mensal; valores pendentes.
+- Essencial: R$ 49,90/mês, 1 estabelecimento, até 10 profissionais por estabelecimento e 2 templates (Flow e Essência). Pro: R$ 89,90/mês, até 3 estabelecimentos, 20 profissionais por estabelecimento, 4 templates (incluindo Editorial e Noturno exclusivos), relatórios avançados e exportação CSV. Ambos com 7 dias grátis na primeira assinatura, conforme confirmado em 20/10/2026.
 - Somente o responsável gerencia a equipe. O código interno do Pro permanece `multi` para preservar assinaturas existentes.
 - Cancelar renovação mantém acesso até fim do período pago. Ao término efetivo, congelar todas as empresas e bloquear painel empresarial; conta continua consumidora.
 - Dados preservados para reativação. Slugs permanecem reservados durante congelamento.
 - Página congelada informa indisponibilidade e não aceita reservas; sai do diretório.
 - Proposta operacional: reservas confirmadas continuam visíveis ao consumidor, sem cancelamento silencioso; pendentes são canceladas no congelamento. Validar essa política antes do lançamento.
 - Downgrade de três para um exige escolher dois estabelecimentos para excluir. Não interpretar exclusão como simples congelamento. Mostrar reservas futuras afetadas e exigir confirmação explícita; estratégia de retenção histórica ainda precisa de definição antes de implementar exclusão definitiva.
-- Proposta: downgrade ao fim do período pago, preservando uso já contratado.
+- Implementação de cobrança: alteração imediata com prévia e ajuste proporcional do Stripe. O formulário informa cobrança/crédito antes da confirmação; o período grátis original não é reiniciado. O downgrade é bloqueado enquanto os dados excederem os limites do Essencial. A proposta anterior de agendamento ao fim do período não foi implementada.
 
 ## Stripe
 
@@ -20,6 +20,7 @@
 - Não conceder assinatura a partir de metadata/estado enviados pelo navegador.
 - Tratar `past_due`, pagamentos falhos, reativação e término do período em política explícita. Prazo de tolerância é pendência, não presumir acesso pago.
 - Portal de cobrança não pode contornar escolha obrigatória de exclusões no downgrade.
+- Portal habilitado para cartão, dados de faturamento, faturas e cancelamento. Troca entre planos passa pelo Flow para validar limites e exigir confirmação. `/assinatura` permite recuperar pagamentos mesmo com o painel bloqueado. Detalhes técnicos e testes: [Integração Stripe](stripe.md).
 
 ## Templates e relatórios
 

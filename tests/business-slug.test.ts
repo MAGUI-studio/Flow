@@ -7,6 +7,7 @@ test("automatic page addresses normalize names and avoid reserved or too short s
   assert.equal(businessSlug("A"), "a-espaco");
   assert.equal(businessSlug(""), "");
   assert.equal(businessSlug("Entrar"), "entrar-espaco");
+  assert.equal(businessSlug("Assinatura"), "assinatura-espaco");
   assert.ok(!reservedSlugs.includes(businessSlug("Painel")));
   const long = businessSlug("a".repeat(69) + " bbbbb");
   assert.ok(long.length <= 70 && !long.endsWith("-"));

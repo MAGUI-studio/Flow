@@ -1,4 +1,5 @@
 "use client";
+import { authModalAppearance } from "@/lib/auth-modal-appearance";
 import { useToastError } from "@/components/ui/flow-toaster";
 import { formValidation } from "@/lib/form-validation";
 import { AnimatedArrow } from "@/components/ui/animated-arrow";
@@ -175,6 +176,7 @@ export function Booking({
         JSON.stringify({ serviceId, professionalId, date, slot, phone }),
       );
       await clerk.openSignIn({
+        appearance: authModalAppearance,
         forceRedirectUrl: `${window.location.origin}/${b.slug}?retomar=1`,
       });
       return;

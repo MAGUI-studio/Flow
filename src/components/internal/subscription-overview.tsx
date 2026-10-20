@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { BillingPortalButton } from "@/components/billing-portal-button";
+import { billingSummary } from "@/lib/stripe";
 import {
   Building2,
   CalendarDays,
@@ -13,6 +15,9 @@ import { panelHref } from "@/lib/url-state";
 import { StatusBadge } from "@/components/ui/statusBadge";
 type Props = {
   subscription: {
+    provider?: string;
+    stripeSubscriptionId?: string | null;
+    stripeCustomerId?: string | null;
     plan: string;
     currentPeriodStart: Date;
     paidUntil: Date;
@@ -61,12 +66,13 @@ function Usage({
     </div>
   );
 }
-export function SubscriptionOverview({
+export async function SubscriptionOverview({
   subscription,
   businesses,
   timezone,
 }: Props) {
   const features = planFeatures(subscription.plan);
+  const summary = await billingSummary(subscription);
   const date = (value: Date) =>
     value.toLocaleDateString("pt-BR", {
       timeZone: timezone,
@@ -116,7 +122,12 @@ export function SubscriptionOverview({
               <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
                 Seu plano atual
               </span>
-              <StatusBadge status="active" label="Assinatura ativa" />
+              <StatusBadge
+                status="active"
+                label={
+                  summary?.trialEnd ? "Período grátis" : "Assinatura ativa"
+                }
+              />
             </div>
             <div className="flex items-center gap-4">
               <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-[#F5F4FF] text-[#635BFF]">
@@ -130,7 +141,10 @@ export function SubscriptionOverview({
                   {features.name}
                 </h2>
                 <p className="mb-0 mt-1 text-sm text-zinc-500">
-                  Tudo pronto para organizar os próximos atendimentos.
+                  {subscription.plan === "multi" ? "R$ 89,90" : "R$ 49,90"}/mês
+                  {summary?.trialEnd
+                    ? " após o período grátis."
+                    : " · Assinatura mensal."}
                 </p>
               </div>
             </div>
@@ -148,7 +162,9 @@ export function SubscriptionOverview({
               <p className="m-0 text-[11px] font-medium text-zinc-400">
                 {subscription.cancelAtPeriodEnd
                   ? "Acesso disponível até"
-                  : "Fim do período atual"}
+                  : summary?.trialEnd
+                    ? "Fim do período grátis"
+                    : "Fim do período atual"}
               </p>
               <p className="mb-0 mt-1.5 text-sm font-medium text-zinc-700">
                 {date(subscription.paidUntil)}
@@ -161,6 +177,9 @@ export function SubscriptionOverview({
               o acesso até a data acima.
             </p>
           )}
+          <div className="border-t border-zinc-100 px-5 py-4 sm:px-6">
+            <BillingPortalButton />
+          </div>
         </section>
         <section
           aria-labelledby="plan-features-title"

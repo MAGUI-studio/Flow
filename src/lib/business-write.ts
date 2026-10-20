@@ -59,6 +59,7 @@ export async function createEstablishment(
     [
       "painel",
       "planos",
+      "assinatura",
       "agendamentos",
       "explorar",
       "entrar",

@@ -1,6 +1,7 @@
 export const reservedSlugs = [
   "painel",
   "planos",
+  "assinatura",
   "agendamentos",
   "explorar",
   "entrar",
