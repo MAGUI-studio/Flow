@@ -1,6 +1,5 @@
 import { weeklyScheduleSchema } from "./weekly-schedule";
 import { prisma } from "./prisma";
-import { effectiveTemplate, type TemplateId } from "./plan-features";
 import { publicRatings } from "./public-ratings";
 import { topRatedBusinessIds } from "./business-ranking";
 import { locationSchema, type LocationPoint } from "./address";
@@ -26,7 +25,6 @@ export type BusinessCard = {
 };
 export type BusinessProfile = BusinessCard & {
   location?: LocationPoint;
-  templateId: TemplateId;
   timezone: string;
   address: string | null;
   contactPhone: string | null;
@@ -153,7 +151,6 @@ export async function profile(slug: string): Promise<BusinessProfile | null> {
     rating: card?.rating ?? null,
     ratingCount: card?.ratingCount ?? 0,
     isTopRated: card?.isTopRated ?? false,
-    templateId: effectiveTemplate(e.templateId, e.owner.subscription.plan),
     id: e.id,
     slug: e.slug,
     name: e.name,

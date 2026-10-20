@@ -24,7 +24,7 @@
 
 - A tabela segue o comparativo SaaS do Forever: recursos agrupados por categoria, dados e cabeçalhos dos planos centralizados, divisórias leves e espaçamento amplo. O Pro usa destaque discreto, sem cabeçalho roxo sólido. Capacidade: 1/3 estabelecimentos, 10/20 profissionais por estabelecimento (10/60 no total), 2/4 templates. Relatórios avançados e CSV são exclusivos Pro.
 
-- Os planos ficam na home em `/#planos`, em tabela comparativa Essencial/Pro. O Pro inclui mais unidades e profissionais, templates exclusivos, relatórios e exportação. Valores continuam pendentes de definição. `/planos` redireciona para a seção, e todos os links novos apontam diretamente para ela. A seção para negócios possui uma agenda animada com os serviços públicos usados no hero, sem criar reservas.
+- Os planos ficam na home em `/#planos`, em tabela comparativa Essencial/Pro. O Pro inclui mais unidades e profissionais, relatórios e exportação. Valores continuam pendentes de definição. `/planos` redireciona para a seção, e todos os links novos apontam diretamente para ela. A seção para negócios possui uma agenda animada com os serviços públicos usados no hero, sem criar reservas.
 
 - As páginas públicas de estabelecimento (`/[slug]`) usam o mesmo limite centralizado de 1.200 px da home, incluindo o header e o fluxo de agendamento. Páginas internas seguem preenchendo toda a largura disponível.
 
@@ -60,7 +60,7 @@ Não remover semântica de formulário, labels, foco de teclado ou validações 
 
 Páginas internas seguem `paginas-internas.md`: layout próprio em `internal.css`, menu lateral, listas e cadastros em rotas separadas, alternativas curtas em cartões selecionáveis e Nuqs para estado de URL. Não introduzir abas para separar áreas do painel.
 
-- Aparência em `/painel/aparencia`: cards de template com miniaturas, opções Pro bloqueadas no Essencial, formulário RHF/Zod e link para a página pública. Relatórios em `/painel/relatorios` com período via Nuqs e acesso validado no servidor.
+- Relatórios em `/painel/relatorios` com período via Nuqs e acesso validado no servidor.
 - A animação para assinantes usa os mesmos componentes `OwnerAppointment` e `BookingActionControls` da agenda real. Demonstra aprovação em memória, sem acessar dados privados de clientes e sem enviar alterações à API de reservas.
 
 # Pesquisa e filtros de equipe e serviços

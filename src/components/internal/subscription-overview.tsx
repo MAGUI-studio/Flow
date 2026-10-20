@@ -103,7 +103,7 @@ export async function SubscriptionOverview({
         : "Página personalizada",
       description: features.reports
         ? "Acompanhe os resultados do seu negócio."
-        : "Escolha entre os templates Flow e Essência.",
+        : "Apresente seu espaço com logo, banner e informações de contato.",
     },
   ];
   return (
@@ -218,9 +218,7 @@ export async function SubscriptionOverview({
           <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-zinc-100 px-5 py-4 text-xs text-zinc-500 sm:px-6">
             {[
               "Aprovação automática ou manual",
-              features.reports
-                ? "4 templates para sua página"
-                : "2 templates para sua página",
+              "Página com logo, banner e contatos",
             ].map((item) => (
               <span key={item} className="inline-flex items-center gap-1.5">
                 <Check

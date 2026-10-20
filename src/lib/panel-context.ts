@@ -27,7 +27,6 @@ export const ownerContext = cache(async () => {
       city: true,
       description: true,
       color: true,
-      templateId: true,
       timezone: true,
       approvalMode: true,
       cancelNoticeHours: true,

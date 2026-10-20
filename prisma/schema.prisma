@@ -53,7 +53,6 @@ model Establishment {
   category String @default("Outros")
   contactPhone String? @map("contact_phone")
   color String @default("#e5dff0")
-  templateId String @default("flow") @map("template_id")
   owner Account @relation(fields:[ownerId],references:[id],onDelete:NoAction,onUpdate:NoAction)
   professionals Professional[]
   services Service[]

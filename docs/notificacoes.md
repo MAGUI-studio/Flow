@@ -10,4 +10,4 @@ Use `notify.success`, `notify.error` e `notify.info` de `components/ui/flow-toas
 
 Erros de validação continuam nos campos correspondentes, com React Hook Form e Zod. Mensagens persistentes que explicam o estado de um mapa, carregamentos, regras de disponibilidade e o comprovante final de um agendamento permanecem no contexto da tela.
 
-Retornos de cadastros, edição de profissionais, exclusão, ações de agendamentos, avaliações, aparência e ativação de planos usam os toasts compartilhados.
+Retornos de cadastros, edição de profissionais, exclusão, ações de agendamentos, avaliações e ativação de planos usam os toasts compartilhados.

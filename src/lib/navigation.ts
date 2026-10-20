@@ -5,7 +5,6 @@ import {
   Users,
   Scissors,
   Layers,
-  Palette,
   ChartNoAxesCombined,
 } from "lucide-react";
 export const businessNavigation = [
@@ -26,12 +25,6 @@ export const businessNavigation = [
     href: "/painel/servicos",
     label: "Serviços",
     icon: Scissors,
-    group: "Configuração",
-  },
-  {
-    href: "/painel/aparencia",
-    label: "Aparência",
-    icon: Palette,
     group: "Configuração",
   },
   {

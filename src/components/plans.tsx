@@ -44,15 +44,6 @@ const comparison: { title: string; rows: ComparisonRow[] }[] = [
         label: "Página personalizada",
         description: "Logo, capa, apresentação e informações de contato.",
       },
-      {
-        label: "Templates incluídos",
-        values: ["Flow e Essência", "Todos os 4 templates"],
-      },
-      {
-        label: "Templates exclusivos",
-        description: "Editorial e Noturno.",
-        proOnly: true,
-      },
     ],
   },
   {
