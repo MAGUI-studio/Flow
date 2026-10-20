@@ -68,7 +68,10 @@ export const establishmentSchema = businessContactsSchema.extend({
   addressDetails: optionalAddressSchema,
   contactPhone: optionalPhone,
   approvalMode: z.enum(["automatic", "manual"]),
-  cancelNoticeHours: number(0, 720),
+  cancelNoticeHours: z.preprocess(
+    (value) => (typeof value === "string" && !value.trim() ? undefined : value),
+    number(0, 720),
+  ),
 });
 export const professionalSchema = z.object({
   name,

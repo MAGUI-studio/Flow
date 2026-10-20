@@ -23,7 +23,7 @@ export async function requireBusinessOwner(establishmentId: string) {
   if (!result) throw new Error("FORBIDDEN");
   return userId;
 }
-export function apiError(error: unknown) {
+export function apiError(error: unknown, operation?: string) {
   const message = error instanceof Error ? error.message : "";
   const errors: Record<string, [number, string]> = {
     OWN_ESTABLISHMENT_BOOKING: [
@@ -134,5 +134,19 @@ export function apiError(error: unknown) {
     500,
     "Não foi possível concluir a operação.",
   ];
+  if (status === 500) {
+    const details = error as {
+      name?: string;
+      code?: string;
+      meta?: { modelName?: string };
+    } | null;
+    // Prisma messages can contain submitted fields; keep logs free of form data.
+    console.error("Unhandled API operation error", {
+      operation,
+      name: details?.name,
+      code: details?.code,
+      model: details?.meta?.modelName,
+    });
+  }
   return Response.json({ error: text }, { status });
 }

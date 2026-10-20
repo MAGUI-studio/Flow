@@ -1,4 +1,7 @@
-import { professionalCreationSchema } from "@/lib/form-schemas";
+import {
+  professionalCreationSchema,
+  establishmentSchema,
+} from "@/lib/form-schemas";
 import { isWithinAvailability } from "@/lib/weekly-availability";
 import { currentUser, apiError } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
@@ -19,6 +22,8 @@ export async function POST(request: Request) {
     if (!input || typeof input !== "object") throw new Error("INVALID_INPUT");
     const result = await prisma().$transaction(async (tx) => {
       if (input.type === "establishment") {
+        const parsed = establishmentSchema.safeParse(input);
+        if (!parsed.success) throw new Error("INVALID_INPUT");
         const automatic = businessSlug(text(input.name));
         if (
           input.slug !== automatic &&
@@ -28,7 +33,7 @@ export async function POST(request: Request) {
           }))
         )
           throw new Error("INVALID_SLUG");
-        return createEstablishment(tx, owner, input);
+        return createEstablishment(tx, owner, parsed.data);
       }
       if (input.type === "professional")
         return createProfessional(tx, owner, {
@@ -151,6 +156,6 @@ export async function POST(request: Request) {
     });
     return Response.json({ id: result.id }, { status: 201 });
   } catch (error) {
-    return apiError(error);
+    return apiError(error, "manage.create");
   }
 }

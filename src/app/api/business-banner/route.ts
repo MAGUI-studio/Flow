@@ -65,6 +65,6 @@ export async function POST(request: Request) {
       throw error;
     }
   } catch (error) {
-    return apiError(error);
+    return apiError(error, "business-banner.upload");
   }
 }

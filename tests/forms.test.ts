@@ -32,6 +32,30 @@ test("establishment validation requires a category, validates phones and protect
     cancelNoticeHours: 2,
   };
   assert.equal(establishmentSchema.safeParse(base).success, true);
+  for (const field of [
+    "name",
+    "slug",
+    "category",
+    "approvalMode",
+    "cancelNoticeHours",
+  ]) {
+    assert.equal(
+      establishmentSchema.safeParse({ ...base, [field]: "" }).success,
+      false,
+      `${field} must not accept an empty value`,
+    );
+  }
+  assert.equal(
+    establishmentSchema.safeParse({ ...base, cancelNoticeHours: 0 }).success,
+    true,
+  );
+  assert.equal(
+    establishmentSchema.safeParse({
+      ...base,
+      addressDetails: { street: "Rua das Flores" },
+    }).success,
+    false,
+  );
   assert.equal(
     establishmentSchema.safeParse({ ...base, category: "" }).success,
     false,

@@ -54,7 +54,7 @@ import {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { businessSchemas } from "@/lib/form-schemas";
+import { businessSchemas, establishmentSchema } from "@/lib/form-schemas";
 import { phoneMask, currencyMask, currencyCents } from "@/lib/masks";
 
 import { panelHref } from "@/lib/url-state";
@@ -167,6 +167,7 @@ export function BusinessForm({
   );
   const methods = useForm<FieldValues>({
     ...formValidation,
+    mode: kind === "establishment" ? "onTouched" : formValidation.mode,
     resolver: zodResolver(
       businessSchemas[kind] as z.ZodType<FieldValues, FieldValues>,
     ) as Resolver<FieldValues>,
@@ -229,6 +230,7 @@ export function BusinessForm({
       : undefined,
   });
   const [canEditSlug, setCanEditSlug] = useState(false);
+  const [verifiedSlug, setVerifiedSlug] = useState("");
   const [slugStatus, setSlugStatus] = useState("");
   const [slugCheckVersion, setSlugCheckVersion] = useState(0);
   const name = watch("name") as string,
@@ -236,6 +238,12 @@ export function BusinessForm({
     format = watch("kind") as string,
     free = watch("free") as boolean,
     serviceId = watch("serviceId") as string;
+  const validEstablishment =
+    kind !== "establishment" || establishmentSchema.safeParse(watch()).success;
+  const slugReady =
+    kind !== "establishment" ||
+    !!initialEstablishment ||
+    verifiedSlug === JSON.stringify([name, slug]);
   const setName = (v: string) =>
     setValue("name", v, { shouldValidate: methods.formState.isSubmitted });
   const setSlug = (v: string) =>
@@ -251,6 +259,7 @@ export function BusinessForm({
       return;
     }
     const controller = new AbortController();
+    setVerifiedSlug("");
     setSlugStatus("Verificando endereço…");
     const timer = setTimeout(async () => {
       try {
@@ -262,6 +271,7 @@ export function BusinessForm({
         if (controller.signal.aborted) return;
         if (!response.ok) throw new Error(data.error);
         setCanEditSlug(data.canEdit);
+        if (data.available) setVerifiedSlug(JSON.stringify([name, slug]));
         setSlugStatus(
           data.available
             ? "Endereço disponível."
@@ -618,6 +628,7 @@ export function BusinessForm({
                         <input
                           className="peer sr-only"
                           type="radio"
+                          required
                           {...register("category")}
                           value={c.name}
                         />
@@ -643,7 +654,7 @@ export function BusinessForm({
                   <FieldError name="category" />
                 </fieldset>
                 <label className="form-field">
-                  Sobre o seu espaço
+                  Sobre o seu espaço (opcional)
                   <textarea
                     {...register("description")}
                     maxLength={businessBioMaxLength}
@@ -693,7 +704,7 @@ export function BusinessForm({
               >
                 <div className="fields-grid">
                   <label className="form-field">
-                    Site
+                    Site (opcional)
                     <input
                       {...register("website")}
                       placeholder="https://seusite.com.br"
@@ -702,7 +713,7 @@ export function BusinessForm({
                     <FieldError name="website" />
                   </label>
                   <label className="form-field">
-                    Instagram
+                    Instagram (opcional)
                     <input
                       {...register("instagram")}
                       placeholder="@seuestabelecimento"
@@ -712,7 +723,7 @@ export function BusinessForm({
                     <FieldError name="instagram" />
                   </label>
                   <label className="form-field">
-                    WhatsApp de contato
+                    WhatsApp de contato (opcional)
                     <input
                       {...register("contactPhone", {
                         onChange: (e) =>
@@ -1152,7 +1163,15 @@ export function BusinessForm({
             <Link href={back} className="form-cancel">
               Cancelar
             </Link>
-            <button className="button" disabled={busy || photoBusy}>
+            <button
+              className="button"
+              disabled={busy || photoBusy || !validEstablishment || !slugReady}
+              aria-describedby={
+                kind === "establishment"
+                  ? "establishment-submit-help"
+                  : undefined
+              }
+            >
               {busy ? (
                 <>
                   <LoaderCircle size={16} className="spinning" />
@@ -1178,6 +1197,19 @@ export function BusinessForm({
               )}
             </button>
           </div>
+          {kind === "establishment" && (
+            <p
+              id="establishment-submit-help"
+              className="px-5 pb-4 text-xs text-zinc-500 sm:px-6"
+              role="status"
+            >
+              {!validEstablishment
+                ? "Preencha os campos obrigatórios (*) e confira os dados informados para salvar."
+                : !slugReady
+                  ? "Aguarde a confirmação de que o endereço da sua página está disponível."
+                  : "Tudo pronto para salvar seu estabelecimento."}
+            </p>
+          )}
         </form>
         <aside className="form-companion hidden lg:block">
           <div
