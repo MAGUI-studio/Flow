@@ -1,4 +1,5 @@
 "use client";
+import { FormSubmitGuard } from "./ui/form-feedback";
 import { formValidation } from "@/lib/form-validation";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -106,7 +107,12 @@ export function BusinessDirectory({
           <option value="in_person">Presencial</option>
           <option value="online">Online</option>
         </FlowSelect>
-        <ArrowButton type="submit">Buscar</ArrowButton>
+        <FormSubmitGuard
+          schema={catalogSearchSchema}
+          values={searchForm.watch()}
+        >
+          <ArrowButton type="submit">Buscar</ArrowButton>
+        </FormSubmitGuard>
       </form>
       {(searchForm.formState.errors.query ||
         searchForm.formState.errors.city) && (

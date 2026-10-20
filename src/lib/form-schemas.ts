@@ -20,11 +20,14 @@ export const phoneSchema = z
   );
 const optionalPhone = z.union([z.literal(""), phoneSchema]);
 const number = (min: number, max: number) =>
-  z.coerce
-    .number()
-    .int("Use um número inteiro.")
-    .min(min, `O mínimo é ${min}.`)
-    .max(max, `O máximo é ${max}.`);
+  z.preprocess(
+    (value) => (typeof value === "string" && !value.trim() ? undefined : value),
+    z.coerce
+      .number()
+      .int("Use um número inteiro.")
+      .min(min, `O mínimo é ${min}.`)
+      .max(max, `O máximo é ${max}.`),
+  );
 const date = z.string().refine((v) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
   const d = new Date(v + "T12:00:00Z");

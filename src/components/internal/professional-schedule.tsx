@@ -1,4 +1,9 @@
 "use client";
+import {
+  FormSubmitGuard,
+  FormEditState,
+  FieldChanged,
+} from "@/components/ui/form-feedback";
 import { useRouter } from "next/navigation";
 import {
   FormProvider,
@@ -44,7 +49,9 @@ export function Weekday({ index }: { index: number }) {
           <Check size={14} strokeWidth={3} />
         </span>
         <span className="flex flex-col gap-1">
-          <span>{weekdays[index]}</span>
+          <span>
+            {weekdays[index]} <FieldChanged name={`days.${index}`} />
+          </span>
           <span
             className={`text-[11px] font-normal ${enabled ? "text-[#635BFF]" : "text-zinc-400"}`}
           >
@@ -69,14 +76,20 @@ export function Weekday({ index }: { index: number }) {
                   <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 min-[480px]:grid-cols-2 [&_.flow-time-field]:mt-1.5! [&_.flow-time-field]:gap-1.5 [&_.flow-select-trigger]:h-10! [&_.flow-select-trigger]:min-h-10! [&_.flow-select-trigger]:rounded-lg! [&_.flow-select-trigger]:px-2! [&_.flow-select-trigger]:text-xs!">
                     <div className="min-w-0">
                       <span className="text-[11px] font-medium text-zinc-500">
-                        Das
+                        Das{" "}
+                        <FieldChanged
+                          name={`days.${index}.intervals.${j}.start`}
+                        />
                       </span>
                       <FormTime name={`days.${index}.intervals.${j}.start`} />
                       <FieldError name={`days.${index}.intervals.${j}.start`} />
                     </div>
                     <div className="min-w-0">
                       <span className="text-[11px] font-medium text-zinc-500">
-                        Até
+                        Até{" "}
+                        <FieldChanged
+                          name={`days.${index}.intervals.${j}.end`}
+                        />
                       </span>
                       <FormTime name={`days.${index}.intervals.${j}.end`} />
                       <FieldError name={`days.${index}.intervals.${j}.end`} />
@@ -180,35 +193,44 @@ export function ProfessionalSchedule({
         </p>
       </div>
       <FormProvider {...form}>
-        <form
-          noValidate
-          aria-busy={form.formState.isSubmitting}
-          onSubmit={form.handleSubmit(save)}
-        >
-          <div className="space-y-3 px-5 py-5 sm:px-6">
-            {weekdays.map((day, index) => (
-              <Weekday key={day} index={index} />
-            ))}
-            <FieldError name="days" />
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#efedf5] bg-[#faf9fd] px-5 py-4 sm:px-6">
-            <p className="inline-flex items-center gap-2 text-xs text-zinc-500">
-              <Repeat2
-                size={15}
-                aria-hidden="true"
-                className="shrink-0 text-[#635BFF]"
-              />
-              Repete toda semana após salvar.
-            </p>
-            <button
-              type="submit"
-              className="button"
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting ? "Salvando…" : "Salvar horários"}
-            </button>
-          </div>
-        </form>
+        <FormEditState editing={true}>
+          <form
+            noValidate
+            aria-busy={form.formState.isSubmitting}
+            onSubmit={form.handleSubmit(save)}
+          >
+            <div className="space-y-3 px-5 py-5 sm:px-6">
+              {weekdays.map((day, index) => (
+                <Weekday key={day} index={index} />
+              ))}
+              <FieldError name="days" />
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#efedf5] bg-[#faf9fd] px-5 py-4 sm:px-6">
+              <p className="inline-flex items-center gap-2 text-xs text-zinc-500">
+                <Repeat2
+                  size={15}
+                  aria-hidden="true"
+                  className="shrink-0 text-[#635BFF]"
+                />
+                Repete toda semana após salvar.
+              </p>
+              <FormSubmitGuard
+                schema={weeklyScheduleSchema}
+                values={form.watch()}
+              >
+                <button
+                  type="submit"
+                  className="button"
+                  disabled={form.formState.isSubmitting}
+                >
+                  {form.formState.isSubmitting
+                    ? "Salvando…"
+                    : "Salvar horários"}
+                </button>
+              </FormSubmitGuard>
+            </div>
+          </form>
+        </FormEditState>
       </FormProvider>
     </section>
   );

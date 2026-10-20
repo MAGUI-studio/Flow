@@ -1,4 +1,5 @@
 "use client";
+import { FormSubmitGuard } from "@/components/ui/form-feedback";
 import { useEffect, useRef, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -303,15 +304,22 @@ export function BusinessBanner({
                 >
                   Cancelar
                 </button>
-                <button
-                  disabled={isSubmitting || !pixels}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#635BFF] px-6 py-3.5 text-sm font-semibold text-white disabled:opacity-50"
+                <FormSubmitGuard
+                  schema={schema}
+                  values={watch()}
+                  issues={!pixels ? ["Ajuste o enquadramento da imagem."] : []}
+                  className="w-full [&>button:first-child]:flex-1"
                 >
-                  {isSubmitting && (
-                    <LoaderCircle size={15} className="animate-spin" />
-                  )}
-                  {isSubmitting ? "Ajustando…" : "Usar este banner"}
-                </button>
+                  <button
+                    disabled={isSubmitting || !pixels}
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#635BFF] px-6 py-3.5 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    {isSubmitting && (
+                      <LoaderCircle size={15} className="animate-spin" />
+                    )}
+                    {isSubmitting ? "Ajustando…" : "Usar este banner"}
+                  </button>
+                </FormSubmitGuard>
               </div>
             </form>
           </Dialog.Content>

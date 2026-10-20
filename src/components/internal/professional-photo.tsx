@@ -1,4 +1,5 @@
 "use client";
+import { FormSubmitGuard } from "@/components/ui/form-feedback";
 import { useToastError } from "@/components/ui/flow-toaster";
 import { formValidation } from "@/lib/form-validation";
 import { useEffect, useRef, useState } from "react";
@@ -385,18 +386,25 @@ export function ProfessionalPhoto({
                 >
                   Cancelar
                 </Dialog.Close>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !source || !pixels}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#635BFF] px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[#5046E5] disabled:cursor-not-allowed disabled:opacity-40"
+                <FormSubmitGuard
+                  schema={cropSchema}
+                  values={watch()}
+                  issues={!pixels ? ["Ajuste o enquadramento da imagem."] : []}
+                  className="w-full [&>button:first-child]:flex-1"
                 >
-                  {isSubmitting ? (
-                    <LoaderCircle size={18} className="animate-spin" />
-                  ) : (
-                    <Check size={18} />
-                  )}{" "}
-                  {isSubmitting ? "Salvando foto…" : "Usar esta foto"}
-                </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || !source || !pixels}
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#635BFF] px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[#5046E5] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {isSubmitting ? (
+                      <LoaderCircle size={18} className="animate-spin" />
+                    ) : (
+                      <Check size={18} />
+                    )}{" "}
+                    {isSubmitting ? "Salvando foto…" : "Usar esta foto"}
+                  </button>
+                </FormSubmitGuard>
               </div>
             </form>
           </Dialog.Content>

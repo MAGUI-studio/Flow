@@ -1,4 +1,5 @@
 "use client";
+import { FieldChanged } from "@/components/ui/form-feedback";
 import { useEffect, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import {
@@ -229,7 +230,7 @@ export function AddressFields() {
               className={`form-field ${field === "street" ? "sm:col-span-2" : ""}`}
             >
               <span>
-                {label}
+                {label} <FieldChanged name={name} />
                 {field !== "complement" && (
                   <span className="ml-1 text-red-600" aria-hidden="true">
                     *

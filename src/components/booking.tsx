@@ -1,4 +1,5 @@
 "use client";
+import { FormSubmitGuard } from "@/components/ui/form-feedback";
 import {
   BookingServiceOption,
   bookingServiceOptionStyle,
@@ -589,16 +590,22 @@ export function Booking({
                     <AnimatedArrow direction="right" size={16} />
                   </button>
                 ) : (
-                  <button className="button" type="submit" disabled={saving}>
-                    {saving
-                      ? "Reservando…"
-                      : !isSignedIn
-                        ? "Entrar com Google"
-                        : b.approvalMode === "manual"
-                          ? "Solicitar agendamento"
-                          : "Confirmar agendamento"}
-                    <AnimatedArrow direction="right" size={16} />
-                  </button>
+                  <FormSubmitGuard
+                    schema={bookingSchema(service?.modality === "online")}
+                    values={bookingForm.watch()}
+                    className="w-full [&>button:first-child]:w-full"
+                  >
+                    <button className="button" type="submit" disabled={saving}>
+                      {saving
+                        ? "Reservando…"
+                        : !isSignedIn
+                          ? "Entrar com Google"
+                          : b.approvalMode === "manual"
+                            ? "Solicitar agendamento"
+                            : "Confirmar agendamento"}
+                      <AnimatedArrow direction="right" size={16} />
+                    </button>
+                  </FormSubmitGuard>
                 )}
               </div>
             </form>

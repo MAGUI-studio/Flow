@@ -1,4 +1,5 @@
 "use client";
+import { FormSubmitGuard } from "@/components/ui/form-feedback";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -262,22 +263,32 @@ export function SubscriptionChangeForm({ plan }: { plan: "basic" | "multi" }) {
           </div>
         )}
         <div className="mt-6 flex flex-col gap-3">
-          <button
-            type="submit"
-            disabled={loading || !quote || !agreed || form.formState.isSubmitting}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-xl bg-[#635BFF] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#5046E5] disabled:cursor-not-allowed disabled:opacity-50"
+          <FormSubmitGuard
+            schema={schema}
+            values={form.watch()}
+            className="w-full"
           >
-            {form.formState.isSubmitting ? "Alterando…" : "Confirmar alteração"}
-            {form.formState.isSubmitting ? (
-              <LoaderCircle
-                size={17}
-                aria-hidden="true"
-                className="motion-safe:animate-spin"
-              />
-            ) : (
-              <ArrowUpRight size={17} aria-hidden="true" />
-            )}
-          </button>
+            <button
+              type="submit"
+              disabled={
+                loading || !quote || !agreed || form.formState.isSubmitting
+              }
+              className="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-xl bg-[#635BFF] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#5046E5] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {form.formState.isSubmitting
+                ? "Alterando…"
+                : "Confirmar alteração"}
+              {form.formState.isSubmitting ? (
+                <LoaderCircle
+                  size={17}
+                  aria-hidden="true"
+                  className="motion-safe:animate-spin"
+                />
+              ) : (
+                <ArrowUpRight size={17} aria-hidden="true" />
+              )}
+            </button>
+          </FormSubmitGuard>
           <Link
             href="/assinatura"
             className="inline-flex min-h-10 items-center justify-center px-4 text-xs font-medium text-zinc-500 hover:text-[#635BFF]"

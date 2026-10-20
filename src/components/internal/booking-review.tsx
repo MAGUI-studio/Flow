@@ -1,4 +1,5 @@
 "use client";
+import { FormSubmitGuard } from "@/components/ui/form-feedback";
 import { notify, useToastError } from "@/components/ui/flow-toaster";
 import { formValidation } from "@/lib/form-validation";
 import { useState } from "react";
@@ -204,13 +205,15 @@ export function BookingReview({
         </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={form.formState.isSubmitting}
-        className="button small mt-5"
-      >
-        {form.formState.isSubmitting ? "Enviando…" : "Enviar avaliação"}
-      </button>
+      <FormSubmitGuard schema={reviewSchema} values={form.watch()}>
+        <button
+          type="submit"
+          disabled={form.formState.isSubmitting}
+          className="button small mt-5"
+        >
+          {form.formState.isSubmitting ? "Enviando…" : "Enviar avaliação"}
+        </button>
+      </FormSubmitGuard>
     </form>
   );
 }
