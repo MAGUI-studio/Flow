@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { useQueryState, parseAsString } from "nuqs";
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
+import { StatusBadge } from "@/components/ui/statusBadge";
 import { formatContact } from "@/lib/format-contact";
 import { BookingActions } from "./booking-actions";
 import { DataTable } from "@/components/ui/data-table";
@@ -15,23 +16,7 @@ const dateLabel = (date: Date, timezone: string) =>
     year: "numeric",
   });
 function BookingStatus({ status }: { status: string }) {
-  const color =
-    status === "confirmed" || status === "completed"
-      ? "bg-[#347759]"
-      : status === "pending"
-        ? "bg-amber-600"
-        : status === "canceled" || status === "declined"
-          ? "bg-rose-500"
-          : "bg-zinc-400";
-  return (
-    <span className="inline-flex items-center gap-2 text-xs text-zinc-600">
-      <span
-        aria-hidden="true"
-        className={`size-1.5 shrink-0 rounded-full ${color}`}
-      />
-      {statusLabel[status] ?? status}
-    </span>
-  );
+  return <StatusBadge status={status} label={statusLabel[status] ?? status} />;
 }
 type SessionRow = {
   id: string;

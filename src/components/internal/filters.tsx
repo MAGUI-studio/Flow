@@ -48,22 +48,9 @@ export function ListFilters({
     query.profissional !== "all" ||
     (professionalFilters &&
       (query.ordem !== "name_asc" || query.vinculos !== "all"));
-  const separateFilters = professionalFilters || serviceFilters;
   return (
-    <div
-      className={
-        separateFilters
-          ? "mb-5 grid min-w-0 gap-3 lg:grid-cols-[minmax(220px,1fr)_auto] lg:items-start"
-          : "internal-filters"
-      }
-    >
-      <div
-        className={
-          separateFilters
-            ? "internal-search min-h-11 min-w-0! rounded-xl border border-zinc-200 bg-white px-3! transition-colors [&>svg]:shrink-0 focus-within:border-[#635BFF]/40 focus-within:ring-2 focus-within:ring-[#635BFF]/10"
-            : "internal-search rounded-lg border border-transparent transition-colors focus-within:border-[#635BFF]/40 focus-within:bg-[#F5F4FF]/60 focus-within:ring-2 focus-within:ring-[#635BFF]/10"
-        }
-      >
+    <div className="mb-5 grid min-w-0 gap-3 lg:grid-cols-[minmax(220px,1fr)_auto] lg:items-start">
+      <div className="internal-search min-h-11 min-w-0! rounded-xl border border-zinc-200 bg-white px-3! transition-colors [&>svg]:shrink-0 focus-within:border-[#635BFF]/40 focus-within:ring-2 focus-within:ring-[#635BFF]/10">
         <Search size={17} />
         <input
           className="focus-visible:outline-none"
@@ -88,11 +75,7 @@ export function ListFilters({
         )}
       </div>
       <div
-        className={
-          separateFilters
-            ? `filter-controls grid! w-full! min-w-0 grid-cols-1 gap-2! sm:grid-cols-2 lg:flex! lg:w-auto! [&_.flow-select-trigger]:min-h-11! [&_.flow-select-trigger]:w-full! [&_.flow-select-trigger]:min-w-0! [&_.flow-select-trigger]:max-w-none! [&_.flow-select-trigger]:rounded-xl! [&_.flow-select-trigger]:bg-white [&_.flow-select-trigger]:text-xs! lg:[&_.flow-select-trigger]:w-auto! ${serviceFilters ? "sm:grid-cols-3" : ""}`
-            : "filter-controls"
-        }
+        className={`filter-controls grid! w-full! min-w-0 grid-cols-1 gap-2! sm:grid-cols-2 lg:flex! lg:w-auto! [&_.flow-select-trigger]:min-h-11! [&_.flow-select-trigger]:w-full! [&_.flow-select-trigger]:min-w-0! [&_.flow-select-trigger]:max-w-none! [&_.flow-select-trigger]:rounded-xl! [&_.flow-select-trigger]:bg-white [&_.flow-select-trigger]:text-xs! lg:[&_.flow-select-trigger]:w-auto! ${serviceFilters ? "sm:grid-cols-3" : ""}`}
       >
         {serviceFilters && (
           <>

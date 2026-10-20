@@ -13,7 +13,7 @@ export default async function Page({
   return (
     <>
       <PageHeading
-        eyebrow="COM A CARA DO SEU NEGÓCIO"
+        eyebrow={context.business.name}
         title="Sua página, seu estilo."
         description="Escolha um template para apresentar seu espaço e receber seus clientes."
       />

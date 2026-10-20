@@ -1,5 +1,7 @@
 "use client";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect } from "react";
+import { StatusBadge } from "@/components/ui/statusBadge";
+import { FlowTabs } from "@/components/ui/flow-tabs";
 import { useRouter } from "next/navigation";
 import { formatContact } from "@/lib/format-contact";
 import { useQueryState, parseAsStringEnum, parseAsString } from "nuqs";
@@ -15,10 +17,10 @@ import {
 import { AgendaTable, type BookingRow } from "./schedule-tables";
 import { dayKey, hourLabel, money, statusLabel } from "@/lib/format";
 const modes = [
-  { id: "table", label: "Tabela", icon: Table2 },
-  { id: "day", label: "Agenda diária", icon: CalendarDays },
-  { id: "month", label: "Calendário", icon: CalendarRange },
-  { id: "timeline", label: "Cronograma", icon: ListOrdered },
+  { value: "table", label: "Tabela", icon: Table2 },
+  { value: "day", label: "Agenda diária", icon: CalendarDays },
+  { value: "month", label: "Calendário", icon: CalendarRange },
+  { value: "timeline", label: "Cronograma", icon: ListOrdered },
 ] as const;
 function shiftDay(day: string, delta: number) {
   const d = new Date(day + "T12:00:00Z");
@@ -51,13 +53,7 @@ function Appointment({
             <Clock size={13} aria-hidden="true" />
             {hourLabel(a.session.startsAt, timezone)} · {a.durationMinutes} min
           </span>
-          <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-500">
-            <span
-              aria-hidden="true"
-              className="size-1.5 rounded-full bg-emerald-600"
-            />
-            {statusLabel[a.effectiveStatus] ?? a.effectiveStatus}
-          </span>
+          <StatusBadge status={a.effectiveStatus} />
         </div>
         <h3 className="m-0 break-words text-sm font-semibold text-zinc-800">
           {a.session.service.name}
@@ -123,27 +119,6 @@ export function AgendaViews({
       .withDefault("table")
       .withOptions({ shallow: true, scroll: false }),
   );
-  const tabListRef = useRef<HTMLDivElement>(null);
-  const [indicator, setIndicator] = useState<{
-    left: number;
-    width: number;
-  } | null>(null);
-  useLayoutEffect(() => {
-    const list = tabListRef.current;
-    if (!list) return;
-    const update = () => {
-      const active = list.querySelector<HTMLElement>('[aria-selected="true"]');
-      if (active)
-        setIndicator({ left: active.offsetLeft, width: active.offsetWidth });
-    };
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(list);
-    list
-      .querySelectorAll("button")
-      .forEach((button) => observer.observe(button));
-    return () => observer.disconnect();
-  }, [view]);
   const today = dayKey(new Date(), timezone);
   const [dateParam, setDate] = useQueryState(
     "data-agenda",
@@ -190,54 +165,14 @@ export function AgendaViews({
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div
-          ref={tabListRef}
-          role="tablist"
-          aria-label="Visualização da agenda"
-          className="relative flex w-full max-w-full gap-5 overflow-x-auto border-b border-[#e8e5f0] sm:gap-7"
-        >
-          {modes.map(({ id, label, icon: Icon }, index) => (
-            <button
-              type="button"
-              key={id}
-              role="tab"
-              id={`agenda-tab-${id}`}
-              aria-selected={view === id}
-              aria-controls="agenda-view-panel"
-              tabIndex={view === id ? 0 : -1}
-              onKeyDown={(event) => {
-                let next = index;
-                if (event.key === "ArrowRight")
-                  next = (index + 1) % modes.length;
-                else if (event.key === "ArrowLeft")
-                  next = (index + modes.length - 1) % modes.length;
-                else if (event.key === "Home") next = 0;
-                else if (event.key === "End") next = modes.length - 1;
-                else return;
-                event.preventDefault();
-                void setView(modes[next].id);
-                document
-                  .getElementById(`agenda-tab-${modes[next].id}`)
-                  ?.focus();
-              }}
-              onClick={() => void setView(id)}
-              className={`relative inline-flex min-h-12 shrink-0 items-center justify-center gap-2 border-b-2 border-transparent px-1 py-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#635BFF] ${view === id ? "text-[#635BFF]" : "text-zinc-500 hover:border-[#ded9ef] hover:text-zinc-800"}`}
-            >
-              <Icon size={15} aria-hidden="true" />
-              {label}
-            </button>
-          ))}
-          {indicator && (
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute bottom-0 left-0 h-0.5 rounded-full bg-[#635BFF] transition-[transform,width] duration-300 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none"
-              style={{
-                width: indicator.width,
-                transform: `translateX(${indicator.left}px)`,
-              }}
-            />
-          )}
-        </div>
+        <FlowTabs
+          items={modes}
+          value={view}
+          onValueChange={(value) => void setView(value)}
+          label="Visualização da agenda"
+          id="agenda-tab"
+          panelId={() => "agenda-view-panel"}
+        />
         <span className="text-xs text-zinc-400">
           <span className="inline-flex items-center gap-2">
             <span

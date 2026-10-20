@@ -24,6 +24,7 @@ export default async function Page({
     return (
       <>
         <PageHeading
+          eyebrow={context.business.name}
           title="Um olhar mais completo sobre seu negócio."
           description="Compare serviços, acompanhe a equipe e exporte o histórico da sua agenda."
         />
@@ -50,7 +51,7 @@ export default async function Page({
   return (
     <>
       <PageHeading
-        eyebrow="FLOW PRO"
+        eyebrow={context.business.name}
         title="Sua agenda em perspectiva."
         description={`Atendimentos iniciados nos últimos ${days} dias${context.business ? ` em ${context.business.name}` : ""}.`}
         action={
@@ -64,7 +65,7 @@ export default async function Page({
           </a>
         }
       />
-      <div className="mb-7 max-w-56">
+      <div className="mb-5 w-full sm:max-w-56 [&_.flow-select-trigger]:min-h-11 [&_.flow-select-trigger]:rounded-xl">
         <ReportPeriod />
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -92,7 +93,7 @@ export default async function Page({
         ].map((metric) => (
           <div
             key={metric.label}
-            className="relative isolate overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6"
+            className="relative isolate overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6"
           >
             <metric.icon
               aria-hidden="true"

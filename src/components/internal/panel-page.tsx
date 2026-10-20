@@ -1,5 +1,8 @@
+import { ProUpgradeCard } from "./pro-upgrade-card";
+import { SubscriptionOverview } from "./subscription-overview";
 import { redirect } from "next/navigation";
 import { ServicesTable } from "./services-table";
+import { PlanLimitButton } from "./plan-limit-button";
 import { ProfessionalsTable } from "./professionals-table";
 import { professionalList } from "@/lib/professional-list";
 import { BusinessOnboarding } from "./business-onboarding";
@@ -296,17 +299,17 @@ export async function PanelPage({
     return (
       <>
         <PageHeading
-          eyebrow="UM LUGAR PARA CADA NEGÓCIO"
+          eyebrow="SEUS ESTABELECIMENTOS"
           title={meta.title}
           description={meta.description}
           action={
-            rows.length < limit ? (
+            businesses.length < limit ? (
               createAction
             ) : (
-              <Link href="/#planos" className="button secondary">
-                Ver planos
-                <AnimatedArrow size={15} />
-              </Link>
+              <PlanLimitButton
+                label={meta.cta ?? "Novo estabelecimento"}
+                message={`Seu plano permite até ${limit} ${limit === 1 ? "estabelecimento" : "estabelecimentos"}. Altere seu plano para cadastrar mais.`}
+              />
             )
           }
         />
@@ -327,7 +330,7 @@ export async function PanelPage({
             icon={<Building2 size={26} />}
           />
         ) : (
-          <div className="establishment-grid">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {rows.map((e) => {
               const details = e.addressDetails;
               const location = locationSchema.safeParse(
@@ -338,7 +341,10 @@ export async function PanelPage({
                   : undefined,
               );
               return (
-                <article className="establishment-card" key={e.id}>
+                <article
+                  className="establishment-card rounded-2xl! border-zinc-200! bg-white!"
+                  key={e.id}
+                >
                   <div
                     className="establishment-card-cover"
                     style={{ background: e.color }}
@@ -401,70 +407,35 @@ export async function PanelPage({
       </>
     );
   }
-  if (section === "subscription")
+  if (section === "subscription") {
+    const usage = await prisma().establishment.findMany({
+      where: { ownerId: context.userId, active: true },
+      select: {
+        id: true,
+        name: true,
+        _count: { select: { professionals: { where: { deletedAt: null } } } },
+      },
+      orderBy: { name: "asc" },
+    });
     return (
       <>
         <PageHeading
-          eyebrow="FLOW PARA SEU NEGÓCIO"
+          eyebrow="SUA CONTA FLOW"
           title={meta.title}
-          description={meta.description}
+          description="Consulte seu plano, acompanhe os limites e veja os recursos disponíveis para o seu negócio."
         />
-        <div className="subscription-grid">
-          <section className="subscription-card">
-            <span className="subscription-flower">✳</span>
-            <StatusPill status="confirmed" label="Assinatura ativa" />
-            <small>SEU PLANO ATUAL</small>
-            <h2>{subscription.plan === "multi" ? "Flow PRO" : "Essencial"}</h2>
-            <p>Mais organização para cada próximo momento.</p>
-            <div className="subscription-period">
-              <span>Período atual</span>
-              <strong>
-                {subscription.currentPeriodStart.toLocaleDateString("pt-BR")} –{" "}
-                {subscription.paidUntil.toLocaleDateString("pt-BR")}
-              </strong>
-            </div>
-            <Link href="/#planos" className="button">
-              Conhecer os planos
-              <AnimatedArrow size={15} />
-            </Link>
-          </section>
-          <SectionCard
-            title="Seu espaço no Flow"
-            description="Recursos que acompanham o seu negócio."
-          >
-            <div className="usage-stat">
-              <span>Estabelecimentos</span>
-              <strong>
-                {businesses.length} / {limit}
-              </strong>
-            </div>
-            <div className="usage-track">
-              <i style={{ width: `${(businesses.length / limit) * 100}%` }} />
-            </div>
-            <ul className="subscription-benefits">
-              {[
-                `Até ${limit} ${limit === 1 ? "estabelecimento" : "estabelecimentos"}`,
-                `${features.professionals} profissionais por estabelecimento`,
-                "Serviços individuais e em grupo",
-                "Página de agendamentos personalizada",
-                "Aprovação automática ou manual",
-                ...(features.reports
-                  ? [
-                      "Relatórios avançados e exportação CSV",
-                      "4 templates, incluindo Editorial e Noturno",
-                    ]
-                  : ["2 templates: Flow e Essência"]),
-              ].map((feature) => (
-                <li key={feature}>
-                  <Check size={15} />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-          </SectionCard>
-        </div>
+        <SubscriptionOverview
+          subscription={subscription}
+          businesses={usage.map((e) => ({
+            id: e.id,
+            name: e.name,
+            professionals: e._count.professionals,
+          }))}
+          timezone={b?.timezone ?? "America/Sao_Paulo"}
+        />
       </>
     );
+  }
   if (!b) return <BusinessOnboarding title={meta.title} />;
   if (section === "overview") {
     const now = new Date();
@@ -682,6 +653,9 @@ export async function PanelPage({
             </section>
           </div>
         </div>
+        {subscription.plan !== "multi" && (
+          <ProUpgradeCard professionals={professionals.length} />
+        )}
       </>
     );
   }
@@ -705,29 +679,10 @@ export async function PanelPage({
             professionals.length < features.professionals ? (
               createAction
             ) : (
-              <span
-                className="group relative inline-flex"
-                tabIndex={0}
-                aria-describedby="professional-limit-tooltip"
-              >
-                <button
-                  type="button"
-                  disabled
-                  className="button pointer-events-none opacity-50"
-                >
-                  <Plus size={16} aria-hidden="true" />
-                  Adicionar profissional
-                </button>
-                <span
-                  id="professional-limit-tooltip"
-                  role="tooltip"
-                  className="pointer-events-none absolute right-0 top-full z-50 mt-2 w-64 rounded-xl bg-zinc-900 px-3 py-2 text-xs leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100"
-                >
-                  Seu plano permite até {features.professionals} profissionais.
-                  Exclua um profissional ou altere seu plano para cadastrar
-                  outro.
-                </span>
-              </span>
+              <PlanLimitButton
+                label="Adicionar profissional"
+                message={`Seu plano permite até ${features.professionals} profissionais. Exclua um profissional ou altere seu plano para cadastrar outro.`}
+              />
             )
           }
         />

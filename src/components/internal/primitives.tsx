@@ -1,3 +1,4 @@
+import { StatusBadge } from "@/components/ui/statusBadge";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft, ArrowUpRight, Sparkles, Plus } from "lucide-react";
@@ -15,18 +16,20 @@ export function PageHeading({
   back?: { href: string; label: string };
 }) {
   return (
-    <div className="internal-page-heading">
+    <div className="internal-page-heading mb-6! [&_h1]:m-0! [&_h1]:text-3xl! [&_h1]:leading-tight! sm:[&_h1]:text-4xl! [&_.internal-eyebrow]:mb-2!">
       {back && (
         <Link className="internal-back" href={back.href}>
           <ArrowLeft size={14} />
           {back.label}
         </Link>
       )}
-      <div className="heading-main">
+      <div className="heading-main flex-col! items-start! gap-4! sm:flex-row! sm:justify-between!">
         <div>
           {eyebrow && <span className="internal-eyebrow">{eyebrow}</span>}
           <h1>{title}</h1>
-          <p>{description}</p>
+          <p className="mt-2! max-w-2xl text-sm! leading-relaxed! text-zinc-500!">
+            {description}
+          </p>
         </div>
         {action && <div className="heading-action">{action}</div>}
       </div>
@@ -47,7 +50,7 @@ export function EmptyState({
   icon?: ReactNode;
 }) {
   return (
-    <div className="internal-empty">
+    <div className="internal-empty rounded-2xl! border! border-dashed! border-zinc-200! bg-white! px-5! py-10! sm:px-6!">
       <span className="internal-empty-icon">
         {icon ?? <Sparkles size={25} />}
       </span>
@@ -124,10 +127,5 @@ export function StatusPill({
   status: string;
   label: string;
 }) {
-  return (
-    <span className={`status-pill status-${status}`}>
-      <i />
-      {label}
-    </span>
-  );
+  return <StatusBadge status={status} label={label} />;
 }

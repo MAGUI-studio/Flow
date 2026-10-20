@@ -1,4 +1,5 @@
 "use client";
+import { FlowTabs } from "@/components/ui/flow-tabs";
 import type { WeeklySchedule } from "@/lib/weekly-schedule";
 import { notify, useToastError } from "@/components/ui/flow-toaster";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -70,28 +71,7 @@ export function ProfessionalEditForm({
       .withDefault("dados")
       .withOptions({ shallow: true, scroll: false, history: "push" }),
   );
-  const tabListRef = useRef<HTMLDivElement>(null);
   const panelsRef = useRef<HTMLDivElement>(null);
-  const [indicator, setIndicator] = useState<{
-    left: number;
-    width: number;
-  } | null>(null);
-  useLayoutEffect(() => {
-    const list = tabListRef.current;
-    if (!list) return;
-    const update = () => {
-      const active = list.querySelector<HTMLElement>('[aria-selected="true"]');
-      if (active)
-        setIndicator({ left: active.offsetLeft, width: active.offsetWidth });
-    };
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(list);
-    list
-      .querySelectorAll("button")
-      .forEach((button) => observer.observe(button));
-    return () => observer.disconnect();
-  }, [tab]);
   useLayoutEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const panel = panelsRef.current?.querySelector<HTMLElement>(
@@ -165,53 +145,15 @@ export function ProfessionalEditForm({
   }
   return (
     <FormProvider {...form}>
-      <div
-        ref={tabListRef}
-        role="tablist"
-        aria-label="Editar profissional"
-        className="relative mb-5 flex gap-5 overflow-x-auto border-b border-[#e8e5f0] sm:gap-7"
-      >
-        {tabs.map(({ value, label, icon: Icon }, index) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            id={`professional-tab-${value}`}
-            aria-selected={tab === value}
-            aria-controls={`professional-panel-${value}`}
-            tabIndex={tab === value ? 0 : -1}
-            onClick={() => void setTab(value)}
-            onKeyDown={(event) => {
-              let next = index;
-              if (event.key === "ArrowRight") next = (index + 1) % tabs.length;
-              else if (event.key === "ArrowLeft")
-                next = (index + tabs.length - 1) % tabs.length;
-              else if (event.key === "Home") next = 0;
-              else if (event.key === "End") next = tabs.length - 1;
-              else return;
-              event.preventDefault();
-              void setTab(tabs[next].value);
-              document
-                .getElementById(`professional-tab-${tabs[next].value}`)
-                ?.focus();
-            }}
-            className={`relative inline-flex min-h-12 shrink-0 items-center justify-center gap-2 border-b-2 px-1 py-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#635BFF] ${tab === value ? "border-transparent text-[#635BFF]" : "border-transparent text-zinc-500 hover:border-[#ded9ef] hover:text-zinc-800"}`}
-          >
-            <Icon size={16} aria-hidden="true" />
-            {label}
-          </button>
-        ))}
-        {indicator && (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute bottom-0 left-0 h-0.5 rounded-full bg-[#635BFF] transition-[transform,width] duration-300 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none"
-            style={{
-              width: indicator.width,
-              transform: `translateX(${indicator.left}px)`,
-            }}
-          />
-        )}
-      </div>
+      <FlowTabs
+        items={tabs}
+        value={tab}
+        onValueChange={(value) => void setTab(value)}
+        label="Editar profissional"
+        id="professional-tab"
+        panelId={(value) => `professional-panel-${value}`}
+        className="mb-5"
+      />
       <div className="form-page-grid w-full gap-5 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_320px]">
         <div ref={panelsRef} className="min-w-0">
           <div

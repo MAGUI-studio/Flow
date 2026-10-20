@@ -49,11 +49,11 @@ export function TemplatePicker({
       })}
     >
       <fieldset>
-        <legend className="mb-6 text-sm text-zinc-500">
+        <legend className="mb-5 text-sm text-zinc-500">
           Escolha a apresentação de {business.name}. Seus serviços e
           agendamentos são preservados.
         </legend>
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {templates.map((template) => {
             const locked = template.pro && plan !== "multi";
             return (
@@ -101,7 +101,7 @@ export function TemplatePicker({
                   <p className="mt-2 text-xs leading-relaxed text-zinc-500">
                     {template.description}
                   </p>
-                  <span className="mt-4 inline-block rounded-full bg-[#F5F4FF] px-2 py-1 text-[10px] text-[#635BFF]">
+                  <span className="mt-4 inline-block rounded-md bg-zinc-100 px-2 py-1 text-[10px] text-zinc-500">
                     {template.pro ? "Exclusivo do Flow PRO" : "Todos os planos"}
                   </span>
                 </div>
