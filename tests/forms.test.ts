@@ -32,6 +32,20 @@ test("establishment validation requires a category, validates phones and protect
     cancelNoticeHours: 2,
   };
   assert.equal(establishmentSchema.safeParse(base).success, true);
+  for (const value of ["", " ", undefined, NaN]) {
+    const result = establishmentSchema.safeParse({
+      ...base,
+      cancelNoticeHours: value,
+    });
+    assert.equal(result.success, false);
+    if (!result.success)
+      assert.equal(
+        result.error.issues.find(
+          (issue) => issue.path[0] === "cancelNoticeHours",
+        )?.message,
+        "Informe o prazo para cancelar em horas.",
+      );
+  }
   for (const field of [
     "name",
     "slug",

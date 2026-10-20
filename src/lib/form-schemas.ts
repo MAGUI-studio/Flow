@@ -19,11 +19,15 @@ export const phoneSchema = z
     "Informe um telefone com DDD e 10 ou 11 dígitos.",
   );
 const optionalPhone = z.union([z.literal(""), phoneSchema]);
-const number = (min: number, max: number) =>
+const number = (
+  min: number,
+  max: number,
+  message = "Informe um número válido.",
+) =>
   z.preprocess(
     (value) => (typeof value === "string" && !value.trim() ? undefined : value),
     z.coerce
-      .number()
+      .number({ error: message })
       .int("Use um número inteiro.")
       .min(min, `O mínimo é ${min}.`)
       .max(max, `O máximo é ${max}.`),
@@ -71,10 +75,7 @@ export const establishmentSchema = businessContactsSchema.extend({
   addressDetails: optionalAddressSchema,
   contactPhone: optionalPhone,
   approvalMode: z.enum(["automatic", "manual"]),
-  cancelNoticeHours: z.preprocess(
-    (value) => (typeof value === "string" && !value.trim() ? undefined : value),
-    number(0, 720),
-  ),
+  cancelNoticeHours: number(0, 720, "Informe o prazo para cancelar em horas."),
 });
 export const professionalSchema = z.object({
   name,
