@@ -94,7 +94,7 @@ export function DateRail({
           return (
             <button
               type="button"
-              className="date-rail-day"
+              className={`date-rail-day ${bookedDates.includes(iso) && value !== iso ? "border-[#635BFF]/40 bg-[#F5F4FF]" : ""}`}
               key={iso}
               aria-label={d.toLocaleDateString("pt-BR", {
                 dateStyle: "full",
@@ -132,7 +132,7 @@ export function DateRail({
                   .replace(".", "")}
               </small>
               {bookedDates.includes(iso) ? (
-                <em className="date-rail-booked-marker">Agendado</em>
+                <em className={`date-rail-booked-marker ${value === iso ? "text-white" : "text-[#635BFF]"}`}>Agendado</em>
               ) : (
                 <i aria-hidden="true" />
               )}

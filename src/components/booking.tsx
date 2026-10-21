@@ -356,7 +356,7 @@ export function Booking({
                   ][step]
                 }
                 className="min-h-0 flex-1"
-                viewportClassName="overscroll-contain"
+                viewportClassName="overscroll-auto"
               >
                 <div className="pr-3 pb-2">
                   {step === 0 && (

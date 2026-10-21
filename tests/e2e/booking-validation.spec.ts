@@ -1,5 +1,17 @@
 import { test, expect } from "@playwright/test";
 
+test("booking lets the page scroll when its service list fits the viewport", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "Mouse wheel behavior is checked on desktop.");
+  await page.goto("/conecta-idiomas");
+  const viewport = page.locator(".booking-grid form [data-radix-scroll-area-viewport]");
+  await viewport.scrollIntoViewIfNeeded();
+  expect(await viewport.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
+  const before = await page.evaluate(() => window.scrollY);
+  await viewport.hover();
+  await page.mouse.wheel(0, 300);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(before);
+});
+
 test("online booking validates selected steps immediately and keeps actions compact", async ({
   page,
 }) => {
