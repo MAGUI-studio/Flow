@@ -2,6 +2,7 @@ import { markBookingArrival } from "@/lib/booking-arrival";
 import { currentUser, apiError } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { releaseBooking } from "@/lib/reservations";
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -30,6 +31,7 @@ export async function PATCH(
       await tx.$queryRaw`SELECT id FROM professionals WHERE id=${s.professionalId}::uuid FOR UPDATE`;
       await tx.$queryRaw`SELECT id FROM sessions WHERE id=${s.id}::uuid FOR UPDATE`;
       const booking = await tx.booking.findUniqueOrThrow({ where: { id } });
+      if (booking.purpose !== "normal") throw Error("BOOKING_CLOSED");
       const now = new Date();
       const owner = actor === s.establishment.ownerId;
       const sub = await tx.subscription.findUnique({
@@ -71,7 +73,8 @@ export async function PATCH(
       )
         status = "completed";
       else throw new Error("INVALID_INPUT");
-      await tx.booking.update({ where: { id }, data: { status } });
+      if (status === "canceled") await releaseBooking(tx, id);
+      else await tx.booking.update({ where: { id }, data: { status } });
       await tx.auditEvent.create({
         data: {
           actorId: actor,

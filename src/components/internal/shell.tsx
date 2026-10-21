@@ -28,6 +28,7 @@ import {
   BuildingsIcon as Buildings,
   ArrowLeftIcon,
   ArrowUpRightIcon,
+  HourglassIcon,
 } from "@phosphor-icons/react";
 import { FlowSelect } from "@/components/ui/flow-select";
 import { ScrollArea } from "@/components/ui/scrollArea";
@@ -79,7 +80,9 @@ export function InternalShell({
     mode === "consumer"
       ? pathname === "/favoritos"
         ? "Meus favoritos"
-        : "Meus agendamentos"
+        : pathname.startsWith("/lista-de-espera")
+          ? "Minha lista de espera"
+          : "Meus agendamentos"
       : (navigation.find(
           (n) => n.href !== "/painel" && pathname.startsWith(n.href),
         )?.label ??
@@ -229,6 +232,18 @@ export function InternalShell({
                     <CalendarDays size={18} />
                     <span>Meus agendamentos</span>
                   </Link>
+                  <Link
+                    href="/lista-de-espera"
+                    aria-current={
+                      pathname.startsWith("/lista-de-espera")
+                        ? "page"
+                        : undefined
+                    }
+                    onClick={() => setMobile(false)}
+                  >
+                    <HourglassIcon size={18} />
+                    <span>Lista de espera</span>
+                  </Link>
                 </>
               )}
               <Link
@@ -350,8 +365,15 @@ export function InternalShell({
               <Menu size={19} />
             </button>
             {mode === "business" && (
-              <Link href="/agendamentos" className="public-page-link group shrink-0 whitespace-nowrap focus-visible:text-[#635BFF]">
-                <ArrowLeftIcon size={15} aria-hidden="true" className="shrink-0 transition-[transform,color] duration-200 group-hover:-translate-x-1 group-hover:text-[#635BFF]! group-focus-visible:-translate-x-1 group-focus-visible:text-[#635BFF]! motion-reduce:transform-none motion-reduce:transition-none" />
+              <Link
+                href="/agendamentos"
+                className="public-page-link group shrink-0 whitespace-nowrap focus-visible:text-[#635BFF]"
+              >
+                <ArrowLeftIcon
+                  size={15}
+                  aria-hidden="true"
+                  className="shrink-0 transition-[transform,color] duration-200 group-hover:-translate-x-1 group-hover:text-[#635BFF]! group-focus-visible:-translate-x-1 group-focus-visible:text-[#635BFF]! motion-reduce:transform-none motion-reduce:transition-none"
+                />
                 Voltar para meu espaço
               </Link>
             )}
@@ -383,7 +405,11 @@ export function InternalShell({
                 {current.published === false
                   ? "Concluir configuração"
                   : "Ver minha página"}
-                <ArrowUpRightIcon size={15} aria-hidden="true" className="shrink-0 transition-[transform,color] duration-200 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-[#635BFF]! group-focus-visible:translate-x-1 group-focus-visible:-translate-y-1 group-focus-visible:text-[#635BFF]! motion-reduce:transform-none motion-reduce:transition-none" />
+                <ArrowUpRightIcon
+                  size={15}
+                  aria-hidden="true"
+                  className="shrink-0 transition-[transform,color] duration-200 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-[#635BFF]! group-focus-visible:translate-x-1 group-focus-visible:-translate-y-1 group-focus-visible:text-[#635BFF]! motion-reduce:transform-none motion-reduce:transition-none"
+                />
               </Link>
             ) : (
               <Link className="public-page-link" href="/explorar">

@@ -14,6 +14,7 @@ export async function getAvailability(
   date?: string,
   tx: Prisma.TransactionClient = prisma(),
   consumerId?: string,
+  ignoreBookingId?: string,
 ): Promise<{ dates: string[]; slots: Slot[] }> {
   const availability = await professionalAvailability(
     serviceId,
@@ -31,6 +32,7 @@ export async function getAvailability(
     tx.booking.findMany({
       where: {
         consumerId,
+        ...(ignoreBookingId ? { id: { not: ignoreBookingId } } : {}),
         session: { endsAt: { gt: now } },
         OR: [
           { status: "confirmed" },
@@ -87,11 +89,36 @@ async function professionalAvailability(
   )
     throw new Error("ESTABLISHMENT_FROZEN");
   const now = new Date();
+  const scheduleBlocks = await tx.scheduleBlock.findMany({
+    where: {
+      establishmentId: e.id,
+      OR: [
+        { professionalIds: { isEmpty: true } },
+        { professionalIds: { has: professionalId } },
+      ],
+      endsAt: { gt: now },
+    },
+  });
   const horizon = new Date(now.getTime() + 90 * 86400000);
+  let fromDay = dayKey(now, e.timezone);
+  if (
+    date &&
+    /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+    date > dayKey(horizon, e.timezone)
+  ) {
+    const requested = new Date(date + "T12:00:00Z");
+    if (
+      !Number.isFinite(requested.getTime()) ||
+      requested.toISOString().slice(0, 10) !== date
+    )
+      throw Error("INVALID_INPUT");
+    fromDay = date;
+    horizon.setTime(requested.getTime() + 86400000);
+  }
   const windows = await availabilityWindows(
     tx,
     professionalId,
-    dayKey(now, e.timezone),
+    fromDay,
     dayKey(horizon, e.timezone),
   );
   let dates: string[] = [];
@@ -135,6 +162,12 @@ async function professionalAvailability(
     const available = sessions.filter(
       (s, index) =>
         permitted[index] &&
+        !scheduleBlocks.some((b) =>
+          overlaps(
+            { start: b.startsAt, end: b.endsAt },
+            { start: s.occupiedStart, end: s.occupiedEnd },
+          ),
+        ) &&
         s.bookings.length < s.capacity &&
         !professionalVacationOverlaps(
           s.occupiedStart,
@@ -212,6 +245,7 @@ async function professionalAvailability(
     },
   });
   const busy = [
+    ...scheduleBlocks.map((b) => ({ start: b.startsAt, end: b.endsAt })),
     ...(professional.vacationStartsAt && professional.vacationEndsAt
       ? [
           {

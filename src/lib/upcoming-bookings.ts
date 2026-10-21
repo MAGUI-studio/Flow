@@ -16,6 +16,7 @@ export async function upcomingBookings(
   const rows = await tx.booking.findMany({
     where: {
       consumerId,
+      purpose: "normal",
       session: { establishmentId, startsAt: { gt: now } },
       OR: [
         { status: "confirmed" },

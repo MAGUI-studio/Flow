@@ -440,6 +440,14 @@ export function Booking({
                           setSlot(null);
                         }}
                       />
+                      {service && (
+                        <Link
+                          href={`/lista-de-espera/nova?${new URLSearchParams({ servico: service.id, ...(professionalId ? { profissional: professionalId } : {}) })}`}
+                          className="my-4 inline-flex text-xs font-medium text-[#635BFF] hover:underline"
+                        >
+                          Não encontrou um horário? Entrar na lista de espera →
+                        </Link>
+                      )}
                       {!dates.length && !bookedDates.length && !loading ? (
                         <p className="muted-text">
                           {service?.kind === "collective"

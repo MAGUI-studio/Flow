@@ -25,7 +25,7 @@
     "build:homolog": "node scripts/run-homolog.mjs build",
     "start:homolog": "node scripts/run-homolog.mjs start",
     "verify:homolog": "tsx scripts/verify-homolog.ts",
-    "test:journey": "tsx --test tests/journey.integration.ts",
+    "test:journey": "tsx --test tests/journey.integration.ts tests/scheduling.integration.ts",
     "test:e2e": "playwright test"
   },
   "keywords": [],

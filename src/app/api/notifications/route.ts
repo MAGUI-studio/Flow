@@ -3,10 +3,12 @@ import { currentUser, apiError } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { bookingReminders, readNotifications } from "@/lib/notifications";
 import { completeOverdueBookings } from "@/lib/booking-completion";
+import { runScheduling } from "@/lib/scheduling-worker";
 export async function GET() {
   try {
     const accountId = await currentUser();
     const db = prisma();
+    await runScheduling();
     await completeOverdueBookings(db, new Date(), { consumerId: accountId });
     await bookingReminders(db, accountId);
     const [items, unread] = await Promise.all([

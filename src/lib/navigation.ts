@@ -1,4 +1,10 @@
-import { RocketLaunchIcon } from "@phosphor-icons/react";
+import {
+  RocketLaunchIcon,
+  CalendarSlashIcon,
+  ArrowsClockwiseIcon,
+  CalendarPlusIcon,
+  AddressBookIcon,
+} from "@phosphor-icons/react";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -44,6 +50,30 @@ export const businessNavigation = [
     href: "/painel/agenda",
     label: "Agenda",
     icon: CalendarDays,
+    group: "Atendimentos",
+  },
+  {
+    href: "/painel/bloqueios",
+    label: "Bloqueios",
+    icon: CalendarSlashIcon,
+    group: "Atendimentos",
+  },
+  {
+    href: "/painel/reagendamentos",
+    label: "Reagendamentos",
+    icon: ArrowsClockwiseIcon,
+    group: "Atendimentos",
+  },
+  {
+    href: "/painel/recorrencias",
+    label: "Recorrências",
+    icon: CalendarPlusIcon,
+    group: "Atendimentos",
+  },
+  {
+    href: "/painel/clientes",
+    label: "Clientes",
+    icon: AddressBookIcon,
     group: "Atendimentos",
   },
   {

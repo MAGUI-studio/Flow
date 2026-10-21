@@ -466,6 +466,7 @@ export async function PanelPage({
       >`SELECT (${localDay}::date::timestamp AT TIME ZONE ${b.timezone}) AS start,((${localDay}::date+1)::timestamp AT TIME ZONE ${b.timezone}) AS end`
     )[0];
     const activeWhere = {
+      purpose: "normal",
       session: { establishmentId: b.id },
       OR: [
         { status: "confirmed" },
@@ -486,6 +487,7 @@ export async function PanelPage({
         where: {
           session: { establishmentId: b.id },
           status: "pending",
+          purpose: "normal",
           expiresAt: { gt: now },
         },
       }),
@@ -931,6 +933,7 @@ export async function PanelPage({
   >`SELECT (${dayKey(now, b.timezone)}::date::timestamp AT TIME ZONE ${b.timezone}) AS start`;
   const rows = await prisma().booking.findMany({
     where: {
+      purpose: "normal",
       status: { notIn: ["canceled", "declined"] },
       session: {
         establishmentId: b.id,
@@ -962,6 +965,20 @@ export async function PanelPage({
     .filter((a) =>
       matches(a.session.service.name + " " + a.session.professional.name),
     );
+  const blocks = await prisma().scheduleBlock.findMany({
+    where: {
+      establishmentId: b.id,
+      ...(query.profissional !== "all"
+        ? {
+            OR: [
+              { professionalIds: { isEmpty: true } },
+              { professionalIds: { has: query.profissional } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: { startsAt: "asc" },
+  });
   return (
     <>
       <PageHeading
@@ -984,17 +1001,39 @@ export async function PanelPage({
         professionals={professionals}
       />
       <AgendaViews
+        blocks={blocks.map((block) => ({
+          id: block.id,
+          startsAt: block.startsAt.toISOString(),
+          endsAt: block.endsAt.toISOString(),
+          reason: block.reason,
+          professionals: block.professionalIds.length
+            ? professionals
+                .filter((p) => block.professionalIds.includes(p.id))
+                .map((p) => p.name)
+                .join(", ")
+            : "Toda a equipe",
+        }))}
         timezone={b.timezone}
         rows={bookings.map((a) => ({
           ...a,
           actions: (
-            <BookingActions
-              id={a.id}
-              status={a.effectiveStatus}
-              canComplete={a.session.startsAt <= now}
-              arrivedAt={a.arrivedAt}
-              startsAt={a.session.startsAt}
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <BookingActions
+                id={a.id}
+                status={a.effectiveStatus}
+                canComplete={a.session.startsAt <= now}
+                arrivedAt={a.arrivedAt}
+                startsAt={a.session.startsAt}
+              />
+              {a.status === "confirmed" && a.session.startsAt > now && (
+                <Link
+                  className="text-xs font-medium text-[#635BFF] hover:underline"
+                  href={panelHref(`/painel/agenda/${a.id}/reagendar`, b.id)}
+                >
+                  Alterar horário
+                </Link>
+              )}
+            </div>
           ),
         }))}
       />

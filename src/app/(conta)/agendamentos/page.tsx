@@ -47,14 +47,21 @@ export default async function Page({
   const now = new Date();
   await completeOverdueBookings(prisma(), now, { consumerId: userId });
   const records = await prisma().booking.findMany({
-    where: { consumerId: userId },
+    where: { consumerId: userId, purpose: "normal" },
     include: {
       review: true,
       session: {
         include: { establishment: true, service: true, professional: true },
       },
     },
-    orderBy: { session: { startsAt: "asc" } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+  });
+  const reschedules = await prisma().rescheduleRequest.findMany({
+    where: {
+      bookingId: { in: records.map((b) => b.id) },
+      status: "pending",
+      expiresAt: { gt: now },
+    },
   });
   const all = records.map((b) => ({
     ...b,
@@ -84,7 +91,10 @@ export default async function Page({
         .toLocaleLowerCase("pt-BR")
         .includes(query.busca.toLocaleLowerCase("pt-BR")),
   );
-  if (query.periodo === "past") rows.reverse();
+  rows.sort((a, b) => {
+    const last = (status: string) => ["canceled", "expired", "declined"].includes(status);
+    return Number(last(a.effectiveStatus)) - Number(last(b.effectiveStatus)) || b.createdAt.getTime() - a.createdAt.getTime() || b.id.localeCompare(a.id);
+  });
   const awaitingReview = all.filter(canReview).length;
   return (
     <>
@@ -261,6 +271,13 @@ export default async function Page({
                     reserva não é confirmada.
                   </p>
                 )}
+                {reschedules.some((r) => r.bookingId === b.id) && (
+                  <p className="border-b border-zinc-100 bg-[#F5F4FF] px-4 py-3 text-xs leading-6 text-zinc-600">
+                    Você solicitou uma mudança de horário. Este atendimento
+                    continua confirmado até o estabelecimento aprovar o
+                    reagendamento.
+                  </p>
+                )}
                 <div className="consumer-booking-body grid grid-cols-1 items-start gap-3 p-4 sm:grid-cols-[160px_minmax(0,1fr)] xl:grid-cols-[180px_minmax(0,1fr)]">
                   <div className="w-full min-w-0">
                     {b.session.service.modality !== "online" &&
@@ -268,9 +285,19 @@ export default async function Page({
                       <LocationMap point={location.data} compact />
                     ) : b.session.service.modality === "online" ? (
                       <div className="relative isolate flex aspect-square w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-xl bg-[#F5F4FF] p-4 text-center">
-                        <VideoCameraIcon aria-hidden="true" weight="light" className="pointer-events-none absolute -right-6 -bottom-5 -z-10 size-40 -rotate-12 text-[#635BFF]/10" />
-                        <VideoCameraIcon aria-hidden="true" size={28} className="text-[#635BFF]" />
-                        <span className="text-xs font-medium text-zinc-600">Atendimento online</span>
+                        <VideoCameraIcon
+                          aria-hidden="true"
+                          weight="light"
+                          className="pointer-events-none absolute -right-6 -bottom-5 -z-10 size-40 -rotate-12 text-[#635BFF]/10"
+                        />
+                        <VideoCameraIcon
+                          aria-hidden="true"
+                          size={28}
+                          className="text-[#635BFF]"
+                        />
+                        <span className="text-xs font-medium text-zinc-600">
+                          Atendimento online
+                        </span>
                       </div>
                     ) : (
                       <div className="flex h-24 items-center justify-center gap-2 rounded-xl bg-[#F5F4FF] px-4 text-xs text-zinc-500">
@@ -353,6 +380,16 @@ export default async function Page({
                     consumer
                     canCancel={canCancel}
                   />
+                  {b.status === "confirmed" &&
+                    canCancel &&
+                    !reschedules.some((r) => r.bookingId === b.id) && (
+                      <Link
+                        href={`/agendamentos/${b.id}/reagendar`}
+                        className="button secondary w-full justify-center"
+                      >
+                        Reagendar atendimento
+                      </Link>
+                    )}
                 </div>
                 {(b.review || canReview(b)) && (
                   <BookingReview

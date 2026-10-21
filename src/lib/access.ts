@@ -27,6 +27,17 @@ export async function requireBusinessOwner(establishmentId: string) {
 export function apiError(error: unknown, operation?: string) {
   const message = error instanceof Error ? error.message : "";
   const errors: Record<string, [number, string]> = {
+    SCHEDULE_BLOCKED: [409, "Esse horário está bloqueado na agenda."],
+    RESCHEDULE_PENDING: [
+      409,
+      "Já existe uma solicitação de reagendamento aguardando resposta.",
+    ],
+    SERIES_CONFLICT: [
+      409,
+      "Há horários indisponíveis na sequência. Atualize a prévia e ajuste ou exclua os conflitos.",
+    ],
+    WAITLIST_DUPLICATE: [409, "Você já está na lista de espera desse serviço."],
+    CONSUMER_CONFLICT: [409, "Você já possui um atendimento nesse horário."],
     SETUP_INCOMPLETE: [
       409,
       "Conclua a equipe, os serviços, o endereço e os horários antes de publicar.",
@@ -105,7 +116,10 @@ export function apiError(error: unknown, operation?: string) {
       409,
       "O estabelecimento não está recebendo reservas.",
     ],
-    WHATSAPP_REQUIRED: [400, "Informe o WhatsApp completo com DDD, como (12) 98184-7553."],
+    WHATSAPP_REQUIRED: [
+      400,
+      "Informe o WhatsApp completo com DDD, como (12) 98184-7553.",
+    ],
     OUTSIDE_AVAILABILITY: [
       409,
       "Este horário está fora da disponibilidade do profissional.",

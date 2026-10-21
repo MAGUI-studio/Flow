@@ -1,6 +1,7 @@
 import { bookingReminders } from "@/lib/notifications";
 import { completeOverdueBookings } from "./booking-completion";
 import { prisma } from "./prisma";
+import { runScheduling } from "./scheduling-worker";
 
 const state = globalThis as unknown as {
   flowCompletionTimer?: ReturnType<typeof setInterval>;
@@ -14,6 +15,7 @@ export function startBookingCompletionWorker() {
     state.flowCompletionRunning = true;
     try {
       await bookingReminders(prisma());
+      await runScheduling();
       // Bounded batches also catch up after downtime without holding a long transaction.
       for (let batch = 0; batch < 10; batch++) {
         if ((await completeOverdueBookings(prisma())) < 500) break;

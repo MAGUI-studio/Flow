@@ -89,12 +89,20 @@ export function AgendaViews({
   preview = false,
   previewView,
   previewDate,
+  blocks = [],
 }: {
   rows: BookingRow[];
   timezone: string;
   preview?: boolean;
   previewView?: "table" | "day" | "month" | "timeline";
   previewDate?: string;
+  blocks?: {
+    id: string;
+    startsAt: string;
+    endsAt: string;
+    reason: string;
+    professionals: string;
+  }[];
 }) {
   const router = useRouter();
   useEffect(() => {
@@ -206,6 +214,40 @@ export function AgendaViews({
         aria-labelledby={`agenda-tab-${view}`}
         className="space-y-5"
       >
+        {blocks
+          .filter((b) =>
+            view === "table" || view === "timeline"
+              ? new Date(b.endsAt) > new Date()
+              : view === "month"
+                ? dayKey(b.startsAt, timezone).slice(0, 7) <=
+                    date.slice(0, 7) &&
+                  dayKey(b.endsAt, timezone).slice(0, 7) >= date.slice(0, 7)
+                : dayKey(b.startsAt, timezone) <= date &&
+                  dayKey(
+                    new Date(new Date(b.endsAt).getTime() - 1),
+                    timezone,
+                  ) >= date,
+          )
+          .map((b) => (
+            <div
+              key={b.id}
+              className="rounded-xl border border-[#635BFF]/20 bg-[#F5F4FF] px-4 py-3 text-xs leading-6 text-zinc-600"
+            >
+              <strong className="text-[#635BFF]">
+                Período bloqueado · {b.reason}
+              </strong>
+              <p className="m-0">
+                {new Date(b.startsAt).toLocaleString("pt-BR", {
+                  timeZone: timezone,
+                })}{" "}
+                até{" "}
+                {new Date(b.endsAt).toLocaleString("pt-BR", {
+                  timeZone: timezone,
+                })}{" "}
+                · {b.professionals}
+              </p>
+            </div>
+          ))}
         {(view === "day" || view === "month") && (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="m-0 text-lg font-semibold capitalize text-zinc-800">

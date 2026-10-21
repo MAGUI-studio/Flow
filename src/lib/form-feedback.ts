@@ -51,6 +51,20 @@ const labels: Record<string, string> = {
   zoom: "Enquadramento",
   status: "Status",
   query: "Busca",
+  consumerId: "Cliente",
+  establishmentId: "Estabelecimento",
+  fromDate: "Data inicial",
+  toDate: "Data final",
+  untilDate: "Encerrar até",
+  fromTime: "Horário inicial",
+  toTime: "Horário final",
+  time: "Horário",
+  weekdays: "Dias da semana",
+  reason: "Motivo",
+  content: "Observação",
+  count: "Quantidade de atendimentos",
+  intervalWeeks: "Frequência",
+  cancelConflicts: "Cancelamento dos atendimentos afetados",
 };
 export function validationMessages(schema: ValidationSchema, values: unknown) {
   const result = schema.safeParse(values);

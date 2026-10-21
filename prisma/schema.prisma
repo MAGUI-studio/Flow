@@ -168,6 +168,8 @@ model Session {
 }
 
 model Booking {
+  purpose String @default("normal")
+  seriesId String? @map("series_id") @db.Uuid
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sessionId String @map("session_id") @db.Uuid
   consumerId String @map("consumer_id")
@@ -189,6 +191,74 @@ model Booking {
   review Review?
   // Partial unique index and expiry index live in SQL migration.
   @@map("bookings")
+}
+
+model ScheduleBlock {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  establishmentId String @map("establishment_id") @db.Uuid
+  professionalIds String[] @map("professional_ids") @db.Uuid
+  startsAt DateTime @map("starts_at") @db.Timestamptz
+  endsAt DateTime @map("ends_at") @db.Timestamptz
+  reason String
+  @@index([establishmentId, startsAt])
+  @@map("schedule_blocks")
+}
+
+model CustomerNote {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  establishmentId String @map("establishment_id") @db.Uuid
+  consumerId String @map("consumer_id")
+  content String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  @@index([establishmentId, consumerId])
+  @@map("customer_notes")
+}
+
+model BookingSeries {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  establishmentId String @map("establishment_id") @db.Uuid
+  consumerId String @map("consumer_id")
+  serviceId String @map("service_id") @db.Uuid
+  professionalId String @map("professional_id") @db.Uuid
+  intervalWeeks Int @map("interval_weeks")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  @@index([establishmentId, createdAt])
+  @@map("booking_series")
+}
+
+model RescheduleRequest {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId String @map("booking_id") @db.Uuid
+  targetBookingId String @unique @map("target_booking_id") @db.Uuid
+  status String @default("pending")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  @@index([bookingId, status])
+  @@map("reschedule_requests")
+}
+
+model WaitlistEntry {
+  checkedAt DateTime? @map("checked_at") @db.Timestamptz
+  searchFromDate String? @map("search_from_date")
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consumerId String @map("consumer_id")
+  serviceId String @map("service_id") @db.Uuid
+  professionalId String? @map("professional_id") @db.Uuid
+  fromDate String @map("from_date")
+  toDate String @map("to_date")
+  fromTime String @map("from_time")
+  toTime String @map("to_time")
+  weekdays Int[]
+  phone String
+  status String @default("waiting")
+  offeredBookingId String? @unique @map("offered_booking_id") @db.Uuid
+  offerExpiresAt DateTime? @map("offer_expires_at") @db.Timestamptz
+  attemptedSlots String[] @default([]) @map("attempted_slots")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  @@index([serviceId, status, createdAt])
+  @@index([consumerId, status])
+  @@map("waitlist_entries")
 }
 
 model Review {
