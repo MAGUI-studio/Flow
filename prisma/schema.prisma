@@ -10,6 +10,7 @@ datasource db {
 model Account {
   id String @id
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  notifications Notification[]
   subscription Subscription?
   establishments Establishment[]
   favorites Favorite[]
@@ -35,6 +36,7 @@ model Subscription {
 model Establishment {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ownerId String @map("owner_id")
+  published Boolean @default(true)
   slug String @unique
   name String
   timezone String @default("America/Sao_Paulo")
@@ -169,6 +171,7 @@ model Booking {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sessionId String @map("session_id") @db.Uuid
   consumerId String @map("consumer_id")
+  completedAutomatically Boolean @default(false) @map("completed_automatically")
   status String
   priceCents Int @map("price_cents")
   durationMinutes Int @map("duration_minutes")
@@ -235,4 +238,18 @@ model BusinessBanner {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   @@index([ownerId,createdAt])
   @@map("business_banners")
+}
+
+model Notification {
+ id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ accountId String @map("account_id")
+ eventKey String @unique @map("event_key")
+ title String
+ body String
+ href String
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+ readAt DateTime? @map("read_at") @db.Timestamptz
+ account Account @relation(fields:[accountId],references:[id],onDelete:Cascade)
+ @@index([accountId,createdAt])
+ @@map("notifications")
 }

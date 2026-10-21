@@ -36,6 +36,7 @@ import { completeOverdueBookings } from "@/lib/booking-completion";
 import { BusinessMonogram } from "@/components/ui/business-monogram";
 import { LocationMap } from "@/components/ui/location-map";
 import { locationSchema } from "@/lib/address";
+import { VideoCameraIcon } from "@phosphor-icons/react/dist/ssr";
 export default async function Page({
   searchParams,
 }: {
@@ -242,24 +243,39 @@ export default async function Page({
                     label={statusLabel[b.effectiveStatus]}
                   />
                 </div>
+                {b.effectiveStatus === "completed" && (
+                  <p className="border-b border-zinc-100 px-4 py-3 text-xs leading-6 text-zinc-500">
+                    {b.completedAutomatically
+                      ? "Concluído automaticamente 24 horas após o início do atendimento."
+                      : "Concluído pelo estabelecimento."}{" "}
+                    Sua avaliação já está disponível.
+                  </p>
+                )}
+                {b.effectiveStatus === "pending" && b.expiresAt && (
+                  <p className="border-b border-zinc-100 bg-[#F5F4FF] px-4 py-3 text-xs leading-6 text-zinc-600">
+                    Aguarde a aprovação até{" "}
+                    {b.expiresAt.toLocaleString("pt-BR", {
+                      timeZone: e.timezone,
+                    })}
+                    . Sem resposta até esse horário, a solicitação expira e a
+                    reserva não é confirmada.
+                  </p>
+                )}
                 <div className="consumer-booking-body grid grid-cols-1 items-start gap-3 p-4 sm:grid-cols-[160px_minmax(0,1fr)] xl:grid-cols-[180px_minmax(0,1fr)]">
                   <div className="w-full min-w-0">
                     {b.session.service.modality !== "online" &&
                     location.success ? (
                       <LocationMap point={location.data} compact />
+                    ) : b.session.service.modality === "online" ? (
+                      <div className="relative isolate flex aspect-square w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-xl bg-[#F5F4FF] p-4 text-center">
+                        <VideoCameraIcon aria-hidden="true" weight="light" className="pointer-events-none absolute -right-6 -bottom-5 -z-10 size-40 -rotate-12 text-[#635BFF]/10" />
+                        <VideoCameraIcon aria-hidden="true" size={28} className="text-[#635BFF]" />
+                        <span className="text-xs font-medium text-zinc-600">Atendimento online</span>
+                      </div>
                     ) : (
                       <div className="flex h-24 items-center justify-center gap-2 rounded-xl bg-[#F5F4FF] px-4 text-xs text-zinc-500">
-                        {b.session.service.modality === "online" ? (
-                          <>
-                            <Globe size={18} />
-                            Atendimento online
-                          </>
-                        ) : (
-                          <>
-                            <MapPin size={18} />
-                            {e.city || "Atendimento presencial"}
-                          </>
-                        )}
+                        <MapPin size={18} />
+                        {e.city || "Atendimento presencial"}
                       </div>
                     )}
                   </div>

@@ -372,7 +372,7 @@ export async function PanelPage({
                     )}
                     <span className="live-pill z-10">
                       <i />
-                      Página ativa
+                      {e.published ? "Página publicada" : "Em preparação"}
                     </span>
                   </div>
                   <div className="establishment-card-body">
@@ -403,9 +403,17 @@ export async function PanelPage({
                         <AnimatedArrow direction="right" size={15} />
                       </Link>
                       <Link
-                        href={`/${e.slug}`}
-                        target="_blank"
-                        aria-label={`Ver página de ${e.name}`}
+                        href={
+                          e.published
+                            ? `/${e.slug}`
+                            : panelHref("/painel/configuracao", e.id)
+                        }
+                        target={e.published ? "_blank" : undefined}
+                        aria-label={
+                          e.published
+                            ? `Ver página de ${e.name}`
+                            : `Configurar ${e.name}`
+                        }
                       >
                         <AnimatedArrow size={18} />
                       </Link>
@@ -514,6 +522,22 @@ export async function PanelPage({
             </Link>
           }
         />
+        {!b.published && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#e8e5f6] bg-[#F5F4FF] p-5">
+            <div>
+              <h2 className="text-sm font-semibold">
+                Sua página está em preparação.
+              </h2>
+              <p className="mt-2 text-xs leading-6 text-zinc-500">
+                Configure sua equipe, serviços e horários antes de receber
+                reservas.
+              </p>
+            </div>
+            <Link href={link("/painel/configuracao")} className="button small">
+              Continuar configuração
+            </Link>
+          </div>
+        )}
         <div className="overview-metrics">
           {[
             {
@@ -633,6 +657,11 @@ export async function PanelPage({
                   title: "Configure os horários da equipe",
                   href: "/painel/profissionais",
                 },
+                {
+                  done: b.published,
+                  title: "Publique seu estabelecimento",
+                  href: "/painel/configuracao",
+                },
               ].map((step) => (
                 <Link
                   className="setup-step"
@@ -654,12 +683,23 @@ export async function PanelPage({
                 <br />
                 começa por aqui.
               </h2>
-              <p>Sua página está pronta para receber visitas.</p>
+              <p>
+                {b.published
+                  ? "Sua página está pronta para receber visitas."
+                  : "Conclua a configuração e publique para receber visitas."}
+              </p>
               <div>
                 {appAddress}/{b.slug}
               </div>
-              <Link href={businessPageUrl(b.slug)} target="_blank">
-                Abrir minha página
+              <Link
+                href={
+                  b.published
+                    ? businessPageUrl(b.slug)
+                    : link("/painel/configuracao")
+                }
+                target={b.published ? "_blank" : undefined}
+              >
+                {b.published ? "Abrir minha página" : "Concluir configuração"}
                 <AnimatedArrow size={17} />
               </Link>
             </section>

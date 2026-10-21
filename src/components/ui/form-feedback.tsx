@@ -14,6 +14,7 @@ import { useFormContext, useWatch, useFormState } from "react-hook-form";
 import * as Popover from "@radix-ui/react-popover";
 import { QuestionIcon, PencilSimpleIcon } from "@phosphor-icons/react";
 import { Tooltip } from "./tooltip";
+import { useUnsavedChanges } from "../unsaved-changes";
 
 import {
   validationMessages,
@@ -26,16 +27,20 @@ export function FormSubmitGuard({
   issues = [],
   children,
   className = "",
+  compact = false,
 }: {
   schema: ValidationSchema;
   values: unknown;
   issues?: string[];
   children: ReactElement<ButtonHTMLAttributes<HTMLButtonElement>>;
   className?: string;
+  compact?: boolean;
 }) {
   const pending = [...validationMessages(schema, values), ...issues];
   const [helpOpen, setHelpOpen] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   useEffect(() => () => clearTimeout(closeTimer.current), []);
   function openHelp() {
     clearTimeout(closeTimer.current);
@@ -46,7 +51,9 @@ export function FormSubmitGuard({
     closeTimer.current = setTimeout(() => setHelpOpen(false), 150);
   }
   return (
-    <div className={`inline-flex min-w-0 items-center gap-2 ${className}`}>
+    <div
+      className={`relative min-w-0 items-center gap-2 ${compact ? pending.length > 0 ? "grid grid-cols-[minmax(0,1fr)_2rem]" : "grid grid-cols-1" : "inline-flex flex-wrap"} ${className}`}
+    >
       {cloneElement(children, {
         disabled: children.props.disabled || pending.length > 0,
       })}
@@ -88,17 +95,36 @@ export function FormSubmitGuard({
           </Popover.Portal>
         </Popover.Root>
       )}
+      {pending.length > 0 && (
+        <p
+          role="status"
+          className={compact ? "sr-only" : "basis-full max-w-sm text-left text-[11px] leading-5 text-zinc-500"}
+        >
+          {pending[0]}
+          {pending.length > 1 ? ` (+${pending.length - 1} pendências)` : ""}
+        </p>
+      )}
     </div>
   );
 }
 const EditingContext = createContext(false);
 export function FormEditState({
   editing,
+  extraDirty = false,
   children,
 }: {
   editing: boolean;
+  extraDirty?: boolean;
   children: ReactNode;
 }) {
+  const form = useFormContext();
+  const values = useWatch({ control: form.control });
+  const { defaultValues, isSubmitting } = useFormState({
+    control: form.control,
+  });
+  useUnsavedChanges(
+    !isSubmitting && (extraDirty || !fieldValuesEqual(values, defaultValues)),
+  );
   return (
     <EditingContext.Provider value={editing}>
       {children}

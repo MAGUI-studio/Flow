@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "./prisma";
+import { reportOperationError } from "./error-reporting";
 export async function currentUser() {
   const { userId } = await auth();
   if (!userId) throw new Error("UNAUTHENTICATED");
@@ -26,6 +27,10 @@ export async function requireBusinessOwner(establishmentId: string) {
 export function apiError(error: unknown, operation?: string) {
   const message = error instanceof Error ? error.message : "";
   const errors: Record<string, [number, string]> = {
+    SETUP_INCOMPLETE: [
+      409,
+      "Conclua a equipe, os serviços, o endereço e os horários antes de publicar.",
+    ],
     OWN_ESTABLISHMENT_BOOKING: [
       403,
       "Você não pode agendar serviços no seu próprio estabelecimento.",
@@ -100,7 +105,7 @@ export function apiError(error: unknown, operation?: string) {
       409,
       "O estabelecimento não está recebendo reservas.",
     ],
-    WHATSAPP_REQUIRED: [400, "Informe um WhatsApp válido com código do país."],
+    WHATSAPP_REQUIRED: [400, "Informe o WhatsApp completo com DDD, como (12) 98184-7553."],
     OUTSIDE_AVAILABILITY: [
       409,
       "Este horário está fora da disponibilidade do profissional.",
@@ -134,19 +139,13 @@ export function apiError(error: unknown, operation?: string) {
     500,
     "Não foi possível concluir a operação.",
   ];
-  if (status === 500) {
-    const details = error as {
-      name?: string;
-      code?: string;
-      meta?: { modelName?: string };
-    } | null;
-    // Prisma messages can contain submitted fields; keep logs free of form data.
-    console.error("Unhandled API operation error", {
-      operation,
-      name: details?.name,
-      code: details?.code,
-      model: details?.meta?.modelName,
-    });
-  }
-  return Response.json({ error: text }, { status });
+  const reference =
+    status === 500 ? reportOperationError(error, operation) : undefined;
+  return Response.json(
+    {
+      error: reference ? `${text} Referência: ${reference}` : text,
+      ...(reference ? { reference } : {}),
+    },
+    { status },
+  );
 }

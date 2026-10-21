@@ -1,4 +1,5 @@
 "use client";
+import { NotificationsDrawer } from "../notifications-drawer";
 import { AccountMenu } from "../account-menu";
 import { NavigationIndicator } from "@/components/ui/navigation-indicator";
 import { AnimatedArrow } from "@/components/ui/animated-arrow";
@@ -25,12 +26,20 @@ import {
   PlusIcon as Plus,
   WalletIcon as Wallet,
   BuildingsIcon as Buildings,
+  ArrowLeftIcon,
+  ArrowUpRightIcon,
 } from "@phosphor-icons/react";
 import { FlowSelect } from "@/components/ui/flow-select";
 import { ScrollArea } from "@/components/ui/scrollArea";
 import { Container } from "@/components/container";
 import { panelHref, panelSearch } from "@/lib/url-state";
-type Business = { id: string; name: string; slug: string; color: string };
+type Business = {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+  published?: boolean;
+};
 import { businessNavigation as navigation } from "@/lib/navigation";
 export function InternalShell({
   children,
@@ -322,9 +331,7 @@ export function InternalShell({
                 <AccountMenu businessAccess={!!plan} />
                 <div>
                   <strong>{user?.firstName ?? "Sua conta"}</strong>
-                  <small>
-                    {user?.primaryEmailAddress?.emailAddress}
-                  </small>
+                  <small>{user?.primaryEmailAddress?.emailAddress}</small>
                 </div>
               </div>
             </div>
@@ -332,7 +339,7 @@ export function InternalShell({
         </ScrollArea>
       </aside>
       <div className="internal-stage" inert={mobile ? true : undefined}>
-        <header className="internal-topbar">
+        <header className="internal-topbar h-auto! min-h-[61px] flex-wrap py-3 sm:min-h-[73px]">
           <div>
             <button
               className="internal-icon mobile-only"
@@ -342,25 +349,41 @@ export function InternalShell({
             >
               <Menu size={19} />
             </button>
+            {mode === "business" && (
+              <Link href="/agendamentos" className="public-page-link group shrink-0 whitespace-nowrap focus-visible:text-[#635BFF]">
+                <ArrowLeftIcon size={15} aria-hidden="true" className="shrink-0 transition-[transform,color] duration-200 group-hover:-translate-x-1 group-hover:text-[#635BFF]! group-focus-visible:-translate-x-1 group-focus-visible:text-[#635BFF]! motion-reduce:transform-none motion-reduce:transition-none" />
+                Voltar para meu espaço
+              </Link>
+            )}
             <span className="topbar-root">
-              {mode === "business" ? "Meu negócio" : "Minha conta"}
+              {mode === "business" ? "Meu negócio" : "Minha área"}
             </span>
             <ChevronRight size={13} />
-            <strong>{activeLabel}</strong>
+            <strong className="max-w-40 truncate sm:max-w-none">
+              {activeLabel}
+            </strong>
           </div>
-          <div>
+          <div className="min-w-0 flex-wrap justify-end">
+            <NotificationsDrawer />
+
             <span className="workspace-status">
               <i />
               Tudo no seu tempo
             </span>
             {mode === "business" && current ? (
               <Link
-                className="public-page-link"
-                href={`/${current.slug}`}
-                target="_blank"
+                className="public-page-link group focus-visible:text-[#635BFF]"
+                href={
+                  current.published === false
+                    ? panelHref("/painel/configuracao", current.id)
+                    : `/${current.slug}`
+                }
+                target={current.published === false ? undefined : "_blank"}
               >
-                Ver minha página
-                <AnimatedArrow size={15} />
+                {current.published === false
+                  ? "Concluir configuração"
+                  : "Ver minha página"}
+                <ArrowUpRightIcon size={15} aria-hidden="true" className="shrink-0 transition-[transform,color] duration-200 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-[#635BFF]! group-focus-visible:translate-x-1 group-focus-visible:-translate-y-1 group-focus-visible:text-[#635BFF]! motion-reduce:transform-none motion-reduce:transition-none" />
               </Link>
             ) : (
               <Link className="public-page-link" href="/explorar">
@@ -372,16 +395,10 @@ export function InternalShell({
         </header>
         <Container
           as="main"
-          className="internal-content max-w-none px-4 sm:px-6 lg:px-9"
+          className="internal-content max-w-none px-4 pb-6 sm:px-6 lg:px-9"
         >
           {children}
         </Container>
-        <footer className="internal-footer">
-          <span>Flow · Seu tempo, organizado.</span>
-          <span>
-            Feito por <a href="https://magui.studio" target="_blank" rel="noopener noreferrer" className="font-semibold transition-colors hover:text-[#635BFF] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#635BFF]">MAGUI.studio</a>
-          </span>
-        </footer>
       </div>
     </div>
   );

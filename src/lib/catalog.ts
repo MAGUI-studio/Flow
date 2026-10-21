@@ -49,6 +49,7 @@ export async function catalog() {
   const rows = await prisma().establishment.findMany({
     where: {
       active: true,
+      published: true,
       owner: {
         subscription: {
           is: { status: "active", paidUntil: { gt: new Date() } },
@@ -123,6 +124,7 @@ export async function profile(slug: string): Promise<BusinessProfile | null> {
   if (
     !e ||
     !e.active ||
+    !e.published ||
     e.owner.subscription?.status !== "active" ||
     e.owner.subscription.paidUntil <= new Date()
   )

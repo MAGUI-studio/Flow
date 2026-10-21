@@ -3,7 +3,7 @@ export function phoneMask(value: string) {
   if (!digits) return "";
   if (digits.length <= 2) return `(${digits}`;
   const local = digits.slice(2),
-    split = local.length > 8 ? 5 : 4;
+    split = local.startsWith("9") || local.length > 8 ? 5 : 4;
   return `(${digits.slice(0, 2)}) ${local.slice(0, split)}${local.length > split ? "-" + local.slice(split) : ""}`;
 }
 export function currencyMask(value: string) {

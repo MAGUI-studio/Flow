@@ -9,6 +9,7 @@ import "./internal.css";
 import "leaflet/dist/leaflet.css";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { FlowToaster } from "@/components/ui/flow-toaster";
+import { UnsavedChangesProvider } from "@/components/unsaved-changes";
 export const metadata: Metadata = {
   ...pageMetadata("Seu tempo, em boa companhia", siteDescription, "/"),
   metadataBase: new URL(appUrl),
@@ -57,12 +58,14 @@ export default function RootLayout({
           }}
         >
           <NuqsAdapter>
-            <FlowToaster />
-            <FavoritesProvider>
-              <div className="relative mx-auto w-full max-w-440 [&_h2]:font-bold [&_h3]:font-semibold">
-                {children}
-              </div>
-            </FavoritesProvider>
+            <UnsavedChangesProvider>
+              <FlowToaster />
+              <FavoritesProvider>
+                <div className="relative mx-auto w-full max-w-440 [&_h2]:font-bold [&_h3]:font-semibold">
+                  {children}
+                </div>
+              </FavoritesProvider>
+            </UnsavedChangesProvider>
           </NuqsAdapter>
         </ClerkProvider>
       </body>

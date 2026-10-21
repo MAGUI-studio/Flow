@@ -1,3 +1,4 @@
+import { bookingReminders } from "@/lib/notifications";
 import { timingSafeEqual } from "node:crypto";
 import { completeOverdueBookings } from "@/lib/booking-completion";
 import { prisma } from "@/lib/prisma";
@@ -17,5 +18,6 @@ export async function GET(request: Request) {
     completed += count;
     if (count < 500) break;
   }
+  await bookingReminders(prisma());
   return Response.json({ completed });
 }

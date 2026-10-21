@@ -11,6 +11,7 @@ test("phone masks handle partial input, landlines, mobile phones, paste and leng
   assert.equal(phoneMask(""), "");
   assert.equal(phoneMask("1"), "(1");
   assert.equal(phoneMask("11987654321"), "(11) 98765-4321");
+  assert.equal(phoneMask("1298184755"), "(12) 98184-755");
   assert.equal(phoneMask("(11) 3456-7890"), "(11) 3456-7890");
   assert.equal(phoneMask("11987654321999"), "(11) 98765-4321");
 });
@@ -137,6 +138,8 @@ test("services require a professional and a price unless free; online bookings r
   };
   assert.equal(bookingSchema(false).safeParse(reservation).success, true);
   assert.equal(bookingSchema(true).safeParse(reservation).success, false);
+  assert.equal(bookingSchema(true).safeParse({ ...reservation, phone: "(12) 98184-755" }).success, false);
+  assert.equal(bookingSchema(true).safeParse({ ...reservation, phone: "(12) 98184-7553" }).success, true);
   assert.equal(
     bookingSchema(true).safeParse({ ...reservation, phone: "(11) 98765-4321" })
       .success,

@@ -13,6 +13,7 @@ export async function setFavorite(
     where: {
       id: establishmentId,
       active: true,
+      published: true,
       owner: {
         subscription: {
           is: { status: "active", paidUntil: { gt: new Date() } },

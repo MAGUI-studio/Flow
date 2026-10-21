@@ -55,6 +55,13 @@ function Appointment({
           </span>
           <StatusBadge status={a.effectiveStatus} />
         </div>
+        {a.effectiveStatus === "completed" && (
+          <p className="text-[10px] text-zinc-500">
+            {a.completedAutomatically
+              ? "Concluído automaticamente após 24h"
+              : "Concluído pelo estabelecimento"}
+          </p>
+        )}
         <h3 className="m-0 break-words text-sm font-semibold text-zinc-800">
           {a.session.service.name}
         </h3>

@@ -1,4 +1,5 @@
 "use client";
+import { NotificationCount } from "./ui/notification-count";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   CheckIcon as Check,
@@ -8,10 +9,13 @@ import {
   ScissorsIcon as Scissors,
   ClockIcon as Clock,
   PlusIcon as Plus,
+  ArrowLeftIcon,
+  ArrowUpRightIcon,
+  BellIcon,
 } from "@phosphor-icons/react";
 import { businessNavigation } from "@/lib/navigation";
 import { NavigationIndicator } from "./ui/navigation-indicator";
-import { dayKey, hourLabel } from "@/lib/format";
+import { dayKey, hourLabel, statusLabel } from "@/lib/format";
 import type { BusinessProfile } from "@/lib/catalog";
 import { ProfessionalsTable } from "./internal/professionals-table";
 import { ServicesTable } from "./internal/services-table";
@@ -22,6 +26,8 @@ import { BookingActionControls } from "./internal/booking-action-controls";
 import { PageHeading, StatusPill, SectionCard } from "./internal/primitives";
 import { ListFilters } from "./internal/filters";
 import { ArrowLink } from "./ui/arrow-link";
+const previewWidth = 1760;
+const previewHeight = 1124;
 const stages = [
   {
     name: "Visão geral",
@@ -53,10 +59,83 @@ const stages = [
   },
 ];
 export function AgendaPreview({
-  business,
+  business: sourceBusiness,
 }: {
   business: BusinessProfile | null;
 }) {
+  const business: BusinessProfile | null = sourceBusiness
+    ? {
+        ...sourceBusiness,
+        name: "Clínica Viva",
+        professionals: [
+          "Dra. Mariana Costa",
+          "Dr. Rafael Torres",
+          "Camila Rocha",
+          "André Martins",
+          "Beatriz Almeida",
+          "Lucas Ferreira",
+          "Juliana Mendes",
+          "Renata Oliveira",
+        ].map((name, index) => ({ id: `preview-professional-${index}`, name })),
+        services: [
+          {
+            name: "Avaliação odontológica",
+            durationMinutes: 45,
+            priceCents: 15000,
+          },
+          {
+            name: "Consulta nutricional",
+            durationMinutes: 60,
+            priceCents: 18000,
+          },
+          {
+            name: "Sessão de fisioterapia",
+            durationMinutes: 50,
+            priceCents: 16000,
+          },
+          {
+            name: "Acompanhamento psicológico",
+            durationMinutes: 50,
+            priceCents: 22000,
+          },
+          {
+            name: "Limpeza e prevenção dental",
+            durationMinutes: 60,
+            priceCents: 24000,
+          },
+          {
+            name: "Avaliação postural",
+            durationMinutes: 45,
+            priceCents: 14000,
+          },
+          {
+            name: "Retorno nutricional",
+            durationMinutes: 30,
+            priceCents: 12000,
+          },
+          {
+            name: "Pilates terapêutico",
+            durationMinutes: 50,
+            priceCents: 11000,
+          },
+        ].map((item, index) => ({
+          ...item,
+          id: `preview-service-${index}`,
+          kind: "individual",
+          modality: index === 3 || index === 6 ? "online" : "in_person",
+          professionalIds: [
+            [0, 1],
+            [2, 4],
+            [3, 5],
+            [6, 7],
+            [0, 1],
+            [3, 5],
+            [2, 4],
+            [3, 5],
+          ][index].map((person) => `preview-professional-${person}`),
+        })),
+      }
+    : null;
   const root = useRef<HTMLDivElement>(null);
   const scene = useRef<HTMLDivElement>(null);
   const copy = useRef<HTMLDivElement>(null);
@@ -66,7 +145,10 @@ export function AgendaPreview({
   const [frame, setFrame] = useState(0);
   const [reduced, setReduced] = useState(true);
   const [visible, setVisible] = useState(false);
-  const [startsAt, setStartsAt] = useState("");
+  const [startsAt] = useState(() => {
+    const date = new Date();
+    return `${dayKey(date, business?.timezone ?? "America/Sao_Paulo")}T09:00:00-03:00`;
+  });
   const [cursor, setCursor] = useState({ x: 65, y: 170 });
   const service = business?.services.find(
     (service) => service.professionalIds.length > 0,
@@ -107,7 +189,7 @@ export function AgendaPreview({
     update();
     preference.addEventListener("change", update);
     const resize = new ResizeObserver(([entry]) =>
-      setScale(entry.contentRect.width / 1080),
+      setScale(entry.contentRect.width / previewWidth),
     );
     const observer = new IntersectionObserver(([entry]) =>
       setVisible(entry.isIntersecting),
@@ -122,32 +204,6 @@ export function AgendaPreview({
       preference.removeEventListener("change", update);
     };
   }, []);
-  useEffect(() => {
-    if (!service || !professional) return;
-    const abort = new AbortController();
-    const params = new URLSearchParams({
-      serviceId: service.id,
-      professionalId: professional.id,
-    });
-    void (async () => {
-      try {
-        const response = await fetch(`/api/availability?${params}`, {
-          signal: abort.signal,
-        });
-        if (!response.ok) return;
-        const data = await response.json();
-        if (!data.dates?.[0]) return;
-        params.set("date", data.dates[0]);
-        const timesResponse = await fetch(`/api/availability?${params}`, {
-          signal: abort.signal,
-        });
-        if (!timesResponse.ok) return;
-        const times = await timesResponse.json();
-        if (times.slots?.[0]) setStartsAt(times.slots[0].startsAt);
-      } catch {}
-    })();
-    return () => abort.abort();
-  }, [service?.id, professional?.id]);
   useEffect(() => {
     if (reduced || !visible || (stage === 3 && !startsAt)) return;
     const hold = [0, 3, 6, 9, 13, 16, 19, 22].includes(frame);
@@ -200,6 +256,53 @@ export function AgendaPreview({
       );
   }, [stage, reduced]);
   const noop = () => {};
+  const appointments =
+    business && service && professional
+      ? Array.from({ length: 30 }, (_, index) => {
+          const availableServices = business.services.filter(
+            (item) => item.professionalIds.length && item.priceCents > 0,
+          );
+          const item =
+            availableServices[index % availableServices.length] ?? service;
+          const people = business.professionals.filter((person) =>
+            item.professionalIds.includes(person.id),
+          );
+          const person = people[index % people.length] ?? professional;
+          const date = new Date(startsAt);
+          date.setUTCDate(date.getUTCDate() + Math.floor(index / 6));
+          date.setUTCMinutes(date.getUTCMinutes() + (index % 6) * 90);
+          const status =
+            index === 0
+              ? approved
+                ? "confirmed"
+                : "pending"
+              : ["confirmed", "confirmed", "pending", "completed", "canceled"][
+                  index % 5
+                ];
+          return {
+            id: `preview-appointment-${index}`,
+            effectiveStatus: status,
+            durationMinutes: item.durationMinutes,
+            priceCents: item.priceCents,
+            whatsapp: null,
+            session: {
+              startsAt: date,
+              service: { name: item.name },
+              professional: { name: person.name },
+            },
+            actions: (
+              <div className="appointment-actions flex-nowrap self-center [&>button]:my-0 [&>button]:h-9 [&>button]:min-h-9 [&>button]:py-0">
+                <BookingActionControls
+                  status={status}
+                  busy={index === 0 && frame === 12 ? "approve" : ""}
+                  onAction={noop}
+                  onConfirm={noop}
+                />
+              </div>
+            ),
+          };
+        })
+      : [];
   return (
     <div className="py-8 sm:py-12">
       <div className="mx-auto max-w-3xl text-center">
@@ -236,14 +339,18 @@ export function AgendaPreview({
       <div
         ref={root}
         className="relative w-full overflow-hidden rounded-2xl border border-[#e8e5f6] bg-white shadow-[0_20px_60px_#635BFF0a]"
-        style={{ height: 690 * scale }}
+        style={{ height: previewHeight * scale }}
         aria-hidden="true"
       >
         <div
           ref={scene}
-          className="internal-app pointer-events-none absolute top-0 left-0 min-h-0 w-[1080px] origin-top-left select-none overflow-hidden text-left"
+          className="internal-app pointer-events-none absolute top-0 left-0 min-h-0 origin-top-left select-none overflow-hidden text-left"
           inert
-          style={{ transform: `scale(${scale})`, height: 690 }}
+          style={{
+            transform: `scale(${scale})`,
+            width: previewWidth,
+            height: previewHeight,
+          }}
         >
           <div className="flex h-11 items-center gap-1.5 border-b border-zinc-200 bg-white px-5">
             <span className="size-2 rounded-full bg-zinc-200" />
@@ -254,8 +361,11 @@ export function AgendaPreview({
             </span>
             <span className="w-8" />
           </div>
-          <div className="grid h-[646px] grid-cols-[210px_1fr]">
-            <aside className="border-r border-[#e9e9f1] bg-white p-5">
+          <div
+            className="grid grid-cols-[250px_minmax(0,1fr)]"
+            style={{ height: previewHeight - 44 }}
+          >
+            <aside className="min-w-0 border-r border-[#e9e9f1] bg-white px-4 py-5">
               <img src="/brand/logo_black.svg" alt="" className="mb-6 w-20" />
               <span className="nav-caption mb-2">SEU ESTABELECIMENTO</span>
               <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-[#e9e9f1] bg-white p-3 text-xs font-medium">
@@ -264,7 +374,7 @@ export function AgendaPreview({
               </div>
               <nav
                 ref={navigationRef}
-                className="internal-navigation relative mt-3 p-0 [&>a]:pr-7"
+                className="internal-navigation relative mt-3 p-0 [&>a]:whitespace-nowrap [&>a]:pr-7 [&>a>svg]:shrink-0"
               >
                 <NavigationIndicator
                   containerRef={navigationRef}
@@ -306,6 +416,10 @@ export function AgendaPreview({
             <div className="min-w-0 overflow-hidden">
               <header className="internal-topbar">
                 <div>
+                  <span className="public-page-link inline-flex shrink-0 whitespace-nowrap">
+                    <ArrowLeftIcon size={15} />
+                    Voltar para meu espaço
+                  </span>
                   <span className="topbar-root">Meu negócio</span>
                   <span className="text-zinc-400">›</span>
                   <strong>
@@ -315,11 +429,18 @@ export function AgendaPreview({
                   </strong>
                 </div>
                 <div>
+                  <span className="relative inline-flex size-8 shrink-0 items-center justify-center bg-transparent text-zinc-900 [&>svg]:text-current!">
+                    <BellIcon size={19} />
+                    <NotificationCount count={3} />
+                  </span>
                   <span className="workspace-status">
                     <i />
                     Tudo no seu tempo
                   </span>
-                  <span className="public-page-link">Ver minha página →</span>
+                  <span className="public-page-link">
+                    Ver minha página
+                    <ArrowUpRightIcon size={15} />
+                  </span>
                 </div>
               </header>
               <div className="overflow-hidden p-7" ref={content}>
@@ -345,18 +466,24 @@ export function AgendaPreview({
                       {[
                         {
                           label: "Agendamentos hoje",
-                          value:
-                            startsAt &&
-                            business &&
-                            dayKey(startsAt, business.timezone) ===
-                              dayKey(new Date(), business.timezone)
-                              ? "1"
-                              : "0",
+                          value: String(
+                            appointments.filter(
+                              (item) =>
+                                dayKey(
+                                  item.session.startsAt,
+                                  business!.timezone,
+                                ) === dayKey(startsAt, business!.timezone),
+                            ).length,
+                          ),
                           icon: CalendarDays,
                         },
                         {
                           label: "Aguardando aprovação",
-                          value: startsAt ? "1" : "0",
+                          value: String(
+                            appointments.filter(
+                              (item) => item.effectiveStatus === "pending",
+                            ).length,
+                          ),
                           icon: Clock,
                         },
                         {
@@ -405,30 +532,36 @@ export function AgendaPreview({
                           <span className="subtle-link">Ver agenda →</span>
                         }
                       >
-                        <div className="upcoming-row">
-                          <div className="upcoming-time">
-                            <strong>
-                              {startsAt &&
-                                hourLabel(startsAt, business!.timezone)}
-                            </strong>
-                            <small>
-                              {startsAt &&
-                                new Date(startsAt).toLocaleDateString("pt-BR", {
-                                  timeZone: business!.timezone,
-                                  day: "2-digit",
-                                  month: "short",
-                                })}
-                            </small>
+                        {appointments.slice(0, 6).map((item) => (
+                          <div className="upcoming-row" key={item.id}>
+                            <div className="upcoming-time">
+                              <strong>
+                                {hourLabel(
+                                  item.session.startsAt,
+                                  business!.timezone,
+                                )}
+                              </strong>
+                              <small>
+                                {item.session.startsAt.toLocaleDateString(
+                                  "pt-BR",
+                                  {
+                                    timeZone: business!.timezone,
+                                    day: "2-digit",
+                                    month: "short",
+                                  },
+                                )}
+                              </small>
+                            </div>
+                            <div>
+                              <strong>{item.session.service.name}</strong>
+                              <small>{item.session.professional.name}</small>
+                            </div>
+                            <StatusPill
+                              status={item.effectiveStatus}
+                              label={statusLabel[item.effectiveStatus]}
+                            />
                           </div>
-                          <div>
-                            <strong>{service?.name}</strong>
-                            <small>{professional?.name}</small>
-                          </div>
-                          <StatusPill
-                            status="pending"
-                            label="Aguardando aprovação"
-                          />
-                        </div>
+                        ))}
                       </SectionCard>
                       <SectionCard
                         title="Tudo pronto para fluir?"
@@ -552,9 +685,7 @@ export function AgendaPreview({
                       professionals={business?.professionals}
                     />
                     <div className="section-subline">
-                      <span>
-                        {startsAt ? "1 agendamento" : "Nenhum agendamento"}
-                      </span>
+                      <span>{appointments.length} agendamentos</span>
                       <span>Fuso: {business?.timezone}</span>
                     </div>
                     {service && professional && startsAt && (
@@ -563,30 +694,7 @@ export function AgendaPreview({
                         previewView={agendaView}
                         previewDate={dayKey(startsAt, business!.timezone)}
                         timezone={business!.timezone}
-                        rows={[
-                          {
-                            id: "preview-appointment",
-                            effectiveStatus: approved ? "confirmed" : "pending",
-                            durationMinutes: service.durationMinutes,
-                            priceCents: service.priceCents,
-                            whatsapp: null,
-                            session: {
-                              startsAt: new Date(startsAt),
-                              service: { name: service.name },
-                              professional: { name: professional.name },
-                            },
-                            actions: (
-                              <div className="appointment-actions flex-nowrap self-center [&>button]:my-0 [&>button]:h-9 [&>button]:min-h-9 [&>button]:py-0">
-                                <BookingActionControls
-                                  status={approved ? "confirmed" : "pending"}
-                                  busy={frame === 12 ? "approve" : ""}
-                                  onAction={noop}
-                                  onConfirm={noop}
-                                />
-                              </div>
-                            ),
-                          },
-                        ]}
+                        rows={appointments}
                       />
                     )}
                     <div

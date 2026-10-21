@@ -43,7 +43,7 @@ export function BusinessOnboarding({
           [
             "03",
             "Sua agenda aberta",
-            "Datas e horários para receber clientes.",
+            "Configure horários e publique quando estiver tudo pronto.",
           ],
         ].map(([n, title, description]) => (
           <div key={n}>

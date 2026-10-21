@@ -69,6 +69,11 @@ test("business banners are owner scoped and favorites are persistent, isolated a
         contactPhone: "(11) 99999-9999",
       }),
     );
+    assert.equal(business.published, false);
+    await db.establishment.update({
+      where: { id: business.id },
+      data: { published: true },
+    });
     assert.equal(business.coverUrl, banner.url);
     assert.equal(business.website, "https://aurora.com.br");
     assert.equal(business.instagram, "aurora");

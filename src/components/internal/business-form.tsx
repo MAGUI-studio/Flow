@@ -423,7 +423,9 @@ export function BusinessForm({
       }
       router.push(
         panelHref(
-          destinations[kind],
+          kind === "establishment" && !initialEstablishment
+            ? "/painel/configuracao"
+            : destinations[kind],
           kind === "establishment" ? data.id : business?.id,
         ),
       );
@@ -458,7 +460,10 @@ export function BusinessForm({
   );
   return (
     <FormProvider {...methods}>
-      <FormEditState editing={!!initialEstablishment || !!savedServiceId}>
+      <FormEditState
+        editing={!!initialEstablishment || !!savedServiceId}
+        extraDirty={!!bannerFile}
+      >
         <div
           className={`form-page-grid w-full grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_320px] ${kind === "professional" ? "gap-5" : ""}`}
         >

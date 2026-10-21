@@ -85,6 +85,7 @@ export async function createEstablishment(
   return tx.establishment.create({
     data: {
       ownerId: owner,
+      published: false,
       website: contacts.website || null,
       instagram: contacts.instagram || null,
       coverUrl,

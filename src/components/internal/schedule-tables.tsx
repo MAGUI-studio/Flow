@@ -219,6 +219,7 @@ export function SessionsTable({
   );
 }
 export type BookingRow = {
+  completedAutomatically?: boolean;
   arrivedAt?: Date | string | null;
   id: string;
   effectiveStatus: string;
@@ -296,6 +297,13 @@ export function AgendaTable({
           </td>
           <td>
             <BookingStatus status={a.effectiveStatus} />
+            {a.effectiveStatus === "completed" && (
+              <span className="mt-1 block text-[10px] text-zinc-400">
+                {a.completedAutomatically
+                  ? "Automático após 24h"
+                  : "Pelo estabelecimento"}
+              </span>
+            )}
           </td>
           <td className="text-right [&_.appointment-actions]:justify-end">
             {["confirmed", "pending"].includes(a.effectiveStatus) ? (

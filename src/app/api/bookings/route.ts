@@ -4,6 +4,7 @@ import { getAvailability } from "@/lib/availability";
 import { dayKey } from "@/lib/format";
 import { text } from "@/lib/business-write";
 import { isEstablishmentOwner } from "@/lib/booking-policy";
+import { whatsappSchema } from "@/lib/form-schemas";
 export async function POST(request: Request) {
   try {
     const consumer = await currentUser();
@@ -44,6 +45,12 @@ export async function POST(request: Request) {
         )
           throw new Error("IDEMPOTENCY_CONFLICT");
         return { id: previous.id, status: previous.status };
+      }
+      if (service.modality === "online") {
+        const national = typeof body.whatsapp === "string"
+          ? body.whatsapp.replace(/^\+55\s*/, "")
+          : "";
+        if (!whatsappSchema.safeParse(national).success) throw new Error("WHATSAPP_REQUIRED");
       }
       const start = new Date(body.startsAt);
       if (!Number.isFinite(start.getTime())) throw new Error("INVALID_INPUT");

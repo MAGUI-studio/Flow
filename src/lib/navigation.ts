@@ -1,3 +1,4 @@
+import { RocketLaunchIcon } from "@phosphor-icons/react";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -8,6 +9,12 @@ import {
   ChartNoAxesCombined,
 } from "lucide-react";
 export const businessNavigation = [
+  {
+    href: "/painel/configuracao",
+    label: "Configurar negócio",
+    icon: RocketLaunchIcon,
+    group: "",
+  },
   { href: "/painel", label: "Visão geral", icon: LayoutDashboard, group: "" },
   {
     href: "/painel/estabelecimentos",

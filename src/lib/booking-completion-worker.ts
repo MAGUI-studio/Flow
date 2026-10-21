@@ -1,3 +1,4 @@
+import { bookingReminders } from "@/lib/notifications";
 import { completeOverdueBookings } from "./booking-completion";
 import { prisma } from "./prisma";
 
@@ -12,6 +13,7 @@ export function startBookingCompletionWorker() {
     if (state.flowCompletionRunning) return;
     state.flowCompletionRunning = true;
     try {
+      await bookingReminders(prisma());
       // Bounded batches also catch up after downtime without holding a long transaction.
       for (let batch = 0; batch < 10; batch++) {
         if ((await completeOverdueBookings(prisma())) < 500) break;

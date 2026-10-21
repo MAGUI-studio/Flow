@@ -145,7 +145,11 @@ test("automatic completion respects the exact 24-hour boundary, terminal statuse
       });
       assert.equal(
         actual.status,
-        ["exact", "older"].includes(item.name) ? "completed" : item.status,
+        ["exact", "older"].includes(item.name)
+          ? "completed"
+          : item.status === "pending"
+            ? "expired"
+            : item.status,
         item.name,
       );
     }

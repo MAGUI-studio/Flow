@@ -49,11 +49,43 @@ export function Booking({
   const { isSignedIn, user } = useUser(),
     clerk = useClerk();
   const isOwner = isEstablishmentOwner(user?.id, ownerUserId);
+  const bookingForm = useForm({
+    ...formValidation,
+    resolver: (values, context, options) =>
+      zodResolver(
+        bookingSchema(
+          b.services.find((item) => item.id === values.serviceId)?.modality ===
+            "online",
+        ),
+      )(values, context, options),
+    defaultValues: {
+      serviceId: "",
+      professionalId: "",
+      date: "",
+      startsAt: "",
+      phone: "",
+    },
+  });
+  const serviceId = bookingForm.watch("serviceId");
+  const professionalId = bookingForm.watch("professionalId");
+  const date = bookingForm.watch("date");
+  const setServiceId = (value: string) =>
+    bookingForm.setValue("serviceId", value, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  const setProfessionalId = (value: string) =>
+    bookingForm.setValue("professionalId", value, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  const setDate = (value: string) =>
+    bookingForm.setValue("date", value, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   const [step, setStep] = useState(0),
-    [serviceId, setServiceId] = useState(""),
-    [professionalId, setProfessionalId] = useState(""),
-    [date, setDate] = useState(""),
-    [slot, setSlot] = useState<Slot | null>(null),
+    [slot, setSelectedSlot] = useState<Slot | null>(null),
     [dates, setDates] = useState<string[]>([]),
     [slots, setSlots] = useState<Slot[]>([]),
     [loading, setLoading] = useState(false),
@@ -62,6 +94,13 @@ export function Booking({
       null,
     ),
     [key, setKey] = useState("");
+  function setSlot(value: Slot | null) {
+    setSelectedSlot(value);
+    bookingForm.setValue("startsAt", value?.startsAt ?? "", {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
   const [resolvedKey, setResolvedKey] = useState("");
   const requestKey = `${serviceId}:${professionalId}:${date}`;
   const timesReady = resolvedKey === requestKey && !loading;
@@ -81,17 +120,6 @@ export function Booking({
   );
   const service = b.services.find((s) => s.id === serviceId),
     professional = b.professionals.find((p) => p.id === professionalId);
-  const bookingForm = useForm({
-    ...formValidation,
-    resolver: zodResolver(bookingSchema(service?.modality === "online")),
-    defaultValues: {
-      serviceId: "",
-      professionalId: "",
-      date: "",
-      startsAt: "",
-      phone: "",
-    },
-  });
   const phone = bookingForm.watch("phone");
   const setPhone = (value: string) =>
     bookingForm.setValue("phone", phoneMask(value), {
@@ -182,10 +210,6 @@ export function Booking({
     setStep(step - 1);
   }
   async function confirm() {
-    bookingForm.setValue("serviceId", serviceId);
-    bookingForm.setValue("professionalId", professionalId);
-    bookingForm.setValue("date", date);
-    bookingForm.setValue("startsAt", slot?.startsAt ?? "");
     await bookingForm.handleSubmit(sendReservation)();
   }
   async function sendReservation() {
@@ -564,7 +588,7 @@ export function Booking({
                 </div>
               </ScrollArea>
               <div
-                className={`form-actions mt-4! grid! shrink-0 gap-3! border-t border-zinc-100 pt-4 [&>.button]:w-full [&>.button]:justify-center ${step > 0 ? "grid-cols-2" : "grid-cols-1"}`}
+                className={`form-actions mt-4! grid! shrink-0 items-start! gap-3! border-t border-zinc-100 pt-4 [&_.button]:h-14 [&_.button]:min-h-14 [&_.button]:px-3 [&_.button]:py-2 [&_.button]:text-xs sm:[&_.button]:text-sm [&>.button]:w-full [&>.button]:justify-center ${step > 0 ? "grid-cols-2" : "grid-cols-1"}`}
               >
                 {step > 0 && (
                   <button
@@ -591,6 +615,7 @@ export function Booking({
                   </button>
                 ) : (
                   <FormSubmitGuard
+                    compact
                     schema={bookingSchema(service?.modality === "online")}
                     values={bookingForm.watch()}
                     className="w-full [&>button:first-child]:w-full"

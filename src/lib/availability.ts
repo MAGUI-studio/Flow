@@ -81,6 +81,7 @@ async function professionalAvailability(
   const e = service.establishment;
   if (
     !e.active ||
+    !e.published ||
     e.owner.subscription?.status !== "active" ||
     e.owner.subscription.paidUntil <= new Date()
   )

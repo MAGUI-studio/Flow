@@ -75,16 +75,16 @@ function LinkSelector({
           type="button"
           className={`inline-flex min-h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-3.5 text-left text-xs font-medium transition-colors ${selected.length ? "border-[#635BFF]/40 text-[#635BFF]" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}
         >
-          <span className="inline-flex items-center gap-2">
-            <SlidersHorizontal size={14} aria-hidden="true" />
-            {label}
+          <span className="inline-flex min-w-0 items-center gap-2">
+            <SlidersHorizontal size={14} className="shrink-0" aria-hidden="true" />
+            <span className="truncate">{label}</span>
             {selected.length > 0 && (
-              <span className="rounded-md bg-[#f0eeff] px-1.5 py-0.5 text-[10px] tabular-nums">
+              <span className="shrink-0 rounded-md bg-[#f0eeff] px-1.5 py-0.5 text-[10px] tabular-nums">
                 {selected.length}
               </span>
             )}
           </span>
-          <ChevronDown size={14} aria-hidden="true" />
+          <ChevronDown size={14} className="shrink-0" aria-hidden="true" />
         </button>
       </Popover.Trigger>
       <Popover.Portal>

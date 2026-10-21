@@ -6,3 +6,7 @@ node_modules/
 coverage/
 src/generated/prisma/
 .neon
+
+test-results/
+playwright-report/
+blob-report/

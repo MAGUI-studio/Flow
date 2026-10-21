@@ -150,7 +150,7 @@ export function ProfessionalEditForm({
   }
   return (
     <FormProvider {...form}>
-      <FormEditState editing={true}>
+      <FormEditState editing={true} extraDirty={!!file}>
         <FlowTabs
           items={tabs}
           value={tab}

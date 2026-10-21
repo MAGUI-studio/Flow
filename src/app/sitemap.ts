@@ -6,6 +6,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const businesses = await prisma().establishment.findMany({
     where: {
       active: true,
+      published: true,
       owner: {
         subscription: {
           is: { status: "active", paidUntil: { gt: new Date() } },

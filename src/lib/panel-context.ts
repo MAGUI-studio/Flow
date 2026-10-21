@@ -21,6 +21,7 @@ export const ownerContext = cache(async () => {
     orderBy: { name: "asc" },
     select: {
       id: true,
+      published: true,
       name: true,
       slug: true,
       category: true,

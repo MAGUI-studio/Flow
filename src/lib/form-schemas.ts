@@ -19,6 +19,10 @@ export const phoneSchema = z
     "Informe um telefone com DDD e 10 ou 11 dígitos.",
   );
 const optionalPhone = z.union([z.literal(""), phoneSchema]);
+export const whatsappSchema = z.string().refine(
+  (value) => /^[1-9]\d9\d{8}$/.test(value.replace(/\D/g, "")),
+  "Informe o WhatsApp completo com DDD, como (12) 98184-7553.",
+);
 const number = (
   min: number,
   max: number,
@@ -160,6 +164,6 @@ export function bookingSchema(online: boolean) {
     professionalId,
     date,
     startsAt: z.string().datetime({ offset: true }),
-    phone: online ? phoneSchema : optionalPhone,
+    phone: online ? whatsappSchema : optionalPhone,
   });
 }
