@@ -62,6 +62,8 @@ export async function createEstablishment(
   if (
     !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) ||
     [
+      "termos",
+      "privacidade",
       "painel",
       "planos",
       "assinatura",

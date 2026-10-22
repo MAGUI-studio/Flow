@@ -58,6 +58,8 @@ export const establishmentSchema = businessContactsSchema.extend({
     .refine(
       (v) =>
         ![
+          "termos",
+          "privacidade",
           "painel",
           "planos",
           "agendamentos",

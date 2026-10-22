@@ -1,4 +1,6 @@
 export const reservedSlugs = [
+  "termos",
+  "privacidade",
   "painel",
   "planos",
   "assinatura",

@@ -16,7 +16,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     select: { slug: true },
     orderBy: { slug: "asc" },
   });
-  return ["/", "/explorar", ...businesses.map((b) => `/${b.slug}`)].map(
-    (path) => ({ url: new URL(path, appUrl).toString() }),
-  );
+  return [
+    "/",
+    "/explorar",
+    "/termos",
+    "/privacidade",
+    ...businesses.map((b) => `/${b.slug}`),
+  ].map((path) => ({ url: new URL(path, appUrl).toString() }));
 }

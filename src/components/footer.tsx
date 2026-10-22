@@ -185,6 +185,20 @@ export function Footer() {
         </div>
         <div className="mx-7 flex flex-col gap-5 border-t border-white/8 py-6 sm:mx-10 sm:flex-row sm:items-center sm:justify-between">
           <StudioCredit />
+          <nav
+            aria-label="Termos e privacidade"
+            className="flex flex-wrap gap-x-5 gap-y-3 text-xs text-zinc-400"
+          >
+            <Link href="/termos" className="transition-colors hover:text-white">
+              Termos de Uso
+            </Link>
+            <Link
+              href="/privacidade"
+              className="transition-colors hover:text-white"
+            >
+              Privacidade
+            </Link>
+          </nav>
           <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 text-[10px] text-zinc-400">
             <span>
               © {new Date().getFullYear()} Flow. Todos os direitos reservados.
