@@ -7,14 +7,19 @@ import {
   CalendarDotsIcon,
   CompassIcon,
   StorefrontIcon,
+  ShieldCheckIcon,
 } from "@phosphor-icons/react";
 export function AccountMenu({ businessAccess }: { businessAccess?: boolean }) {
   const { user } = useUser();
   const userId = user?.id;
   const pathname = usePathname();
-  const [access, setAccess] = useState<{ userId: string; active: boolean }>();
+  const [access, setAccess] = useState<{
+    userId: string;
+    active: boolean;
+    superAdmin: boolean;
+  }>();
   useEffect(() => {
-    if (businessAccess !== undefined || !userId) return;
+    if (!userId) return;
     const controller = new AbortController();
     async function refresh() {
       try {
@@ -28,10 +33,11 @@ export function AccountMenu({ businessAccess }: { businessAccess?: boolean }) {
           setAccess({
             userId: userId!,
             active: result.businessAccess === true,
+            superAdmin: result.superAdmin === true,
           });
       } catch {
         if (!controller.signal.aborted)
-          setAccess({ userId: userId!, active: false });
+          setAccess({ userId: userId!, active: false, superAdmin: false });
       }
     }
     void refresh();
@@ -46,6 +52,13 @@ export function AccountMenu({ businessAccess }: { businessAccess?: boolean }) {
   return (
     <UserButton>
       <UserButton.MenuItems>
+        {access?.userId === userId && access?.superAdmin && (
+          <UserButton.Link
+            label="Administração Flow"
+            labelIcon={<ShieldCheckIcon size={16} />}
+            href="/admin"
+          />
+        )}
         <UserButton.Link
           label="Meus agendamentos"
           labelIcon={<CalendarDotsIcon size={16} />}

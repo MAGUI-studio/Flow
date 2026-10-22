@@ -10,12 +10,18 @@ export function FlowDate({
   onValueChange,
   inputRef,
   value: controlledValue,
+  className,
+  inputClassName,
+  "aria-label": label = "Data",
 }: {
   name: string;
   required?: boolean;
   onValueChange?: (value: string) => void;
   inputRef?: (node: HTMLInputElement | null) => void;
   value?: string;
+  className?: string;
+  inputClassName?: string;
+  "aria-label"?: string;
 }) {
   const [value, setValue] = useState(""),
     [display, setDisplay] = useState(""),
@@ -119,19 +125,20 @@ export function FlowDate({
   }
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
-      <div className="flow-date-field">
+      <div className={`flow-date-field ${className ?? ""}`}>
         <input
           ref={(node) => {
             input.current = node;
             inputRef?.(node);
           }}
           type="text"
+          className={inputClassName}
           inputMode="numeric"
           placeholder="dd/mm/aaaa"
           required={required}
           value={display}
           onChange={(e) => edit(e.target.value)}
-          aria-label="Data"
+          aria-label={label}
         />
         <input type="hidden" name={name} value={value} />
         <Popover.Trigger asChild>
@@ -244,6 +251,7 @@ export function FlowDate({
               type="button"
               onClick={() => {
                 setValue("");
+                onValueChange?.("");
                 setDisplay("");
                 input.current?.setCustomValidity("");
                 setOpen(false);

@@ -34,6 +34,7 @@ import { FlowSelect } from "@/components/ui/flow-select";
 import { ScrollArea } from "@/components/ui/scrollArea";
 import { Container } from "@/components/container";
 import { panelHref, panelSearch } from "@/lib/url-state";
+import { ShieldCheck } from "lucide-react";
 type Business = {
   id: string;
   name: string;
@@ -41,7 +42,7 @@ type Business = {
   color: string;
   published?: boolean;
 };
-import { businessNavigation as navigation } from "@/lib/navigation";
+import { businessNavigation, adminNavigation } from "@/lib/navigation";
 export function InternalShell({
   children,
   mode,
@@ -49,11 +50,12 @@ export function InternalShell({
   plan,
 }: {
   children: ReactNode;
-  mode: "business" | "consumer";
+  mode: "business" | "consumer" | "admin";
   businesses?: Business[];
   plan?: string;
 }) {
   const pathname = usePathname();
+  const navigation = mode === "admin" ? adminNavigation : businessNavigation;
   const { user } = useUser();
   const [mobile, setMobile] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -77,18 +79,22 @@ export function InternalShell({
   const current =
     businesses.find((b) => b.id === query.estabelecimento) ?? businesses[0];
   const activeLabel =
-    mode === "consumer"
-      ? pathname === "/favoritos"
-        ? "Meus favoritos"
-        : pathname.startsWith("/lista-de-espera")
-          ? "Minha lista de espera"
-          : "Meus agendamentos"
-      : (navigation.find(
-          (n) => n.href !== "/painel" && pathname.startsWith(n.href),
-        )?.label ??
-        (pathname === "/painel/assinatura"
-          ? "Minha assinatura"
-          : "Visão geral"));
+    mode === "admin"
+      ? (adminNavigation.find(
+          (n) => n.href !== "/admin" && pathname.startsWith(n.href),
+        )?.label ?? "Visão geral")
+      : mode === "consumer"
+        ? pathname === "/favoritos"
+          ? "Meus favoritos"
+          : pathname.startsWith("/lista-de-espera")
+            ? "Minha lista de espera"
+            : "Meus agendamentos"
+        : (navigation.find(
+            (n) => n.href !== "/painel" && pathname.startsWith(n.href),
+          )?.label ??
+          (pathname === "/painel/assinatura"
+            ? "Minha assinatura"
+            : "Visão geral"));
   return (
     <div className="internal-app">
       <button
@@ -195,10 +201,10 @@ export function InternalShell({
               {mode === "consumer" && (
                 <span className="nav-caption">SEU ESPAÇO</span>
               )}
-              {mode === "business" ? (
+              {mode !== "consumer" ? (
                 navigation.map((n, index) => {
                   const active =
-                    n.href === "/painel"
+                    n.href === (mode === "admin" ? "/admin" : "/painel")
                       ? pathname === n.href
                       : pathname.startsWith(n.href);
                   return (
@@ -210,7 +216,12 @@ export function InternalShell({
                       )}
                       <Link
                         key={n.href}
-                        href={panelHref(n.href, current?.id)}
+                        href={
+                          mode === "admin"
+                            ? n.href
+                            : panelHref(n.href, current?.id)
+                        }
+                        prefetch={mode === "admin" ? false : undefined}
                         aria-current={active ? "page" : undefined}
                         onClick={() => setMobile(false)}
                       >
@@ -246,14 +257,16 @@ export function InternalShell({
                   </Link>
                 </>
               )}
-              <Link
-                href="/favoritos"
-                aria-current={pathname === "/favoritos" ? "page" : undefined}
-                onClick={() => setMobile(false)}
-              >
-                <Heart size={18} />
-                <span>Meus favoritos</span>
-              </Link>
+              {mode !== "admin" && (
+                <Link
+                  href="/favoritos"
+                  aria-current={pathname === "/favoritos" ? "page" : undefined}
+                  onClick={() => setMobile(false)}
+                >
+                  <Heart size={18} />
+                  <span>Meus favoritos</span>
+                </Link>
+              )}
               {mode === "consumer" && (
                 <Link href="/explorar" onClick={() => setMobile(false)}>
                   <Compass size={18} />
@@ -291,7 +304,17 @@ export function InternalShell({
               )}
             </nav>
             <div className="internal-sidebar-bottom">
-              {plan ? (
+              {mode === "admin" ? (
+                <div className="plan-mini">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#F5F4FF] text-[#635BFF]">
+                    <ShieldCheck size={23} aria-hidden="true" />
+                  </span>
+                  <div>
+                    <small>ADMINISTRAÇÃO</small>
+                    <strong>SUPERADMIN</strong>
+                  </div>
+                </div>
+              ) : plan ? (
                 <div className="plan-mini">
                   <span className="grid size-10 shrink-0 place-items-center">
                     <img
@@ -364,9 +387,9 @@ export function InternalShell({
             >
               <Menu size={19} />
             </button>
-            {mode === "business" && (
+            {(mode === "business" || mode === "admin") && (
               <Link
-                href="/agendamentos"
+                href={mode === "admin" ? "/" : "/agendamentos"}
                 className="public-page-link group shrink-0 whitespace-nowrap focus-visible:text-[#635BFF]"
               >
                 <ArrowLeftIcon
@@ -374,11 +397,15 @@ export function InternalShell({
                   aria-hidden="true"
                   className="shrink-0 transition-[transform,color] duration-200 group-hover:-translate-x-1 group-hover:text-[#635BFF]! group-focus-visible:-translate-x-1 group-focus-visible:text-[#635BFF]! motion-reduce:transform-none motion-reduce:transition-none"
                 />
-                Voltar para meu espaço
+                {mode === "admin" ? "Voltar ao Flow" : "Voltar para meu espaço"}
               </Link>
             )}
             <span className="topbar-root">
-              {mode === "business" ? "Meu negócio" : "Minha área"}
+              {mode === "admin"
+                ? "Administração"
+                : mode === "business"
+                  ? "Meu negócio"
+                  : "Minha área"}
             </span>
             <ChevronRight size={13} />
             <strong className="max-w-40 truncate sm:max-w-none">
@@ -390,7 +417,7 @@ export function InternalShell({
 
             <span className="workspace-status">
               <i />
-              Tudo no seu tempo
+              {mode === "admin" ? "Acesso restrito" : "Tudo no seu tempo"}
             </span>
             {mode === "business" && current ? (
               <Link

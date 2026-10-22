@@ -13,7 +13,49 @@ import {
   Scissors,
   Layers,
   ChartNoAxesCombined,
+  Database,
+  CreditCard,
+  Activity,
 } from "lucide-react";
+export const adminNavigation = [
+  { href: "/admin", label: "Visão geral", icon: LayoutDashboard, group: "" },
+  {
+    href: "/admin/usuarios",
+    label: "Usuários",
+    icon: Users,
+    group: "Plataforma",
+  },
+  {
+    href: "/admin/contas",
+    label: "Contas no banco",
+    icon: Database,
+    group: "Plataforma",
+  },
+  {
+    href: "/admin/estabelecimentos",
+    label: "Estabelecimentos",
+    icon: Building2,
+    group: "Plataforma",
+  },
+  {
+    href: "/admin/assinaturas",
+    label: "Assinaturas",
+    icon: CreditCard,
+    group: "Gestão",
+  },
+  {
+    href: "/admin/agendamentos",
+    label: "Agendamentos",
+    icon: CalendarDays,
+    group: "Gestão",
+  },
+  {
+    href: "/admin/auditoria",
+    label: "Auditoria",
+    icon: Activity,
+    group: "Gestão",
+  },
+];
 export const businessNavigation = [
   {
     href: "/painel/configuracao",

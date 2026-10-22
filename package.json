@@ -6,6 +6,7 @@
     "stripe:setup": "tsx scripts/setup-stripe.ts",
     "stripe:verify": "tsx scripts/verify-stripe.ts",
     "test:billing": "tsx --test tests/billing.integration.ts",
+    "test:admin": "tsx --test tests/admin-policy.test.ts tests/admin-filters.test.ts tests/admin-access.test.ts tests/admin-records.integration.ts",
     "secrets:check": "node scripts/check-staged-secrets.mjs",
     "stripe:listen": "node scripts/stripe-listen.mjs",
     "dev": "node scripts/dev.mjs",

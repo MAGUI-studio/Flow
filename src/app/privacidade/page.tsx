@@ -126,6 +126,12 @@ const sections: LegalSection[] = [
           notificações pessoais não são publicados como listas públicas.
         </p>
         <p>
+          A administração autorizada do Flow pode consultar os dados das contas
+          para prestar suporte, administrar o serviço e apurar falhas ou abusos.
+          O acesso é restrito, e as consultas às fichas de usuários e alterações
+          administrativas são registradas em auditoria.
+        </p>
+        <p>
           Para oferecer o Flow, contamos com fornecedores que tratam os dados
           necessários a cada serviço:
         </p>
@@ -137,15 +143,16 @@ const sections: LegalSection[] = [
             <strong>Stripe:</strong> processamento de pagamentos e assinaturas.
           </li>
           <li>
-            <strong>Vercel e Neon:</strong> hospedagem e armazenamento dos dados.
+            <strong>Vercel e Neon:</strong> hospedagem e armazenamento dos
+            dados.
           </li>
           <li>
             <strong>UploadThing:</strong> armazenamento das imagens enviadas.
           </li>
           <li>
             <strong>OpenStreetMap e Photon:</strong> mapas e pesquisa de
-            endereços. Ao usar esses recursos, os fornecedores podem receber
-            seu endereço IP, a região exibida no mapa e os endereços pesquisados,
+            endereços. Ao usar esses recursos, os fornecedores podem receber seu
+            endereço IP, a região exibida no mapa e os endereços pesquisados,
             conforme o serviço utilizado.
           </li>
         </ul>
@@ -202,9 +209,9 @@ const sections: LegalSection[] = [
           restrições de acesso para proteger informações. Nenhum sistema é
           isento de riscos. Se identificar acesso indevido ou exposição de
           dados, avise{" "}
-          <a href="mailto:contato@magui.studio">contato@magui.studio</a>. Incidentes
-          serão avaliados e comunicados aos titulares e à autoridade quando
-          exigido.
+          <a href="mailto:contato@magui.studio">contato@magui.studio</a>.
+          Incidentes serão avaliados e comunicados aos titulares e à autoridade
+          quando exigido.
         </p>
       </>
     ),
@@ -299,8 +306,8 @@ const sections: LegalSection[] = [
         </p>
         <p>
           Para dúvidas sobre privacidade ou encerramento de conta:{" "}
-          <a href="mailto:contato@magui.studio">contato@magui.studio</a>. Consulte
-          também os <Link href="/termos">Termos de Uso</Link>.
+          <a href="mailto:contato@magui.studio">contato@magui.studio</a>.
+          Consulte também os <Link href="/termos">Termos de Uso</Link>.
         </p>
         <p>
           Referência:{" "}
